@@ -15,5 +15,11 @@
   "bugs": {
     "url": "https://github.com/patton-Sr/fireDao/issues"
   },
-  "homepage": "https://github.com/patton-Sr/fireDao#readme"
+  "homepage": "https://github.com/patton-Sr/fireDao#readme",
+  "dependencies": {
+    "hardhat": "^2.13.0"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^2.0.2"
+  }
 }
