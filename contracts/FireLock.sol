@@ -1,8 +1,16 @@
+//File:./interface/ITreasuryDistributionContract.sol
+pragma solidity ^0.8.0;
+
+interface ITreasuryDistributionContract {
+  function AllocationFund() external;
+  function setSourceOfIncome(uint num,uint tokenNum,uint256 amount) external;
+}
 //File:./interface/IFireLockFeeTransfer.sol
 pragma solidity ^0.8.0;
 interface IFireLockFeeTransfer {
     function getAddress() external view returns(address);
-    function getFee() external view returns(uint);
+    function getFee() external view returns(uint256);
+    function getUseTreasuryDistributionContract() external view returns(bool);
 }
 //File:./lib/TransferHelper.sol
 
@@ -108,9 +116,10 @@ contract FireLock {
     LockDetail[] public ListOwnerLockDetail;
     groupLockDetail[] public ListGropLockDetail;
 
-    constructor(address _weth,address _fireLockFeeTransfer) {
+    constructor(address _weth,address _fireLockFeeTransfer,address _treasuryDistributionContract) {
         weth = _weth;
         fireLockFeeTransfer = _fireLockFeeTransfer;
+        treasuryDistributionContract = _treasuryDistributionContract;
     }
 
   function lock(
@@ -139,6 +148,9 @@ contract FireLock {
         require(msg.value == feeAmount(), "Amount is incorrect");
         IWETH(weth).deposit{value: feeAmount()}();
         IWETH(weth).transfer(feeReceiver(), feeAmount());
+    }
+    if(IFireLockFeeTransfer(fireLockFeeTransfer).getUseTreasuryDistributionContract()) {
+         ITreasuryDistributionContract(treasuryDistributionContract).setSourceOfIncome(2,2,feeAmount());
     }
     
     // Create a new LockDetail struct
@@ -308,6 +320,7 @@ function groupLock(
         adminGropLockDetail[msg.sender][_index].rate[i] = _rate[i];
         }
     }
+    
     function getLockTitle(uint _index) public view returns(string memory){
         return ownerLockDetail[msg.sender][_index].LockTitle;
     }
@@ -339,7 +352,7 @@ function groupLock(
     function getTokenList() public view returns(address[] memory) {
         return ListTokenAddress;
     }
-    function feeAmount() public view returns(uint) {
+    function feeAmount() public view returns(uint256) {
         return IFireLockFeeTransfer(fireLockFeeTransfer).getFee();
     }
     function feeReceiver() public view returns(address) {
