@@ -241,6 +241,9 @@ function groupLock(
         ONE_DAY_TIME_STAMP;
         return _amount;
     }
+    function getUserRate() public view returns(uint256) {
+        
+    }
     function groupUnLock(uint _index,address _token) public {
         require(checkRate(msg.sender, _index) == 100 ,"rate is error");
         require(block.timestamp >= adminGropLockDetail[msg.sender][_index].ddl,"current time should be bigger than deadlineTime");
