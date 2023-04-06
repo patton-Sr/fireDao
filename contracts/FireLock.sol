@@ -77,16 +77,16 @@ pragma solidity ^0.8.0;
 // import "./interface/IFireLockFeeTransfer.sol";
 
 contract FireLock {
-    struct LockDetail{
-        string LockTitle;
-        uint256 ddl;
-        uint256 startTime;
-        uint256 amount;
-        uint256 unlockCycle;
-        uint256 unlockRound;
-        address token;
-        uint256 cliffPeriod;
-    }
+    // struct LockDetail{
+    //     string LockTitle;
+    //     uint256 ddl;
+    //     uint256 startTime;
+    //     uint256 amount;
+    //     uint256 unlockCycle;
+    //     uint256 unlockRound;
+    //     address token;
+    //     uint256 cliffPeriod;
+    // }
     struct groupLockDetail{
         string LockTitle;
         uint256 ddl;
@@ -111,9 +111,9 @@ contract FireLock {
     address[] public ListTokenAddress;
     mapping(address => address) adminAndOwner;
     mapping(address => address[]) public tokenAddress;
-    mapping(address => LockDetail[]) public ownerLockDetail;
+    // mapping(address => LockDetail[]) public ownerLockDetail;
     mapping(address => groupLockDetail[]) public adminGropLockDetail;
-    LockDetail[] public ListOwnerLockDetail;
+    // LockDetail[] public ListOwnerLockDetail;
     groupLockDetail[] public ListGropLockDetail;
 
     constructor(address _weth,address _fireLockFeeTransfer,address _treasuryDistributionContract) {
@@ -122,58 +122,58 @@ contract FireLock {
         treasuryDistributionContract = _treasuryDistributionContract;
     }
 
-  function lock(
-    address _token, 
-    address _to, 
-    uint256 _unlockCycle, 
-    uint256 _unlockRound, 
-    uint256 _amount, 
-    uint256 _cliffPeriod, 
-    string memory _title
-) public payable {
-    // Check for valid token amount and deadline
-    require(_amount > 0, "Token amount should be greater than zero");
-    require(block.timestamp + _unlockCycle * _unlockRound * ONE_DAY_TIME_STAMP > block.timestamp, "Deadline should be greater than current block number");
+//   function lock(
+//     address _token, 
+//     address _to, 
+//     uint256 _unlockCycle, 
+//     uint256 _unlockRound, 
+//     uint256 _amount, 
+//     uint256 _cliffPeriod, 
+//     string memory _title
+// ) public payable {
+//     // Check for valid token amount and deadline
+//     require(_amount > 0, "Token amount should be greater than zero");
+//     require(block.timestamp + _unlockCycle * _unlockRound * ONE_DAY_TIME_STAMP > block.timestamp, "Deadline should be greater than current block number");
     
-    // Initialize variables
-    uint256 currentBlockNumber = block.timestamp;
-    address owner = msg.sender;
-    uint256 ddl = currentBlockNumber + _unlockCycle * _unlockRound * ONE_DAY_TIME_STAMP + _cliffPeriod * ONE_DAY_TIME_STAMP;
-    uint256 cliffPeriod = currentBlockNumber + _cliffPeriod * ONE_DAY_TIME_STAMP;
+//     // Initialize variables
+//     uint256 currentBlockNumber = block.timestamp;
+//     address owner = msg.sender;
+//     uint256 ddl = currentBlockNumber + _unlockCycle * _unlockRound * ONE_DAY_TIME_STAMP + _cliffPeriod * ONE_DAY_TIME_STAMP;
+//     uint256 cliffPeriod = currentBlockNumber + _cliffPeriod * ONE_DAY_TIME_STAMP;
 
-    // Transfer fees
-    if (msg.value == 0) {
-        TransferHelper.safeTransferFrom(weth, msg.sender, feeReceiver(), feeAmount());
-    } else {
-        require(msg.value == feeAmount(), "Amount is incorrect");
-        IWETH(weth).deposit{value: feeAmount()}();
-        IWETH(weth).transfer(feeReceiver(), feeAmount());
-    }
-    if(IFireLockFeeTransfer(fireLockFeeTransfer).getUseTreasuryDistributionContract()) {
-         ITreasuryDistributionContract(treasuryDistributionContract).setSourceOfIncome(2,2,feeAmount());
-    }
+//     // Transfer fees
+//     if (msg.value == 0) {
+//         TransferHelper.safeTransferFrom(weth, msg.sender, feeReceiver(), feeAmount());
+//     } else {
+//         require(msg.value == feeAmount(), "Amount is incorrect");
+//         IWETH(weth).deposit{value: feeAmount()}();
+//         IWETH(weth).transfer(feeReceiver(), feeAmount());
+//     }
+//     if(IFireLockFeeTransfer(fireLockFeeTransfer).getUseTreasuryDistributionContract()) {
+//          ITreasuryDistributionContract(treasuryDistributionContract).setSourceOfIncome(2,2,feeAmount());
+//     }
     
-    // Create a new LockDetail struct
-    LockDetail memory lockInfo = LockDetail({
-        LockTitle: _title,
-        ddl: ddl,
-        startTime: cliffPeriod,
-        amount: _amount,
-        unlockCycle: _unlockCycle,
-        unlockRound: _unlockRound,
-        token: _token,
-        cliffPeriod: cliffPeriod
-    });
+//     // Create a new LockDetail struct
+//     LockDetail memory lockInfo = LockDetail({
+//         LockTitle: _title,
+//         ddl: ddl,
+//         startTime: cliffPeriod,
+//         amount: _amount,
+//         unlockCycle: _unlockCycle,
+//         unlockRound: _unlockRound,
+//         token: _token,
+//         cliffPeriod: cliffPeriod
+//     });
     
-    // Update mappings and arrays
-    ListTokenAddress.push(_token);
-    ListOwnerLockDetail.push(lockInfo);
-    tokenAddress[_to].push(_token);
-    ownerLockDetail[_to].push(lockInfo);
+//     // Update mappings and arrays
+//     ListTokenAddress.push(_token);
+//     ListOwnerLockDetail.push(lockInfo);
+//     tokenAddress[_to].push(_token);
+//     ownerLockDetail[_to].push(lockInfo);
     
-    // Transfer tokens to the contract
-    IERC20(_token).transferFrom(owner, address(this), _amount);
-}
+//     // Transfer tokens to the contract
+//     IERC20(_token).transferFrom(owner, address(this), _amount);
+// }
 
 
 function groupLock(
@@ -224,23 +224,23 @@ function groupLock(
 
 
 
-    function unlock(uint256 _index,address _token) public  {
-        require(block.timestamp >= ownerLockDetail[msg.sender][_index].cliffPeriod,"current time should be bigger than cliffPeriod");
-        uint256 amountOfUser = ownerLockDetail[msg.sender][_index].amount;
-        uint256 amount = IERC20(_token).balanceOf(address(this));
-        if(amount > amountOfUser || amount == amountOfUser){
-        IERC20(_token).transfer(msg.sender, unlockAmount(_index,msg.sender));
-        ownerLockDetail[msg.sender][_index].amount -= (amountOfUser/ownerLockDetail[msg.sender][_index].unlockRound)*(block.timestamp - ownerLockDetail[msg.sender][_index].startTime)/
-        ONE_DAY_TIME_STAMP;
-        ownerLockDetail[msg.sender][_index].startTime = block.timestamp;
-        }else{revert();}
-    }
-    function unlockAmount(uint256 _index, address _user) public view returns(uint256) {
-        uint256 amountOfUser = ownerLockDetail[_user][_index].amount;
-        uint256 _amount =  amountOfUser/ownerLockDetail[_user][_index].unlockRound * (block.timestamp - ownerLockDetail[_user][_index].startTime)/
-        ONE_DAY_TIME_STAMP;
-        return _amount;
-    }
+    // function unlock(uint256 _index,address _token) public  {
+    //     require(block.timestamp >= ownerLockDetail[msg.sender][_index].cliffPeriod,"current time should be bigger than cliffPeriod");
+    //     uint256 amountOfUser = ownerLockDetail[msg.sender][_index].amount;
+    //     uint256 amount = IERC20(_token).balanceOf(address(this));
+    //     if(amount > amountOfUser || amount == amountOfUser){
+    //     IERC20(_token).transfer(msg.sender, unlockAmount(_index,msg.sender));
+    //     ownerLockDetail[msg.sender][_index].amount -= (amountOfUser/ownerLockDetail[msg.sender][_index].unlockRound)*(block.timestamp - ownerLockDetail[msg.sender][_index].startTime)/
+    //     ONE_DAY_TIME_STAMP;
+    //     ownerLockDetail[msg.sender][_index].startTime = block.timestamp;
+    //     }else{revert();}
+    // }
+    // function unlockAmount(uint256 _index, address _user) public view returns(uint256) {
+    //     uint256 amountOfUser = ownerLockDetail[_user][_index].amount;
+    //     uint256 _amount =  amountOfUser/ownerLockDetail[_user][_index].unlockRound * (block.timestamp - ownerLockDetail[_user][_index].startTime)/
+    //     ONE_DAY_TIME_STAMP;
+    //     return _amount;
+    // }
 
     function groupUnLock(uint _index,address _token) public {
         require(checkRate(msg.sender, _index) == 100 ,"rate is error");
@@ -326,29 +326,29 @@ function groupLock(
         }
     }
     
-    function getLockTitle(uint _index) public view returns(string memory){
-        return ownerLockDetail[msg.sender][_index].LockTitle;
-    }
+    // function getLockTitle(uint _index) public view returns(string memory){
+    //     return ownerLockDetail[msg.sender][_index].LockTitle;
+    // }
     function getGroupLockTitle(uint _index) public view returns(string memory) {
         return adminGropLockDetail[msg.sender][_index].LockTitle;
     }
-    function getAmount(uint _index) public view returns(uint) {
-        return ownerLockDetail[msg.sender][_index].amount;
-    }
-    function getDdl(uint _index) public view returns(uint) {
-        return ownerLockDetail[msg.sender][_index].ddl;
-    }
+    // function getAmount(uint _index) public view returns(uint) {
+    //     return ownerLockDetail[msg.sender][_index].amount;
+    // }
+    // function getDdl(uint _index) public view returns(uint) {
+    //     return ownerLockDetail[msg.sender][_index].ddl;
+    // }
 
     function getTokenName(uint _index) public view returns(string memory) {
-        return IERC20(ownerLockDetail[msg.sender][_index].token).name();
+        return IERC20(adminGropLockDetail[msg.sender][_index].token).name();
     }
 
     function getTokenSymbol(uint _index) public view returns(string memory) {
-        return IERC20(ownerLockDetail[msg.sender][_index].token).symbol();
+        return IERC20(adminGropLockDetail[msg.sender][_index].token).symbol();
     }
 
     function getTokenDecimals(uint _index) public view returns(uint) {
-        return IERC20(ownerLockDetail[msg.sender][_index].token).decimals();
+        return IERC20(adminGropLockDetail[msg.sender][_index].token).decimals();
     }
 
     function getOwnerTokenList() public view returns(address[] memory) {
@@ -363,9 +363,9 @@ function groupLock(
     function feeReceiver() public view returns(address) {
         return IFireLockFeeTransfer(fireLockFeeTransfer).getAddress();
     }
-    function ListOwnerLockDetailLength() public view returns(uint256){
-        return ListOwnerLockDetail.length;
-    }
+    // function ListOwnerLockDetailLength() public view returns(uint256){
+    //     return ListOwnerLockDetail.length;
+    // }
     function ListGropLockDetailLength() public view returns(uint256) {
         return ListGropLockDetail.length;
     }
