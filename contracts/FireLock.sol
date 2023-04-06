@@ -241,17 +241,15 @@ function groupLock(
         ONE_DAY_TIME_STAMP;
         return _amount;
     }
-    function getUserRate() public view returns(uint256) {
-        
-    }
+
     function groupUnLock(uint _index,address _token) public {
         require(checkRate(msg.sender, _index) == 100 ,"rate is error");
         require(block.timestamp >= adminGropLockDetail[msg.sender][_index].ddl,"current time should be bigger than deadlineTime");
-        uint amountOfUser = adminGropLockDetail[msg.sender][_index].amount;
-        uint amount = IERC20(_token).balanceOf(address(this));
+        uint256 amountOfUser = adminGropLockDetail[msg.sender][_index].amount;
+        uint256 amount = IERC20(_token).balanceOf(address(this));
         if(amount > amountOfUser  || amount == amountOfUser){
             for(uint i = 0 ; i < adminGropLockDetail[msg.sender][_index].member.length;i++){
-            IERC20(_token).transfer(adminGropLockDetail[msg.sender][_index].member[i], (amountOfUser*adminGropLockDetail[msg.sender][_index].rate[i]/100)/(adminGropLockDetail[msg.sender][_index].unlockRound*adminGropLockDetail[msg.sender][_index].unlockRound)*(block.timestamp - adminGropLockDetail[msg.sender][_index].startTime)/
+            IERC20(_token).transfer(adminGropLockDetail[msg.sender][_index].member[i], (amountOfUser * adminGropLockDetail[msg.sender][_index].rate[i]/100)/adminGropLockDetail[msg.sender][_index].unlockRound*(block.timestamp - adminGropLockDetail[msg.sender][_index].startTime)/
             ONE_DAY_TIME_STAMP);
             adminGropLockDetail[msg.sender][_index].amount -= (amountOfUser*adminGropLockDetail[msg.sender][_index].rate[i]/100)/(adminGropLockDetail[msg.sender][_index].unlockRound*adminGropLockDetail[msg.sender][_index].unlockRound)*(block.timestamp - adminGropLockDetail[msg.sender][_index].startTime)/
             ONE_DAY_TIME_STAMP;
