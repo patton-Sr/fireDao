@@ -10,16 +10,18 @@ contract FireLockFactory is Ownable{
     address[] public lockList;
     address public weth;
     address public fireLockFeeAddress;
+    address public treasuryDistributionContract;
     mapping(address => address )  currentLockAddress;
     mapping(address => address[]) public ownerLock; 
     event totalLockList(address lockOwner, address lockAddr);
-    constructor(address _weth,address _fireLockFeeAddress){
+    constructor(address _weth,address _fireLockFeeAddress,address _treasuryDistributionContract){
     weth = _weth;
     fireLockFeeAddress = _fireLockFeeAddress;
+    treasuryDistributionContract = _treasuryDistributionContract;
     }
  
     function createLock() public {
-        currentLock = address(new FireLock(weth,fireLockFeeAddress));
+        currentLock = address(new FireLock(weth,fireLockFeeAddress,treasuryDistributionContract));
         ownerLock[msg.sender].push(currentLock);
         currentLockAddress[msg.sender] = currentLock;
         lockList.push(currentLock);
