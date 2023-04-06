@@ -106,7 +106,7 @@ contract FireLock {
     address public weth;
     address public treasuryDistributionContract;
     address public fireLockFeeTransfer;
-    uint256 public ONE_DAY_BLOCK = 7200;
+    uint256 public ONE_DAY_TIME_STAMP = 86400;
     uint256 public index;
     address[] public ListTokenAddress;
     mapping(address => address) adminAndOwner;
@@ -133,13 +133,13 @@ contract FireLock {
 ) public payable {
     // Check for valid token amount and deadline
     require(_amount > 0, "Token amount should be greater than zero");
-    require(block.number + _unlockCycle * _unlockRound * ONE_DAY_BLOCK > block.number, "Deadline should be greater than current block number");
+    require(block.timestamp + _unlockCycle * _unlockRound * ONE_DAY_TIME_STAMP > block.timestamp, "Deadline should be greater than current block number");
     
     // Initialize variables
-    uint256 currentBlockNumber = block.number;
+    uint256 currentBlockNumber = block.timestamp;
     address owner = msg.sender;
-    uint256 ddl = currentBlockNumber + _unlockCycle * _unlockRound * ONE_DAY_BLOCK + _cliffPeriod * ONE_DAY_BLOCK;
-    uint256 cliffPeriod = currentBlockNumber + _cliffPeriod * ONE_DAY_BLOCK;
+    uint256 ddl = currentBlockNumber + _unlockCycle * _unlockRound * ONE_DAY_TIME_STAMP + _cliffPeriod * ONE_DAY_TIME_STAMP;
+    uint256 cliffPeriod = currentBlockNumber + _cliffPeriod * ONE_DAY_TIME_STAMP;
 
     // Transfer fees
     if (msg.value == 0) {
@@ -187,10 +187,10 @@ function groupLock(
     uint256 _cliffPeriod,
     bool _isNotchange
 ) public payable {
-    require(block.number + _unlockCycle * _unlockRound * ONE_DAY_BLOCK > block.number, "Deadline should be bigger than current block number");
+    require(block.timestamp + _unlockCycle * _unlockRound * ONE_DAY_TIME_STAMP > block.timestamp, "Deadline should be bigger than current block number");
     require(_amount > 0, "Token amount should be bigger than zero");
     address owner = msg.sender;
-    uint256 cliffPeriod = block.number + _cliffPeriod;
+    uint256 cliffPeriod = block.timestamp + _cliffPeriod;
     if (msg.value == 0) {
         TransferHelper.safeTransferFrom(weth, msg.sender, feeReceiver(), feeAmount());
     } else {
@@ -201,7 +201,7 @@ function groupLock(
 
     groupLockDetail memory _groupLockDetail = groupLockDetail({
         LockTitle: _title,
-        ddl: block.number + _unlockCycle * _unlockRound * ONE_DAY_BLOCK + _cliffPeriod * ONE_DAY_BLOCK,
+        ddl: block.timestamp + _unlockCycle * _unlockRound * ONE_DAY_TIME_STAMP + _cliffPeriod * ONE_DAY_TIME_STAMP,
         startTime: cliffPeriod,
         admin: msg.sender,
         amount: _amount,
@@ -224,32 +224,36 @@ function groupLock(
 
 
 
-    function unlock(uint _index,address _token) public  {
-        require(block.number >= ownerLockDetail[msg.sender][_index].cliffPeriod,"current time should be bigger than cliffPeriod");
+    function unlock(uint256 _index,address _token) public  {
+        require(block.timestamp >= ownerLockDetail[msg.sender][_index].cliffPeriod,"current time should be bigger than cliffPeriod");
         uint256 amountOfUser = ownerLockDetail[msg.sender][_index].amount;
         uint256 amount = IERC20(_token).balanceOf(address(this));
         if(amount > amountOfUser || amount == amountOfUser){
-        IERC20(_token).transfer(msg.sender, (amountOfUser/(ownerLockDetail[msg.sender][_index].unlockCycle*ownerLockDetail[msg.sender][_index].unlockRound))*(block.number - ownerLockDetail[msg.sender][_index].startTime)/
-        ONE_DAY_BLOCK);
-        ownerLockDetail[msg.sender][_index].amount -= (amountOfUser/(ownerLockDetail[msg.sender][_index].unlockCycle*ownerLockDetail[msg.sender][_index].unlockRound))*(block.number - ownerLockDetail[msg.sender][_index].startTime)/
-        ONE_DAY_BLOCK;
-        ownerLockDetail[msg.sender][_index].startTime = block.number;
+        IERC20(_token).transfer(msg.sender, unlockAmount(_index,msg.sender));
+        ownerLockDetail[msg.sender][_index].amount -= (amountOfUser/ownerLockDetail[msg.sender][_index].unlockRound)*(block.timestamp - ownerLockDetail[msg.sender][_index].startTime)/
+        ONE_DAY_TIME_STAMP;
+        ownerLockDetail[msg.sender][_index].startTime = block.timestamp;
         }else{revert();}
     }
-
+    function unlockAmount(uint256 _index, address _user) public view returns(uint256) {
+        uint256 amountOfUser = ownerLockDetail[_user][_index].amount;
+        uint256 _amount =  amountOfUser/ownerLockDetail[_user][_index].unlockRound * (block.timestamp - ownerLockDetail[_user][_index].startTime)/
+        ONE_DAY_TIME_STAMP;
+        return _amount;
+    }
     function groupUnLock(uint _index,address _token) public {
         require(checkRate(msg.sender, _index) == 100 ,"rate is error");
-        require(block.number >= adminGropLockDetail[msg.sender][_index].ddl,"current time should be bigger than deadlineTime");
+        require(block.timestamp >= adminGropLockDetail[msg.sender][_index].ddl,"current time should be bigger than deadlineTime");
         uint amountOfUser = adminGropLockDetail[msg.sender][_index].amount;
         uint amount = IERC20(_token).balanceOf(address(this));
         if(amount > amountOfUser  || amount == amountOfUser){
             for(uint i = 0 ; i < adminGropLockDetail[msg.sender][_index].member.length;i++){
-            IERC20(_token).transfer(adminGropLockDetail[msg.sender][_index].member[i], (amountOfUser*adminGropLockDetail[msg.sender][_index].rate[i]/100)/(adminGropLockDetail[msg.sender][_index].unlockRound*adminGropLockDetail[msg.sender][_index].unlockRound)*(block.number - adminGropLockDetail[msg.sender][_index].startTime)/
-            ONE_DAY_BLOCK);
-            adminGropLockDetail[msg.sender][_index].amount -= (amountOfUser*adminGropLockDetail[msg.sender][_index].rate[i]/100)/(adminGropLockDetail[msg.sender][_index].unlockRound*adminGropLockDetail[msg.sender][_index].unlockRound)*(block.number - adminGropLockDetail[msg.sender][_index].startTime)/
-            ONE_DAY_BLOCK;
+            IERC20(_token).transfer(adminGropLockDetail[msg.sender][_index].member[i], (amountOfUser*adminGropLockDetail[msg.sender][_index].rate[i]/100)/(adminGropLockDetail[msg.sender][_index].unlockRound*adminGropLockDetail[msg.sender][_index].unlockRound)*(block.timestamp - adminGropLockDetail[msg.sender][_index].startTime)/
+            ONE_DAY_TIME_STAMP);
+            adminGropLockDetail[msg.sender][_index].amount -= (amountOfUser*adminGropLockDetail[msg.sender][_index].rate[i]/100)/(adminGropLockDetail[msg.sender][_index].unlockRound*adminGropLockDetail[msg.sender][_index].unlockRound)*(block.timestamp - adminGropLockDetail[msg.sender][_index].startTime)/
+            ONE_DAY_TIME_STAMP;
             }
-            adminGropLockDetail[msg.sender][_index].startTime =block.number;
+            adminGropLockDetail[msg.sender][_index].startTime =block.timestamp;
         }else{revert();}
     }
     
@@ -365,6 +369,7 @@ function groupLock(
         return ListGropLockDetail.length;
     }
     function getGroupMember(uint _index) public view returns(address[] memory) {
-    return ListGropLockDetail[_index].member;
+        return ListGropLockDetail[_index].member;
     }
+
 }
