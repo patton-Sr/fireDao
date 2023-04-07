@@ -242,7 +242,7 @@ function groupLock(
     //     return _amount;
     // }
 
-    function groupUnLock(uint _index,address _token) public {
+    function groupUnLock(uint256 _index,address _token) public {
         require(checkRate(msg.sender, _index) == 100 ,"rate is error");
         require(block.timestamp >= adminGropLockDetail[msg.sender][_index].ddl,"current time should be bigger than deadlineTime");
         uint256 amountOfUser = adminGropLockDetail[msg.sender][_index].amount;
