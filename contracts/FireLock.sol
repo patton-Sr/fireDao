@@ -372,5 +372,4 @@ function groupLock(
     function getGroupMember(uint _index) public view returns(address[] memory) {
         return ListGropLockDetail[_index].member;
     }
-
 }
