@@ -174,8 +174,6 @@ function groupLock(
                 unlockStatus = false;
             }
         }else{revert();}
-        
-        
     }
     
     function checkRate(address _user, uint256 _index) public view returns(uint) {
