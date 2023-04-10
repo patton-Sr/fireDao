@@ -6,7 +6,7 @@ import "./FireLock.sol";
 
 contract FireLockFactory is Ownable{
 
-    address public currentLock;
+    address private currentLock;
     address[] public lockList;
     address public weth;
     address public fireLockFeeAddress;
