@@ -94,9 +94,11 @@ contract FireSoul is ERC721,Ownable{
         : "";
   }
   
+ 
+
     function burnToMint(uint256 _tokenId) external payable {
         require(!status, "status is error");
-        require(super.balanceOf(msg.sender) == 0 , "you already have FID");
+        require(haveFID[msg.sender] == false, "you already have FID");
         require(IERC721(firePassport).balanceOf(msg.sender) != 0 ,"you haven't passport");
 
         address down = IFireSeed(FireSeedAddress).upclass(msg.sender);

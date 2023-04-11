@@ -118,21 +118,6 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable{
     _idTracker.increment();
 }
 
-// function calculateFee(uint256 amount) internal view returns (uint256) {
-//     if (amount > 50 && amount <= 100) {
-//         return amount * fee / 2;
-//     } else if (amount < 50 && amount > 40) {
-//         return amount * fee * 6 / 10;
-//     } else if (amount > 30 && amount < 40) {
-//         return amount * fee * 7 / 10;
-//     } else if (amount > 20 && amount < 30) {
-//         return amount * fee * 8 / 10;
-//     } else if (amount > 10 && amount < 20) {
-//         return amount * fee * 9 / 10;
-//     } else {
-//         return amount * fee;
-//     }
-// }
 function calculateFee(uint256 amount) internal view returns (uint256) {
     uint256 calculatedFee = amount * fee;
     if (amount > 50 && amount <= 100) {
