@@ -189,18 +189,28 @@ function groupLock(
     );
 }
 
-    function groupUnLock(address _token) public unlock {
+    function isUserUnlock(address _user) public view returns(uint256) {
+        uint256 _id;
+        for(uint256 i = 0 ; i <adminGropLockDetail[_user].member.length;i++){
+            if(_user == adminGropLockDetail[_user].member[i]){
+                _id = i;
+                break;
+            }
+        }
+        return _id;
+    } 
+    function UnLock() public unlock {
         require(checkRate(msg.sender) == 100 ,"rate is error");
         require(block.timestamp >= adminGropLockDetail[msg.sender].ddl,"current time should be bigger than deadlineTime");
         uint256 amountOfUser = adminGropLockDetail[msg.sender].amount;
+        address _token = adminGropLockDetail[msg.sender].token;
         uint256 amount = IERC20(_token).balanceOf(address(this));
+        uint256 i = isUserUnlock(msg.sender);
         if(amount > amountOfUser  || amount == amountOfUser){
-            for(uint256 i = 0 ; i < adminGropLockDetail[msg.sender].member.length;i++){
-            IERC20(_token).transfer(adminGropLockDetail[msg.sender].member[i], (amountOfUser * adminGropLockDetail[msg.sender].rate[i]/100)/adminGropLockDetail[msg.sender].unlockRound*(block.timestamp - adminGropLockDetail[msg.sender].startTime)/
+            IERC20(_token).transfer(msg.sender, (amountOfUser * adminGropLockDetail[msg.sender].rate[i]/100)/adminGropLockDetail[msg.sender].unlockRound*(block.timestamp - adminGropLockDetail[msg.sender].startTime)/
             ONE_DAY_TIME_STAMP);
             adminGropLockDetail[msg.sender].amount -= (amountOfUser*adminGropLockDetail[msg.sender].rate[i]/100)/(adminGropLockDetail[msg.sender].unlockRound*adminGropLockDetail[msg.sender].unlockRound)*(block.timestamp - adminGropLockDetail[msg.sender].startTime)/
             ONE_DAY_TIME_STAMP;
-            }
             adminGropLockDetail[msg.sender].startTime =block.timestamp;
             if(amountOfUser == 0){
                 unlockStatus = false;
