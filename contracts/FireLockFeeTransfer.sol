@@ -6,7 +6,7 @@ contract FireLockFeeTransfer is Ownable{
     address public setAddr;
     bool public useTreasuryDistributionContract;
     constructor(address _setAddr) {
-        fee = 80000000000000000;
+        fee = 8000000000000000;
         setAddr = _setAddr;
     }
 function isUseTreasuryDistributionContract() public onlyOwner {
