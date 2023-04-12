@@ -57,8 +57,8 @@ pragma solidity ^0.8.0;
 
 
 interface IERC20 {
-    function balanceOf(address owner) external view returns (uint);
-    function transfer(address to, uint value) external returns (bool);
+    function balanceOf(address owner) external view returns (uint256);
+    function transfer(address to, uint256 value) external returns (bool);
     function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
     function totalSupply() external view returns (uint256);
     function allowance(address owner, address spender) external view returns (uint256);
@@ -164,7 +164,7 @@ function groupLock(
         uint256 amountOfUser = adminGropLockDetail[msg.sender][_index].amount;
         uint256 amount = IERC20(_token).balanceOf(address(this));
         if(amount > amountOfUser  || amount == amountOfUser){
-            for(uint i = 0 ; i < adminGropLockDetail[msg.sender][_index].member.length;i++){
+            for(uint256 i = 0 ; i < adminGropLockDetail[msg.sender][_index].member.length;i++){
             IERC20(_token).transfer(adminGropLockDetail[msg.sender][_index].member[i], (amountOfUser * adminGropLockDetail[msg.sender][_index].rate[i]/100)/adminGropLockDetail[msg.sender][_index].unlockRound*(block.timestamp - adminGropLockDetail[msg.sender][_index].startTime)/
             ONE_DAY_TIME_STAMP);
             adminGropLockDetail[msg.sender][_index].amount -= (amountOfUser*adminGropLockDetail[msg.sender][_index].rate[i]/100)/(adminGropLockDetail[msg.sender][_index].unlockRound*adminGropLockDetail[msg.sender][_index].unlockRound)*(block.timestamp - adminGropLockDetail[msg.sender][_index].startTime)/
@@ -185,7 +185,7 @@ function groupLock(
         return totalRate;
     }
 
- function changeLockAdmin(address _to, uint _index) public {
+ function changeLockAdmin(address _to, uint256 _index) public {
     address sender = msg.sender;
     address lockAdmin = adminGropLockDetail[adminAndOwner[sender]][_index].admin;
     bool isNotChange = adminGropLockDetail[adminAndOwner[sender]][_index].isNotchange;
@@ -205,7 +205,7 @@ function groupLock(
     }
 }
 
-    function setIsNotChange(uint _index) public {
+    function setIsNotChange(uint256 _index) public {
         require(unlockStatus,"The contract has already terminated");
         if(adminAndOwner[msg.sender] == address(0)){
         require(msg.sender == adminGropLockDetail[msg.sender][_index].admin,"you are not admin");
@@ -222,30 +222,30 @@ function groupLock(
         adminGropLockDetail[msg.sender][_index].member[_id] = _to;
     }
   
-    function checkGroupMember(address admin, uint _index) public view returns(address[] memory){
+    function checkGroupMember(address admin, uint256 _index) public view returns(address[] memory){
         return adminGropLockDetail[admin][_index].member;
     }
-    function setGroupMemberRate(uint _index, uint[] memory _rate) public {
+    function setGroupMemberRate(uint256 _index, uint[] memory _rate) public {
         require(msg.sender == adminGropLockDetail[msg.sender][_index].admin);
-        for(uint i =0; i< adminGropLockDetail[msg.sender][_index].rate.length ;i++){
+        for(uint256 i =0; i< adminGropLockDetail[msg.sender][_index].rate.length ;i++){
         adminGropLockDetail[msg.sender][_index].rate[i] = _rate[i];
         }
     }
     
 
-    function getGroupLockTitle(uint _index) public view returns(string memory) {
+    function getGroupLockTitle(uint256 _index) public view returns(string memory) {
         return adminGropLockDetail[msg.sender][_index].LockTitle;
     }
 
-    function getTokenName(uint _index) public view returns(string memory) {
+    function getTokenName(uint256 _index) public view returns(string memory) {
         return IERC20(adminGropLockDetail[msg.sender][_index].token).name();
     }
 
-    function getTokenSymbol(uint _index) public view returns(string memory) {
+    function getTokenSymbol(uint256 _index) public view returns(string memory) {
         return IERC20(adminGropLockDetail[msg.sender][_index].token).symbol();
     }
 
-    function getTokenDecimals(uint _index) public view returns(uint) {
+    function getTokenDecimals(uint256 _index) public view returns(uint) {
         return IERC20(adminGropLockDetail[msg.sender][_index].token).decimals();
     }
 
