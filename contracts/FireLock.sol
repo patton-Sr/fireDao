@@ -111,6 +111,7 @@ contract FireLock {
 
 function groupLock(
     address _token,
+    address _admin,
     uint256 _unlockCycle,
     uint256 _unlockRound,
     uint256 _amount,
@@ -137,7 +138,7 @@ function groupLock(
         LockTitle: _title,
         ddl: block.timestamp + _unlockCycle * _unlockRound * ONE_DAY_TIME_STAMP + _cliffPeriod * ONE_DAY_TIME_STAMP,
         startTime: cliffPeriod,
-        admin: msg.sender,
+        admin: _admin,
         amount: _amount,
         unlockCycle: _unlockCycle,
         unlockRound: _unlockRound,
@@ -215,29 +216,12 @@ function groupLock(
         }
     }
     
-    function addLockMember(address _to, uint _index, uint _rate) public {
+    function setLockMemberAddr(uint256 _id, uint256 _index, address _to) public {
         require(unlockStatus,"The contract has already terminated");
         require(msg.sender == adminGropLockDetail[msg.sender][_index].admin);
-        if(adminGropLockDetail[msg.sender][_index].rate[0]-_rate > 0){
-        adminGropLockDetail[msg.sender][_index].rate[0]-_rate;
-        }else{
-            revert();
-        }
-        adminGropLockDetail[msg.sender][_index].member.push(_to);
-        adminGropLockDetail[msg.sender][_index].rate.push(_rate);
+        adminGropLockDetail[msg.sender][_index].member[_id] = _to;
     }
-
-    function removeLockMember(uint _index, address _to) public {
-        require(unlockStatus,"The contract has already terminated");
-        require(msg.sender == adminGropLockDetail[msg.sender][_index].admin);
-        for(uint i = 0; i < adminGropLockDetail[msg.sender][_index].member.length; i++){
-            if(_to == adminGropLockDetail[msg.sender][_index].member[i]){
-                uint id = i;
-                adminGropLockDetail[msg.sender][_index].member[id] = adminGropLockDetail[msg.sender][_index].member[adminGropLockDetail[msg.sender][_index].member.length -1];
-                adminGropLockDetail[msg.sender][_index].member.pop();
-            }
-        }
-    }
+  
     function checkGroupMember(address admin, uint _index) public view returns(address[] memory){
         return adminGropLockDetail[admin][_index].member;
     }
