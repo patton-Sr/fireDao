@@ -1,3 +1,18 @@
+//File:./interface/IFireLockFactory.sol
+pragma solidity ^0.8.0;
+interface IFireLockFactory {
+     function addLockItem(
+        address _lockAddr,
+        string memory _title,
+        string memory _token,
+        uint256 _lockAmount, 
+        uint256 _lockTime, 
+        uint256 _cliffPeriod, 
+        uint256 _unlockCycle,
+        uint256 _unlockRound,
+        uint256 _ddl
+        ) external;
+}
 //File:./interface/ITreasuryDistributionContract.sol
 pragma solidity ^0.8.0;
 
@@ -91,10 +106,10 @@ contract FireLock {
     bool public lockStatus;
     bool public unlockStatus;
     address public weth;
+    address public factoryAddr;
     address public treasuryDistributionContract;
     address public fireLockFeeTransfer;
     uint256 public ONE_DAY_TIME_STAMP = 86400;
-    uint256 public index;
     mapping(address => address) adminAndOwner;
     mapping(address => groupLockDetail) public adminGropLockDetail;
 
@@ -107,10 +122,11 @@ contract FireLock {
         _;
     }
 
-    constructor(address _weth,address _fireLockFeeTransfer,address _treasuryDistributionContract) {
+    constructor(address _weth,address _fireLockFeeTransfer,address _treasuryDistributionContract,address _factoryAddr) {
         weth = _weth;
         fireLockFeeTransfer = _fireLockFeeTransfer;
         treasuryDistributionContract = _treasuryDistributionContract;
+        factoryAddr = _factoryAddr;
         lockStatus = true;
         unlockStatus = true;
     }
@@ -131,6 +147,7 @@ function groupLock(
     require(_amount > 0, "Token amount should be bigger than zero");
     address owner = msg.sender;
     uint256 cliffPeriod = block.timestamp + _cliffPeriod;
+    uint256 _ddl = block.timestamp + _unlockCycle * _unlockRound * ONE_DAY_TIME_STAMP + _cliffPeriod * ONE_DAY_TIME_STAMP;
     if (msg.value == 0) {
         TransferHelper.safeTransferFrom(weth, msg.sender, feeReceiver(), feeAmount());
     } else {
@@ -141,7 +158,7 @@ function groupLock(
 
     groupLockDetail memory _groupLockDetail = groupLockDetail({
         LockTitle: _title,
-        ddl: block.timestamp + _unlockCycle * _unlockRound * ONE_DAY_TIME_STAMP + _cliffPeriod * ONE_DAY_TIME_STAMP,
+        ddl: _ddl,
         startTime: cliffPeriod,
         admin: _admin,
         amount: _amount,
@@ -158,6 +175,18 @@ function groupLock(
 
     IERC20(_token).transferFrom(owner, address(this), _amount);
     lockStatus = false;
+
+    IFireLockFactory(factoryAddr).addLockItem(
+        address(this),
+        _groupLockDetail.LockTitle,
+        getTokenName(),
+        _groupLockDetail.amount,
+        block.timestamp,
+        _groupLockDetail.startTime,
+        _groupLockDetail.unlockCycle,
+        _groupLockDetail.unlockRound,
+        _groupLockDetail.ddl
+    );
 }
 
     function groupUnLock(address _token) public unlock {

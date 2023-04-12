@@ -13,7 +13,19 @@ contract FireLockFactory is Ownable{
     address public treasuryDistributionContract;
     mapping(address => address )  currentLockAddress;
     mapping(address => address[]) public ownerLock; 
+    mapping(address => bool) public lockVerify;
     event totalLockList(address lockOwner, address lockAddr);
+    event allLockItem(
+        address lockAddr,
+        string  title,
+        string  token,
+        uint256 lockAmount, 
+        uint256 lockTime, 
+        uint256 cliffPeriod, 
+        uint256 unlockCycle,
+        uint256 unlockRound,
+        uint256 ddl
+    );
     constructor(address _weth,address _fireLockFeeAddress,address _treasuryDistributionContract){
     weth = _weth;
     fireLockFeeAddress = _fireLockFeeAddress;
@@ -21,14 +33,39 @@ contract FireLockFactory is Ownable{
     }
  
     function createLock() public {
-        currentLock = address(new FireLock(weth,fireLockFeeAddress,treasuryDistributionContract));
+        currentLock = address(new FireLock(weth,fireLockFeeAddress,treasuryDistributionContract, address(this)));
         ownerLock[msg.sender].push(currentLock);
         currentLockAddress[msg.sender] = currentLock;
         lockList.push(currentLock);
+        lockVerify[currentLock] = true;
         emit totalLockList(msg.sender, currentLock);
     }
     function setfireLockFeeAddress(address _addr) public onlyOwner{
         fireLockFeeAddress = _addr;
+    }
+    function addLockItem(
+        address _lockAddr,
+        string memory _title,
+        string memory _token,
+        uint256 _lockAmount, 
+        uint256 _lockTime, 
+        uint256 _cliffPeriod, 
+        uint256 _unlockCycle,
+        uint256 _unlockRound,
+        uint256 _ddl
+        ) external {
+        require(lockVerify[msg.sender], "address is error");
+        emit allLockItem(
+        _lockAddr,
+        _title,
+        _token,
+        _lockAmount, 
+        _lockTime, 
+        _cliffPeriod, 
+        _unlockCycle,
+        _unlockRound,
+        _ddl
+        );
     }
 
     function getUserCurrentLock() public view returns(address) {
