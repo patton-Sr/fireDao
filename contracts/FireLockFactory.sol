@@ -33,7 +33,7 @@ contract FireLockFactory is Ownable{
     }
  
     function createLock() public {
-        currentLock = address(new FireLock(weth,fireLockFeeAddress,treasuryDistributionContract, address(this)));
+        currentLock = address(new FireLock(weth,fireLockFeeAddress,treasuryDistributionContract, address(this),msg.sender));
         ownerLock[msg.sender].push(currentLock);
         currentLockAddress[msg.sender] = currentLock;
         lockList.push(currentLock);

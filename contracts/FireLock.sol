@@ -109,6 +109,7 @@ contract FireLock {
     address public treasuryDistributionContract;
     address public fireLockFeeTransfer;
     address public adminForLock;
+    address public createUser;
     uint256 public ONE_DAY_TIME_STAMP = 86400;
     uint256 public totalAmount;
     LockDetail public adminLockDetail;
@@ -122,11 +123,12 @@ contract FireLock {
         _;
     }
 
-    constructor(address _weth,address _fireLockFeeTransfer,address _treasuryDistributionContract,address _factoryAddr) {
+    constructor(address _weth,address _fireLockFeeTransfer,address _treasuryDistributionContract,address _factoryAddr,address _createUser) {
         weth = _weth;
         fireLockFeeTransfer = _fireLockFeeTransfer;
         treasuryDistributionContract = _treasuryDistributionContract;
         factoryAddr = _factoryAddr;
+        createUser = _createUser;
         lockStatus = true;
         unlockStatus = true;
     }
@@ -142,6 +144,7 @@ function Lock(
     string memory _title,
     uint256 _cliffPeriod
 ) public payable  lock {
+    require(msg.sender == createUser, "you are not creat user");
     require(block.timestamp + _unlockCycle * _unlockRound * ONE_DAY_TIME_STAMP > block.timestamp, "Deadline should be bigger than current block number");
     require(_amount > 0, "Token amount should be bigger than zero");
     address owner = msg.sender;
@@ -177,7 +180,7 @@ function Lock(
     IFireLockFactory(factoryAddr).addLockItem(
         address(this),
         _LockDetail.LockTitle,
-        getTokenName(),
+        getTokenSymbol(),
         _LockDetail.amount,
         block.timestamp,
         _LockDetail.startTime,
@@ -193,10 +196,11 @@ function Lock(
         for(uint256 i = 0 ; i <adminLockDetail.member.length;i++){
             if(_user == adminLockDetail.member[i]){
                 _id = i;
+                return _id;
                 break;
             }
         }
-        return _id;
+        require(false,"You are not a user of this lock address");
     } 
     
     function UnLock() public unlock {
@@ -207,13 +211,13 @@ function Lock(
         address _token = adminLockDetail.token;
         uint256 amount = IERC20(_token).balanceOf(address(this));
         uint256 i = isUserUnlock(msg.sender);
-        if(amount > amountOfUser  || amount == amountOfUser){
+        if(amount >= amountOfUser){
             IERC20(_token).transfer(msg.sender, (amountOfUser * adminLockDetail.rate[i]/100)/adminLockDetail.unlockRound*(block.timestamp - adminLockDetail.startTime)/
             ONE_DAY_TIME_STAMP);
             adminLockDetail.amount -= (amountOfUser * adminLockDetail.rate[i]/100)/(adminLockDetail.unlockRound*adminLockDetail.unlockRound)*(block.timestamp - adminLockDetail.startTime)/
             ONE_DAY_TIME_STAMP;
             adminLockDetail.startTime =block.timestamp;
-            if(_amountOfLock == 0){
+            if(adminLockDetail.amount == 0){
                 unlockStatus = false;
             }
         }else{revert();}
@@ -259,18 +263,10 @@ function Lock(
         return adminLockDetail.LockTitle;
     }
 
-    function getTokenName() public view returns(string memory) {
-        return IERC20(adminLockDetail.token).name();
-    }
-
+   
     function getTokenSymbol() public view returns(string memory) {
         return IERC20(adminLockDetail.token).symbol();
     }
-
-    function getTokenDecimals() public view returns(uint) {
-        return IERC20(adminLockDetail.token).decimals();
-    }
-
 
     function feeAmount() public view returns(uint256) {
         return IFireLockFeeTransfer(fireLockFeeTransfer).getFee();
