@@ -111,8 +111,7 @@ contract FireLock {
     address public adminForLock;
     uint256 public ONE_DAY_TIME_STAMP = 86400;
     uint256 public totalAmount;
-    mapping(address => address) adminAndOwner;
-     LockDetail public adminLockDetail;
+    LockDetail public adminLockDetail;
 
     modifier lock() {
     require(lockStatus,"You have already locked the position");
