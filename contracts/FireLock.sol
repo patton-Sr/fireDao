@@ -108,10 +108,11 @@ contract FireLock {
     address public factoryAddr;
     address public treasuryDistributionContract;
     address public fireLockFeeTransfer;
+    address public adminForLock;
     uint256 public ONE_DAY_TIME_STAMP = 86400;
     uint256 public totalAmount;
     mapping(address => address) adminAndOwner;
-    mapping(address => LockDetail) public adminLockDetail;
+     LockDetail public adminLockDetail;
 
     modifier lock() {
     require(lockStatus,"You have already locked the position");
@@ -169,7 +170,7 @@ function Lock(
         cliffPeriod: cliffPeriod
     });
 
-    adminLockDetail[msg.sender] = _LockDetail;
+    adminLockDetail = _LockDetail;
 
     IERC20(_token).transferFrom(owner, address(this), _amount);
     lockStatus = false;
@@ -190,8 +191,8 @@ function Lock(
 
     function isUserUnlock(address _user) public view returns(uint256) {
         uint256 _id;
-        for(uint256 i = 0 ; i <adminLockDetail[_user].member.length;i++){
-            if(_user == adminLockDetail[_user].member[i]){
+        for(uint256 i = 0 ; i <adminLockDetail.member.length;i++){
+            if(_user == adminLockDetail.member[i]){
                 _id = i;
                 break;
             }
@@ -199,81 +200,75 @@ function Lock(
         return _id;
     } 
     function UnLock() public unlock {
-        require(checkRate(msg.sender) == 100 ,"rate is error");
-        require(block.timestamp >= adminLockDetail[msg.sender].ddl,"current time should be bigger than deadlineTime");
+        require(checkRate() == 100 ,"rate is error");
+        require(block.timestamp >= adminLockDetail.ddl,"current time should be bigger than deadlineTime");
         uint256 amountOfUser = totalAmount;
-        uint256 _amountOfLock = adminLockDetail[msg.sender].amount;
-        address _token = adminLockDetail[msg.sender].token;
+        uint256 _amountOfLock = adminLockDetail.amount;
+        address _token = adminLockDetail.token;
         uint256 amount = IERC20(_token).balanceOf(address(this));
         uint256 i = isUserUnlock(msg.sender);
         if(amount > amountOfUser  || amount == amountOfUser){
-            IERC20(_token).transfer(msg.sender, (amountOfUser * adminLockDetail[msg.sender].rate[i]/100)/adminLockDetail[msg.sender].unlockRound*(block.timestamp - adminLockDetail[msg.sender].startTime)/
+            IERC20(_token).transfer(msg.sender, (amountOfUser * adminLockDetail.rate[i]/100)/adminLockDetail.unlockRound*(block.timestamp - adminLockDetail.startTime)/
             ONE_DAY_TIME_STAMP);
-            adminLockDetail[msg.sender].amount -= (amountOfUser * adminLockDetail[msg.sender].rate[i]/100)/(adminLockDetail[msg.sender].unlockRound*adminLockDetail[msg.sender].unlockRound)*(block.timestamp - adminLockDetail[msg.sender].startTime)/
+            adminLockDetail.amount -= (amountOfUser * adminLockDetail.rate[i]/100)/(adminLockDetail.unlockRound*adminLockDetail.unlockRound)*(block.timestamp - adminLockDetail.startTime)/
             ONE_DAY_TIME_STAMP;
-            adminLockDetail[msg.sender].startTime =block.timestamp;
+            adminLockDetail.startTime =block.timestamp;
             if(_amountOfLock == 0){
                 unlockStatus = false;
             }
         }else{revert();}
     }
     
-    function checkRate(address _user) public view returns(uint) {
+    function checkRate() public view returns(uint) {
         uint totalRate;
-        for(uint i =0; i < adminLockDetail[_user].rate.length; i++ ){
-            totalRate += adminLockDetail[_user].rate[i];
+        for(uint i =0; i < adminLockDetail.rate.length; i++ ){
+            totalRate += adminLockDetail.rate[i];
         }
         return totalRate;
     }
 
  function changeLockAdmin(address _to) public unlock {
     address sender = msg.sender;
-    address lockAdmin = adminLockDetail[adminAndOwner[sender]].admin;
+    address lockAdmin = adminLockDetail.admin;
 
     require(lockAdmin != address(0), "Lock admin must exist");
+    require(lockAdmin == sender, "Sender must be admin");
 
-    if (adminAndOwner[sender] == address(0)) {
-        require(lockAdmin == sender, "Sender must be admin");
-        adminLockDetail[sender].admin = _to;
-        adminAndOwner[_to] = sender;
-    } else {
-        require(lockAdmin == sender, "Sender must be admin");
-        adminLockDetail[adminAndOwner[sender]].admin = _to;
-        adminAndOwner[_to] = adminAndOwner[sender];
-    }
+    adminLockDetail.admin = _to;
+
 }
 
     
     function setLockMemberAddr(uint256 _id, address _to) public  unlock {
-        require(msg.sender == adminLockDetail[msg.sender].admin);
-        adminLockDetail[msg.sender].member[_id] = _to;
+        require(msg.sender == adminLockDetail.admin);
+        adminLockDetail.member[_id] = _to;
     }
   
-    function checkGroupMember(address admin) public view returns(address[] memory){
-        return adminLockDetail[admin].member;
+    function checkGroupMember() public view returns(address[] memory){
+        return adminLockDetail.member;
     }
-    function setGroupMemberRate( uint[] memory _rate) public {
-        require(msg.sender == adminLockDetail[msg.sender].admin);
-        for(uint256 i =0; i< adminLockDetail[msg.sender].rate.length ;i++){
-        adminLockDetail[msg.sender].rate[i] = _rate[i];
+    function setGroupMemberRate(uint[] memory _rate) public {
+        require(msg.sender == adminLockDetail.admin);
+        for(uint256 i =0; i< adminLockDetail.rate.length ;i++){
+        adminLockDetail.rate[i] = _rate[i];
         }
     }
     
 
     function getGroupLockTitle() public view returns(string memory) {
-        return adminLockDetail[msg.sender].LockTitle;
+        return adminLockDetail.LockTitle;
     }
 
     function getTokenName() public view returns(string memory) {
-        return IERC20(adminLockDetail[msg.sender].token).name();
+        return IERC20(adminLockDetail.token).name();
     }
 
     function getTokenSymbol() public view returns(string memory) {
-        return IERC20(adminLockDetail[msg.sender].token).symbol();
+        return IERC20(adminLockDetail.token).symbol();
     }
 
     function getTokenDecimals() public view returns(uint) {
-        return IERC20(adminLockDetail[msg.sender].token).decimals();
+        return IERC20(adminLockDetail.token).decimals();
     }
 
 
@@ -286,9 +281,9 @@ function Lock(
 
   
     function getGroupMember() public view returns(address[] memory) {
-        return adminLockDetail[msg.sender].member;
+        return adminLockDetail.member;
     }
     function getGroupMemberAmount() external view returns(uint256) {
-        return adminLockDetail[msg.sender].member.length;
+        return adminLockDetail.member.length;
     }
 }
