@@ -191,10 +191,10 @@ function Lock(
     totalAmount =  _LockDetail.amount;
 }
 
-    function isUserUnlock(address _user) public view returns(uint256 userId) {
+    function isUserUnlock(address _user) public view returns(uint256 _userId) {
         for(uint256 i = 0 ; i <adminLockDetail.member.length;i++){
             if(_user == adminLockDetail.member[i]){
-                return i;
+               return i;
             }
         }
         require(false,"You are not a user of this lock address");
