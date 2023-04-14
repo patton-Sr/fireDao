@@ -102,6 +102,11 @@ contract FireLock {
         address[] member;
         uint256 cliffPeriod;
     }
+    struct unLockRecord{
+        address user;
+        uint256 amount;
+        uint256 time;
+    }
     bool public lockStatus;
     bool public unlockStatus;
     address public weth;
@@ -113,6 +118,8 @@ contract FireLock {
     uint256 public ONE_DAY_TIME_STAMP = 86400;
     uint256 public totalAmount;
     LockDetail public adminLockDetail;
+    unLockRecord[] public record;
+    mapping(address => uint256) public claim;
 
     modifier lock() {
     require(lockStatus,"You have already locked the position");
@@ -200,7 +207,7 @@ function Lock(
         require(false,"You are not a user of this lock address");
     } 
     
-    function UnLock() public unlock {
+    function unLock() public unlock {
         require(checkRate() == 100 ,"rate is error");
         require(block.timestamp >= adminLockDetail.ddl,"current time should be bigger than deadlineTime");
         uint256 amountOfUser = totalAmount;
@@ -208,12 +215,20 @@ function Lock(
         uint256 amount = IERC20(_token).balanceOf(address(this));
         uint256 userId = isUserUnlock(msg.sender);
         if(amount >= amountOfUser){
-            IERC20(_token).transfer(msg.sender, (amountOfUser * adminLockDetail.rate[userId]/100)/adminLockDetail.unlockRound*(block.timestamp - adminLockDetail.startTime)/
-            ONE_DAY_TIME_STAMP);
-            adminLockDetail.amount -= (amountOfUser * adminLockDetail.rate[userId]/100)/(adminLockDetail.unlockRound*adminLockDetail.unlockRound)*(block.timestamp - adminLockDetail.startTime)/
+            uint256 _unlockAmount =  (amountOfUser * adminLockDetail.rate[userId]/100)/adminLockDetail.unlockRound*(block.timestamp - adminLockDetail.startTime)/
             ONE_DAY_TIME_STAMP;
+            IERC20(_token).transfer(msg.sender, _unlockAmount);
+            adminLockDetail.amount -= _unlockAmount;
             adminLockDetail.startTime =block.timestamp;
+            unLockRecord memory _unlockRecord = unLockRecord({
+                user:msg.sender,
+                amount:_unlockAmount,
+                time: block.timestamp
+            });
+            record.push(_unlockRecord);
+            claim[msg.sender] = _unlockAmount;
             if(adminLockDetail.amount == 0){
+
                 unlockStatus = false;
             }
         }else{revert();}
@@ -247,7 +262,7 @@ function Lock(
     function checkGroupMember() public view returns(address[] memory){
         return adminLockDetail.member;
     }
-    function setGroupMemberRate(uint[] memory _rate) public {
+    function setMemberRate(uint[] memory _rate) public {
         require(msg.sender == adminLockDetail.admin);
         for(uint256 i =0; i< adminLockDetail.rate.length ;i++){
         adminLockDetail.rate[i] = _rate[i];
@@ -258,7 +273,6 @@ function Lock(
     function getGroupLockTitle() public view returns(string memory) {
         return adminLockDetail.LockTitle;
     }
-
    
     function getTokenSymbol() public view returns(string memory) {
         return IERC20(adminLockDetail.token).symbol();
@@ -270,12 +284,14 @@ function Lock(
     function feeReceiver() public view returns(address) {
         return IFireLockFeeTransfer(fireLockFeeTransfer).getAddress();
     }
-
-  
-    function getGroupMember() public view returns(address[] memory) {
+    
+    function getMember() public view returns(address[] memory) {
         return adminLockDetail.member;
     }
-    function getGroupMemberAmount() external view returns(uint256) {
+    function getMemberRate() public view returns(uint256[] memory) {
+        return adminLockDetail.rate;
+    }
+    function getMemberAmount() external view returns(uint256) {
         return adminLockDetail.member.length;
     }
 }
