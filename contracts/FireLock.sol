@@ -191,13 +191,10 @@ function Lock(
     totalAmount =  _LockDetail.amount;
 }
 
-    function isUserUnlock(address _user) public view returns(uint256) {
-        uint256 _id;
+    function isUserUnlock(address _user) public view returns(uint256 userId) {
         for(uint256 i = 0 ; i <adminLockDetail.member.length;i++){
             if(_user == adminLockDetail.member[i]){
-                _id = i;
-                return _id;
-                break;
+                return i;
             }
         }
         require(false,"You are not a user of this lock address");
@@ -207,14 +204,13 @@ function Lock(
         require(checkRate() == 100 ,"rate is error");
         require(block.timestamp >= adminLockDetail.ddl,"current time should be bigger than deadlineTime");
         uint256 amountOfUser = totalAmount;
-        uint256 _amountOfLock = adminLockDetail.amount;
         address _token = adminLockDetail.token;
         uint256 amount = IERC20(_token).balanceOf(address(this));
-        uint256 i = isUserUnlock(msg.sender);
+        uint256 userId = isUserUnlock(msg.sender);
         if(amount >= amountOfUser){
-            IERC20(_token).transfer(msg.sender, (amountOfUser * adminLockDetail.rate[i]/100)/adminLockDetail.unlockRound*(block.timestamp - adminLockDetail.startTime)/
+            IERC20(_token).transfer(msg.sender, (amountOfUser * adminLockDetail.rate[userId]/100)/adminLockDetail.unlockRound*(block.timestamp - adminLockDetail.startTime)/
             ONE_DAY_TIME_STAMP);
-            adminLockDetail.amount -= (amountOfUser * adminLockDetail.rate[i]/100)/(adminLockDetail.unlockRound*adminLockDetail.unlockRound)*(block.timestamp - adminLockDetail.startTime)/
+            adminLockDetail.amount -= (amountOfUser * adminLockDetail.rate[userId]/100)/(adminLockDetail.unlockRound*adminLockDetail.unlockRound)*(block.timestamp - adminLockDetail.startTime)/
             ONE_DAY_TIME_STAMP;
             adminLockDetail.startTime =block.timestamp;
             if(adminLockDetail.amount == 0){
