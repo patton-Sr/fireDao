@@ -269,8 +269,12 @@ function Lock(
         }
     }
     
+    function canClaim(uint256 userId) public view returns(uint256) {
+        return (totalAmount * adminLockDetail.rate[userId]/100)/adminLockDetail.unlockRound*(block.timestamp - adminLockDetail.startTime)/
+            ONE_DAY_TIME_STAMP;
+    }
 
-    function getGroupLockTitle() public view returns(string memory) {
+    function getLockTitle() public view returns(string memory) {
         return adminLockDetail.LockTitle;
     }
    
@@ -293,5 +297,8 @@ function Lock(
     }
     function getMemberAmount() external view returns(uint256) {
         return adminLockDetail.member.length;
+    }
+    function getRecordLength() external view returns(uint256) {
+        return record.length;
     }
 }
