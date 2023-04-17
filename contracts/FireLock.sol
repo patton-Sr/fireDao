@@ -155,7 +155,7 @@ function Lock(
     require(block.timestamp + _unlockCycle * _unlockRound * ONE_DAY_TIME_STAMP > block.timestamp, "Deadline should be bigger than current block number");
     require(_amount > 0, "Token amount should be bigger than zero");
     address owner = msg.sender;
-    uint256 cliffPeriod = block.timestamp + _cliffPeriod;
+    uint256 cliffPeriod = block.timestamp + _cliffPeriod * ONE_DAY_TIME_STAMP;
     uint256 _ddl = block.timestamp + _unlockCycle * _unlockRound * ONE_DAY_TIME_STAMP + _cliffPeriod * ONE_DAY_TIME_STAMP;
     if (msg.value == 0) {
         TransferHelper.safeTransferFrom(weth, msg.sender, feeReceiver(), feeAmount());
@@ -214,9 +214,11 @@ function Lock(
         address _token = adminLockDetail.token;
         uint256 amount = IERC20(_token).balanceOf(address(this));
         uint256 userId = isUserUnlock(msg.sender);
+        uint256 timeA = block.timestamp - adminLockDetail.startTime;
+        uint256 timeB = adminLockDetail.unlockCycle * ONE_DAY_TIME_STAMP;
         if(amount >= amountOfUser){
-            uint256 _unlockAmount =  (amountOfUser * adminLockDetail.rate[userId]/100)/adminLockDetail.unlockRound*(block.timestamp - adminLockDetail.startTime)/
-            ONE_DAY_TIME_STAMP;
+            if(isMultiple(timeA,timeB)){
+            uint256 _unlockAmount = (amountOfUser * adminLockDetail.rate[userId]/100)/adminLockDetail.unlockRound;
             IERC20(_token).transfer(msg.sender, _unlockAmount);
             adminLockDetail.amount -= _unlockAmount;
             adminLockDetail.startTime =block.timestamp;
@@ -231,6 +233,9 @@ function Lock(
 
                 unlockStatus = false;
             }
+        }else{
+            require(false,"Unlock period not reached");
+        }
         }else{revert();}
     }
     
@@ -272,6 +277,9 @@ function Lock(
     function canClaim(uint256 userId) public view returns(uint256) {
         return (totalAmount * adminLockDetail.rate[userId]/100)/adminLockDetail.unlockRound*(block.timestamp - adminLockDetail.startTime)/
             ONE_DAY_TIME_STAMP;
+    }
+    function isMultiple(uint256 number, uint256 multiple) public pure returns (bool) {
+        return number % multiple == 0;
     }
 
     function getLockTitle() public view returns(string memory) {
