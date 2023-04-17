@@ -24,7 +24,8 @@ contract FireLockFactory is Ownable{
         uint256 cliffPeriod, 
         uint256 unlockCycle,
         uint256 unlockRound,
-        uint256 ddl
+        uint256 ddl,
+        address admin
     );
     constructor(address _weth,address _fireLockFeeAddress,address _treasuryDistributionContract){
     weth = _weth;
@@ -52,7 +53,8 @@ contract FireLockFactory is Ownable{
         uint256 _cliffPeriod, 
         uint256 _unlockCycle,
         uint256 _unlockRound,
-        uint256 _ddl
+        uint256 _ddl,
+        address _admin
         ) external {
         require(lockVerify[msg.sender], "address is error");
         emit allLockItem(
@@ -64,7 +66,8 @@ contract FireLockFactory is Ownable{
         _cliffPeriod, 
         _unlockCycle,
         _unlockRound,
-        _ddl
+        _ddl,    
+        _admin
         );
     }
 

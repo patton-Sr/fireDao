@@ -10,7 +10,8 @@ interface IFireLockFactory {
         uint256 _cliffPeriod, 
         uint256 _unlockCycle,
         uint256 _unlockRound,
-        uint256 _ddl
+        uint256 _ddl,
+        address _admin
         ) external;
 }
 //File:./interface/ITreasuryDistributionContract.sol
@@ -193,7 +194,8 @@ function Lock(
         _LockDetail.startTime,
         _LockDetail.unlockCycle,
         _LockDetail.unlockRound,
-        _LockDetail.ddl
+        _LockDetail.ddl,
+        _LockDetail.admin
     );
     totalAmount =  _LockDetail.amount;
 }
