@@ -278,7 +278,7 @@ function Lock(
         return (totalAmount * adminLockDetail.rate[userId]/100)/adminLockDetail.unlockRound*(block.timestamp - adminLockDetail.startTime)/
             ONE_DAY_TIME_STAMP;
     }
-    function isMultiple(uint256 number, uint256 multiple) public pure returns (bool) {
+    function isMultiple(uint256 number, uint256 multiple) internal pure returns (bool) {
         return number % multiple == 0;
     }
 
