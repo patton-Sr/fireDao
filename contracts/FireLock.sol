@@ -230,7 +230,7 @@ function Lock(
                 time: block.timestamp
             });
             record.push(_unlockRecord);
-            claim[msg.sender] = _unlockAmount;
+            claim[msg.sender] += _unlockAmount;
             if(adminLockDetail.amount == 0){
 
                 unlockStatus = false;
@@ -276,7 +276,7 @@ function Lock(
         }
     }
     
-    function canClaim(uint256 userId) public view returns(uint256) {
+    function isClaim(uint256 userId) public view returns(uint256) {
         return (totalAmount * adminLockDetail.rate[userId]/100)/adminLockDetail.unlockRound*(block.timestamp - adminLockDetail.startTime)/
             ONE_DAY_TIME_STAMP;
     }
