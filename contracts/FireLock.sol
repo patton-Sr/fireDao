@@ -212,6 +212,7 @@ function Lock(
     uint256 _cliffPeriod
 ) public payable  lock {
     require(isUnique(_to),"address is not unique");
+    require(_to.length > 0 && _rate.length > 0 , "Address and scale cannot be empty");
     require(_to.length == _rate.length , "user amount error");
     require(msg.sender == createUser, "you are not creat user");
     require(block.timestamp.add(_unlockCycle.mul(_unlockRound).mul(ONE_DAY_TIME_STAMP)) > block.timestamp, "Deadline should be bigger than current block number");
@@ -261,7 +262,7 @@ function Lock(
         _LockDetail.ddl,
         _LockDetail.admin
     );
-    totalAmount =  _LockDetail.amount;
+    totalAmount =  _amount;
 }
 
 function isUserUnlock(address _user) public view returns(uint256 _userId) {
@@ -279,11 +280,10 @@ function claim(uint256 _amount) public unlock {
     require(block.timestamp > adminLockDetail.cliffPeriod,"still cliffPeriod");
     uint256 amountOfUser = totalAmount;
     address _token = adminLockDetail.token;
-    uint256 balance = IERC20(_token).balanceOf(address(this));
-    uint256 amount = balance < amountOfUser ? balance : amountOfUser;
     uint256 userId = isUserUnlock(msg.sender);
     uint256 timeA;
-    require(claimed[msg.sender] < amountOfUser.mul(adminLockDetail.rate[userId].div(100)) && _amount < amountOfUser.mul(adminLockDetail.rate[userId].div(100)), "You do not have enough balance to claim");
+    require(claimed[msg.sender] < amountOfUser.mul(adminLockDetail.rate[userId].div(100)) , "You do not have enough balance to claim");
+    require(_amount < amountOfUser.mul(adminLockDetail.rate[userId].div(100)),"Insufficient quota");
     if(userTime[msg.sender] == 0){
         timeA = block.timestamp.sub(adminLockDetail.cliffPeriod);
     } else {
@@ -291,14 +291,14 @@ function claim(uint256 _amount) public unlock {
     }
 
     uint256 timeB = adminLockDetail.unlockCycle.mul(adminLockDetail.unlockRound).mul(ONE_DAY_TIME_STAMP);
-    uint256 _unlockAmount = amountOfUser.mul(adminLockDetail.rate[userId]).mul(timeA).div(100).div(timeB);
+    uint256 _unLockAmount = amountOfUser.mul(adminLockDetail.rate[userId]).mul(timeA).div(100).div(timeB);
 
     if(remaining[msg.sender] != 0) {
-        if(_amount > _unlockAmount && _amount < _unlockAmount.add(remaining[msg.sender])){
+        if(_amount > _unLockAmount && _amount < _unLockAmount.add(remaining[msg.sender])){
             IERC20(_token).transfer(msg.sender, _amount);
             adminLockDetail.amount = adminLockDetail.amount.sub(_amount);
             userTime[msg.sender] = block.timestamp;
-            remaining[msg.sender] = _unlockAmount.add(remaining[msg.sender]).sub(_amount);
+            remaining[msg.sender] = _unLockAmount.add(remaining[msg.sender]).sub(_amount);
             unLockRecord memory _unlockRecord = unLockRecord({
                 user:msg.sender,
                 amount:_amount,
@@ -311,11 +311,11 @@ function claim(uint256 _amount) public unlock {
             }
 
         }
-    } else if(amount >= amountOfUser && _amount <= _unlockAmount){
+    } else if(_amount <= _unLockAmount){
         IERC20(_token).transfer(msg.sender, _amount);
         adminLockDetail.amount = adminLockDetail.amount.sub(_amount);
         userTime[msg.sender] = block.timestamp;
-        remaining[msg.sender] = _unlockAmount.sub(_amount);
+        remaining[msg.sender] = _unLockAmount.sub(_amount);
         unLockRecord memory _unlockRecord = unLockRecord({
             user:msg.sender,
             amount:_amount,
@@ -362,7 +362,7 @@ function claim(uint256 _amount) public unlock {
 
     function setLockMemberAddr(uint256 _id, address _to) public  unlock {
         require(isExist(_to), "the address is exist");
-        require(adminLockDetail.member.length > 1, "user amount error");
+        require(adminLockDetail.member.length > 0, "user amount error");
         require(msg.sender == adminLockDetail.admin);
         adminLockDetail.member[_id] = _to;
     }
@@ -382,15 +382,15 @@ function claim(uint256 _amount) public unlock {
         address _user = adminLockDetail.member[userId];
         require(userId < adminLockDetail.member.length , "User does not exist");
         require(_user != address(0), "User does not exist");
-        uint256 unlockAmount;
+        uint256 unLockAmount;
     if (userTime[_user] == 0) {
-        unlockAmount = totalAmount.mul(adminLockDetail.rate[userId]).div(100).div(adminLockDetail.unlockRound)
+        unLockAmount = totalAmount.mul(adminLockDetail.rate[userId]).div(100).div(adminLockDetail.unlockRound)
         .mul(block.timestamp.sub(adminLockDetail.startTime)).div(adminLockDetail.unlockCycle).mul(ONE_DAY_TIME_STAMP);
     } else {
-        unlockAmount = totalAmount.mul(adminLockDetail.rate[userId]).div(100).div(adminLockDetail.unlockRound)
+        unLockAmount = totalAmount.mul(adminLockDetail.rate[userId]).div(100).div(adminLockDetail.unlockRound)
         .mul(block.timestamp.sub(userTime[_user])).div(adminLockDetail.unlockCycle).mul(ONE_DAY_TIME_STAMP);
         }
-    return unlockAmount;
+    return unLockAmount;
     
     }
  
