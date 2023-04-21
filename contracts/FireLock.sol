@@ -182,7 +182,7 @@ contract FireLock {
         uint sum = 0;
         for (uint i = 0; i < nums.length; i++) {
             sum += nums[i];
-            if (sum > 100) {
+            if (sum > 100 || sum < 100) {
                 return false;
             }
         }
@@ -283,7 +283,7 @@ function claim(uint256 _amount) public unlock {
     uint256 amount = balance < amountOfUser ? balance : amountOfUser;
     uint256 userId = isUserUnlock(msg.sender);
     uint256 timeA;
-    require(claimed[msg.sender] < amountOfUser.mul(adminLockDetail.rate[userId].div(100)) , "You do not have enough balance to claim");
+    require(claimed[msg.sender] < amountOfUser.mul(adminLockDetail.rate[userId].div(100)) && _amount < amountOfUser.mul(adminLockDetail.rate[userId].div(100)), "You do not have enough balance to claim");
     if(userTime[msg.sender] == 0){
         timeA = block.timestamp.sub(adminLockDetail.cliffPeriod);
     } else {
