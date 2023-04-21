@@ -166,6 +166,7 @@ function Lock(
     string memory _title,
     uint256 _cliffPeriod
 ) public payable  lock {
+    require(_to.length == _rate.length , "user amount error");
     require(msg.sender == createUser, "you are not creat user");
     require(block.timestamp + _unlockCycle * _unlockRound * ONE_DAY_TIME_STAMP > block.timestamp, "Deadline should be bigger than current block number");
     require(_amount > 0, "Token amount should be bigger than zero");
@@ -229,7 +230,7 @@ function isUserUnlock(address _user) public view returns(uint256 _userId) {
 
 function claim(uint256 _amount) public unlock {
     require(checkRate() == 100 ,"rate is error");
-    require(block.timestamp > adminLockDetail.cliffPeriod,"still cliffPeriod");
+    require(block.timestamp > adminLockDetail.cliffPeriod * ONE_DAY_TIME_STAMP,"still cliffPeriod");
     uint256 amountOfUser = totalAmount;
     address _token = adminLockDetail.token;
     uint256 balance = IERC20(_token).balanceOf(address(this));
@@ -303,6 +304,7 @@ function claim(uint256 _amount) public unlock {
     }
 
     function setLockMemberAddr(uint256 _id, address _to) public  unlock {
+        require(adminLockDetail.member.length > 1, "user amount error");
         require(msg.sender == adminLockDetail.admin);
         adminLockDetail.member[_id] = _to;
     }
@@ -312,6 +314,7 @@ function claim(uint256 _amount) public unlock {
     }
     function setMemberRate(uint[] memory _rate) public {
         require(msg.sender == adminLockDetail.admin);
+        require(_rate.length == adminLockDetail.rate.length , "rate is not match");
         for(uint256 i =0; i< adminLockDetail.rate.length ;i++){
         adminLockDetail.rate[i] = _rate[i];
         }
