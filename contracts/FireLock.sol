@@ -1,4 +1,37 @@
+//File:./lib/SafeMath.sol
+pragma solidity ^0.8.0;
+
+library SafeMath {
+    function add(uint256 a, uint256 b) internal pure returns (uint256) {
+        uint256 c = a + b;
+        require(c >= a, "SafeMath: addition overflow");
+        return c;
+    }
+
+    function sub(uint256 a, uint256 b) internal pure returns (uint256) {
+        require(b <= a, "SafeMath: subtraction overflow");
+        uint256 c = a - b;
+        return c;
+    }
+
+    function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+        if (a == 0) {
+            return 0;
+        }
+        uint256 c = a * b;
+        require(c / a == b, "SafeMath: multiplication overflow");
+        return c;
+    }
+
+    function div(uint256 a, uint256 b) internal pure returns (uint256) {
+        require(b > 0, "SafeMath: division by zero");
+        uint256 c = a / b;
+        return c;
+    }
+}
+
 //File:./interface/IFireLockFactory.sol
+
 pragma solidity ^0.8.0;
 interface IFireLockFactory {
      function addLockItem(
@@ -89,6 +122,7 @@ interface IERC20 {
 pragma solidity ^0.8.0;
 
 contract FireLock {
+     using SafeMath for uint256;
 
     struct LockDetail{
         string LockTitle;
@@ -108,6 +142,8 @@ contract FireLock {
         uint256 amount;
         uint256 time;
     }
+    uint256 constant ONE_DAY_TIME_STAMP = 86400;
+
     bool public lockStatus;
     bool public unlockStatus;
     address public weth;
@@ -116,7 +152,6 @@ contract FireLock {
     address public fireLockFeeTransfer;
     address public adminForLock;
     address public createUser;
-    uint256 public ONE_DAY_TIME_STAMP = 86400;
     uint256 public totalAmount;
     LockDetail public adminLockDetail;
     unLockRecord[] public record;
@@ -143,16 +178,26 @@ contract FireLock {
         unlockStatus = true;
     }
 
-    function checkRateForLock(uint256[] memory _rate) public  pure  returns(bool) {
-    uint256 _totalRate;
-    for(uint256 i = 0 ; i < _rate.length; i++) {
-        _totalRate += _rate[i];
+    function validateSum(uint[] memory nums) public pure returns (bool) {
+        uint sum = 0;
+        for (uint i = 0; i < nums.length; i++) {
+            sum += nums[i];
+            if (sum > 100) {
+                return false;
+            }
+        }
+        return sum == 100;
     }
-    if(_totalRate == 100){
+     function isUnique(address[] memory addresses) public pure returns (bool) {
+        uint length = addresses.length;
+        for (uint i = 0; i < length; i++) {
+            for (uint j = i + 1; j < length; j++) {
+                if (addresses[i] == addresses[j]) {
+                    return false;
+                }
+            }
+        }
         return true;
-    }else{
-        return false;
-    }
     }
 
 function Lock(
@@ -166,14 +211,15 @@ function Lock(
     string memory _title,
     uint256 _cliffPeriod
 ) public payable  lock {
+    require(isUnique(_to),"address is not unique");
     require(_to.length == _rate.length , "user amount error");
     require(msg.sender == createUser, "you are not creat user");
-    require(block.timestamp + _unlockCycle * _unlockRound * ONE_DAY_TIME_STAMP > block.timestamp, "Deadline should be bigger than current block number");
+    require(block.timestamp.add(_unlockCycle.mul(_unlockRound).mul(ONE_DAY_TIME_STAMP)) > block.timestamp, "Deadline should be bigger than current block number");
     require(_amount > 0, "Token amount should be bigger than zero");
-    require(checkRateForLock(_rate),"rate error");
+    require(validateSum(_rate),"rate error");
     address owner = msg.sender;
-    uint256 cliffPeriod = block.timestamp + _cliffPeriod * ONE_DAY_TIME_STAMP;
-    uint256 _ddl = block.timestamp + _unlockCycle * _unlockRound * ONE_DAY_TIME_STAMP + _cliffPeriod * ONE_DAY_TIME_STAMP;
+    uint256 cliffPeriod = block.timestamp.add(_cliffPeriod.mul(ONE_DAY_TIME_STAMP)) ;
+    uint256 _ddl = cliffPeriod.add(_unlockCycle.add(_unlockRound).mul(ONE_DAY_TIME_STAMP));
 
     if (msg.value == 0) {
         TransferHelper.safeTransferFrom(weth, msg.sender, feeReceiver(), feeAmount());
@@ -230,35 +276,36 @@ function isUserUnlock(address _user) public view returns(uint256 _userId) {
 
 function claim(uint256 _amount) public unlock {
     require(checkRate() == 100 ,"rate is error");
-    require(block.timestamp > adminLockDetail.cliffPeriod * ONE_DAY_TIME_STAMP,"still cliffPeriod");
+    require(block.timestamp > adminLockDetail.cliffPeriod,"still cliffPeriod");
     uint256 amountOfUser = totalAmount;
     address _token = adminLockDetail.token;
     uint256 balance = IERC20(_token).balanceOf(address(this));
     uint256 amount = balance < amountOfUser ? balance : amountOfUser;
     uint256 userId = isUserUnlock(msg.sender);
     uint256 timeA;
-
+    require(claimed[msg.sender] < amountOfUser.mul(adminLockDetail.rate[userId].div(100)) , "You do not have enough balance to claim");
     if(userTime[msg.sender] == 0){
-        timeA = block.timestamp - adminLockDetail.cliffPeriod;
+        timeA = block.timestamp.sub(adminLockDetail.cliffPeriod);
     } else {
-        timeA = block.timestamp - userTime[msg.sender]; 
+        timeA = block.timestamp.sub(userTime[msg.sender]); 
     }
 
-    uint256 timeB = adminLockDetail.unlockCycle * ONE_DAY_TIME_STAMP * adminLockDetail.unlockRound;
-    uint256 _unlockAmount = (amountOfUser * adminLockDetail.rate[userId]/100)*(timeA/timeB);
+    uint256 timeB = adminLockDetail.unlockCycle.mul(adminLockDetail.unlockRound).mul(ONE_DAY_TIME_STAMP);
+    uint256 _unlockAmount = amountOfUser.mul(adminLockDetail.rate[userId]).mul(timeA).div(100).div(timeB);
+
     if(remaining[msg.sender] != 0) {
-        if(_amount > _unlockAmount && _amount < _unlockAmount + remaining[msg.sender]){
+        if(_amount > _unlockAmount && _amount < _unlockAmount.add(remaining[msg.sender])){
             IERC20(_token).transfer(msg.sender, _amount);
-            adminLockDetail.amount -= _amount;
+            adminLockDetail.amount = adminLockDetail.amount.sub(_amount);
             userTime[msg.sender] = block.timestamp;
-            remaining[msg.sender] = _unlockAmount + remaining[msg.sender] - _amount;
+            remaining[msg.sender] = _unlockAmount.add(remaining[msg.sender]).sub(_amount);
             unLockRecord memory _unlockRecord = unLockRecord({
                 user:msg.sender,
                 amount:_amount,
                 time: block.timestamp
             });
             record.push(_unlockRecord);
-            claimed[msg.sender] += _amount;
+            claimed[msg.sender] = claimed[msg.sender].add(_amount);
             if(adminLockDetail.amount == 0){
                 unlockStatus = false;
             }
@@ -266,16 +313,16 @@ function claim(uint256 _amount) public unlock {
         }
     } else if(amount >= amountOfUser && _amount <= _unlockAmount){
         IERC20(_token).transfer(msg.sender, _amount);
-        adminLockDetail.amount -= _amount;
+        adminLockDetail.amount = adminLockDetail.amount.sub(_amount);
         userTime[msg.sender] = block.timestamp;
-        remaining[msg.sender] = _unlockAmount - _amount;
+        remaining[msg.sender] = _unlockAmount.sub(_amount);
         unLockRecord memory _unlockRecord = unLockRecord({
             user:msg.sender,
             amount:_amount,
             time: block.timestamp
         });
         record.push(_unlockRecord);
-        claimed[msg.sender] += _amount;
+        claimed[msg.sender] = claimed[msg.sender].add(_amount);
         if(adminLockDetail.amount == 0){
             unlockStatus = false;
         }
@@ -289,7 +336,7 @@ function claim(uint256 _amount) public unlock {
     function checkRate() public view returns(uint) {
         uint totalRate;
         for(uint i =0; i < adminLockDetail.rate.length; i++ ){
-            totalRate += adminLockDetail.rate[i];
+            totalRate = totalRate.add(adminLockDetail.rate[i]) ;
         }
         return totalRate;
     }
@@ -297,13 +344,24 @@ function claim(uint256 _amount) public unlock {
     function changeLockAdmin(address _to) public unlock {
     address sender = msg.sender;
     address lockAdmin = adminLockDetail.admin;
-
     require(lockAdmin != address(0), "Lock admin must exist");
     require(lockAdmin == sender, "Sender must be admin");
+    require(_to != address(0), "transfer address does not exist");
+
     adminLockDetail.admin = _to;
     }
 
+    function isExist(address _to) public view returns(bool) {
+        for(uint256 i = 0 ; i < adminLockDetail.member.length; i++) {
+            if(_to == adminLockDetail.member[i]){
+                return false;
+            }
+        }
+        return true;
+    }
+
     function setLockMemberAddr(uint256 _id, address _to) public  unlock {
+        require(isExist(_to), "the address is exist");
         require(adminLockDetail.member.length > 1, "user amount error");
         require(msg.sender == adminLockDetail.admin);
         adminLockDetail.member[_id] = _to;
@@ -322,14 +380,18 @@ function claim(uint256 _amount) public unlock {
     
     function isClaim(uint256 userId) public view returns(uint256) {
         address _user = adminLockDetail.member[userId];
-        if(userTime[_user] == 0 ){
-        return (totalAmount * adminLockDetail.rate[userId]/100/adminLockDetail.unlockRound) * (block.timestamp - adminLockDetail.startTime)/
-        adminLockDetail.unlockCycle * ONE_DAY_TIME_STAMP;
-        }else{
-        return (totalAmount * adminLockDetail.rate[userId]/100/adminLockDetail.unlockRound) * (block.timestamp - userTime[_user])/
-        adminLockDetail.unlockCycle * ONE_DAY_TIME_STAMP;
+        require(userId < adminLockDetail.member.length , "User does not exist");
+        require(_user != address(0), "User does not exist");
+        uint256 unlockAmount;
+    if (userTime[_user] == 0) {
+        unlockAmount = totalAmount.mul(adminLockDetail.rate[userId]).div(100).div(adminLockDetail.unlockRound)
+        .mul(block.timestamp.sub(adminLockDetail.startTime)).div(adminLockDetail.unlockCycle).mul(ONE_DAY_TIME_STAMP);
+    } else {
+        unlockAmount = totalAmount.mul(adminLockDetail.rate[userId]).div(100).div(adminLockDetail.unlockRound)
+        .mul(block.timestamp.sub(userTime[_user])).div(adminLockDetail.unlockCycle).mul(ONE_DAY_TIME_STAMP);
         }
-
+    return unlockAmount;
+    
     }
  
     function getLockTitle() public view returns(string memory) {
