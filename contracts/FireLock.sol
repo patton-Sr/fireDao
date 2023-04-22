@@ -153,6 +153,7 @@ contract FireLock {
     address public adminForLock;
     address public createUser;
     uint256 public totalAmount;
+    uint256 public totalRate;
     LockDetail public adminLockDetail;
     unLockRecord[] public record;
     mapping(address => uint256) public claimed;
@@ -218,6 +219,8 @@ function Lock(
     require(block.timestamp.add(_unlockCycle.mul(_unlockRound).mul(ONE_DAY_TIME_STAMP)) > block.timestamp, "Deadline should be bigger than current block number");
     require(_amount > 0, "Token amount should be bigger than zero");
     require(validateSum(_rate),"rate error");
+    require(_unlockCycle > 0 && _unlockRound > 0, "Period and round input errors");
+    require(bytes(_title).length > 0, "String must not be empty.");
     address owner = msg.sender;
     uint256 cliffPeriod = block.timestamp.add(_cliffPeriod.mul(ONE_DAY_TIME_STAMP)) ;
     uint256 _ddl = cliffPeriod.add(_unlockCycle.add(_unlockRound).mul(ONE_DAY_TIME_STAMP));
@@ -263,6 +266,7 @@ function Lock(
         _LockDetail.admin
     );
     totalAmount =  _amount;
+    checkRate();
 }
 
 function isUserUnlock(address _user) public view returns(uint256 _userId) {
@@ -276,11 +280,11 @@ function isUserUnlock(address _user) public view returns(uint256 _userId) {
 }
 
 function claim(uint256 _amount) public unlock {
-    require(checkRate() == 100 ,"rate is error");
+    uint256 userId = isUserUnlock(msg.sender);
+    require(totalRate == 100 ,"rate is error");
     require(block.timestamp > adminLockDetail.cliffPeriod,"still cliffPeriod");
     uint256 amountOfUser = totalAmount;
     address _token = adminLockDetail.token;
-    uint256 userId = isUserUnlock(msg.sender);
     uint256 timeA;
     require(claimed[msg.sender] < amountOfUser.mul(adminLockDetail.rate[userId].div(100)) , "You do not have enough balance to claim");
     require(_amount < amountOfUser.mul(adminLockDetail.rate[userId].div(100)),"Insufficient quota");
@@ -328,17 +332,17 @@ function claim(uint256 _amount) public unlock {
         }
 
     } else {
-        revert();
+        require(_amount <= _unLockAmount, "Claim amount exceeds unlock amount");
 
     }
 }
 
-    function checkRate() public view returns(uint) {
-        uint totalRate;
-        for(uint i =0; i < adminLockDetail.rate.length; i++ ){
-            totalRate = totalRate.add(adminLockDetail.rate[i]) ;
+    function checkRate() internal {
+        uint256 _totalRate;
+        for(uint256 i =0; i < adminLockDetail.rate.length; i++ ){
+            _totalRate = _totalRate.add(adminLockDetail.rate[i]) ;
         }
-        return totalRate;
+        totalRate = _totalRate;
     }
 
     function changeLockAdmin(address _to) public unlock {
@@ -376,6 +380,7 @@ function claim(uint256 _amount) public unlock {
         for(uint256 i =0; i< adminLockDetail.rate.length ;i++){
         adminLockDetail.rate[i] = _rate[i];
         }
+        checkRate();
     }
     
     function isClaim(uint256 userId) public view returns(uint256) {
