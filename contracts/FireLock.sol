@@ -358,7 +358,7 @@ function claim(uint256 _amount) public unlock {
     adminLockDetail.admin = _to;
     }
 
-    function isExist(address _to) public view returns(bool) {
+    function isNotExist(address _to) public view returns(bool) {
         for(uint256 i = 0 ; i < adminLockDetail.member.length; i++) {
             if(_to == adminLockDetail.member[i]){
                 return false;
@@ -368,7 +368,7 @@ function claim(uint256 _amount) public unlock {
     }
 
     function setLockMemberAddr(uint256 _id, address _to) public  unlock {
-        require(isExist(_to), "the address is exist");
+        require(isNotExist(_to), "the address is exist");
         require(_to != address(0),"the address zero is not allow");
         require(adminLockDetail.member.length > 0, "user amount error");
         require(msg.sender == adminLockDetail.admin);
