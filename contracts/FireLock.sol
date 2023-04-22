@@ -348,7 +348,7 @@ function claim(uint256 _amount) public unlock {
         totalRate = _totalRate;
     }
 
-    function changeLockAdmin(address _to) public unlock {
+    function changeLockAdmin(address _to) public  {
     address sender = msg.sender;
     address lockAdmin = adminLockDetail.admin;
     require(lockAdmin != address(0), "Lock admin must exist");
@@ -383,6 +383,7 @@ function claim(uint256 _amount) public unlock {
         require(msg.sender == adminLockDetail.admin,"you are not admin");
         require(_rate.length == adminLockDetail.rate.length , "rate is not match");
         for(uint256 i =0; i< adminLockDetail.rate.length ;i++){
+        
         adminLockDetail.rate[i] = _rate[i];
         }
         checkRate();
@@ -402,7 +403,8 @@ function claim(uint256 _amount) public unlock {
     }
     return unLockAmount;
 }
- 
+
+
     function getLockTitle() public view returns(string memory) {
         return adminLockDetail.LockTitle;
     }
