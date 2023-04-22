@@ -297,6 +297,9 @@ function claim(uint256 _amount) public unlock {
     uint256 timeB = adminLockDetail.unlockCycle.mul(adminLockDetail.unlockRound).mul(ONE_DAY_TIME_STAMP);
     uint256 _unLockAmount = amountOfUser.mul(adminLockDetail.rate[userId]).mul(timeA).div(100).div(timeB);
 
+    require(_amount <= _unLockAmount.add(remaining[msg.sender]), "Claim amount exceeds allowed maximum");
+    require(claimed[msg.sender].add(_amount) <= amountOfUser.mul(adminLockDetail.rate[userId]).div(100), "Claim amount exceeds user's allowed maximum");
+
     if(remaining[msg.sender] != 0) {
         if(_amount > _unLockAmount && _amount < _unLockAmount.add(remaining[msg.sender])){
             IERC20(_token).transfer(msg.sender, _amount);
@@ -366,6 +369,7 @@ function claim(uint256 _amount) public unlock {
 
     function setLockMemberAddr(uint256 _id, address _to) public  unlock {
         require(isExist(_to), "the address is exist");
+        require(_to != address(0),"the address zero is not allow");
         require(adminLockDetail.member.length > 0, "user amount error");
         require(msg.sender == adminLockDetail.admin);
         adminLockDetail.member[_id] = _to;
@@ -375,7 +379,7 @@ function claim(uint256 _amount) public unlock {
         return adminLockDetail.member;
     }
     function setMemberRate(uint[] memory _rate) public {
-        require(msg.sender == adminLockDetail.admin);
+        require(msg.sender == adminLockDetail.admin,"you are not admin");
         require(_rate.length == adminLockDetail.rate.length , "rate is not match");
         for(uint256 i =0; i< adminLockDetail.rate.length ;i++){
         adminLockDetail.rate[i] = _rate[i];
