@@ -372,6 +372,7 @@ function claim(uint256 _amount) public unlock {
         require(_to != address(0),"the address zero is not allow");
         require(adminLockDetail.member.length > 0, "user amount error");
         require(msg.sender == adminLockDetail.admin);
+        require(_id < adminLockDetail.member.length, "Invalid member ID");
         adminLockDetail.member[_id] = _to;
     }
   
@@ -387,21 +388,20 @@ function claim(uint256 _amount) public unlock {
         checkRate();
     }
     
-    function isClaim(uint256 userId) public view returns(uint256) {
-        address _user = adminLockDetail.member[userId];
-        require(userId < adminLockDetail.member.length , "User does not exist");
-        require(_user != address(0), "User does not exist");
-        uint256 unLockAmount;
+   function isClaim(uint256 userId) public view returns(uint256) {
+    address _user = adminLockDetail.member[userId];
+    require(userId < adminLockDetail.member.length , "User does not exist");
+    require(_user != address(0), "User does not exist");
+    uint256 unLockAmount;
     if (userTime[_user] == 0) {
-        unLockAmount = totalAmount.mul(adminLockDetail.rate[userId]).div(100).div(adminLockDetail.unlockRound)
-        .mul(block.timestamp.sub(adminLockDetail.startTime)).div(adminLockDetail.unlockCycle).mul(ONE_DAY_TIME_STAMP);
+        unLockAmount = totalAmount.mul(adminLockDetail.rate[userId]).mul(block.timestamp.sub(adminLockDetail.startTime))
+        .div(100).div(adminLockDetail.unlockRound).div(adminLockDetail.unlockCycle).mul(ONE_DAY_TIME_STAMP);
     } else {
-        unLockAmount = totalAmount.mul(adminLockDetail.rate[userId]).div(100).div(adminLockDetail.unlockRound)
-        .mul(block.timestamp.sub(userTime[_user])).div(adminLockDetail.unlockCycle).mul(ONE_DAY_TIME_STAMP);
-        }
-    return unLockAmount;
-    
+        unLockAmount = totalAmount.mul(adminLockDetail.rate[userId]).mul(block.timestamp.sub(userTime[_user]))
+        .div(100).div(adminLockDetail.unlockRound).div(adminLockDetail.unlockCycle).mul(ONE_DAY_TIME_STAMP);
     }
+    return unLockAmount;
+}
  
     function getLockTitle() public view returns(string memory) {
         return adminLockDetail.LockTitle;
