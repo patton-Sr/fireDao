@@ -85,16 +85,16 @@ contract FireLock {
     mapping(address => uint256) public remaining;
 
     modifier lock() {
-    require(lockStatus,"You have already locked the position");
+    require(lockStatus,"FireLock: You have already locked the position");
         _;
     }
     modifier unlock(){
-        require(unlockStatus,"The contract has already terminated");
+        require(unlockStatus,"FireLock: The contract has already terminated");
         _;
     }
 
     modifier nonReentrant() {
-        require(!locked, "ReentrancyGuard: reentrant call");
+        require(!locked, "FireLock: ReentrancyGuard: reentrant call");
         locked = true;
         _;
         locked = false;
@@ -152,21 +152,18 @@ function Lock(
     string memory _title,
     uint256 _cliffPeriod
 ) public payable  lock {
-    require(isUnique(_to),"address is not unique");
-    require(_to.length > 0 && _rate.length > 0 , "Address and scale cannot be empty");
-    require(_to.length == _rate.length , "user amount error");
+    require(isUnique(_to),"FireLock: address is not unique");
+    require(_to.length > 0 && _rate.length > 0 , "FireLock: Address and scale cannot be empty");
+    require(_to.length == _rate.length , "FireLock: user amount error");
     for(uint256 i = 0; i < _to.length; i++){
-        for(uint256 j = i+1; j < _to.length; j++){
-            require(_to[i] != _to[j], "FireLock: Duplicate address found.");
-        }
         require(!isContractAddress(_to[i]), "FireLock: Contract address found in _to array.");
     }
-    require(msg.sender == createUser, "you are not creat user");
-    require(block.timestamp.add(_unlockCycle.mul(_unlockRound).mul(ONE_DAY_TIME_STAMP)) > block.timestamp, "Deadline should be bigger than current block number");
-    require(_amount > 0, "Token amount should be bigger than zero");
-    require(validateSum(_rate),"rate error");
-    require(_unlockCycle > 0 && _unlockRound > 0, "Period and round input errors");
-    require(bytes(_title).length > 0, "String must not be empty.");
+    require(msg.sender == createUser, "FireLock: you are not creat user");
+    require(block.timestamp.add(_unlockCycle.mul(_unlockRound).mul(ONE_DAY_TIME_STAMP)) > block.timestamp, "FireLock: Deadline should be bigger than current block number");
+    require(_amount > 0, "FireLock: Token amount should be bigger than zero");
+    require(validateSum(_rate),"FireLock: rate error");
+    require(_unlockCycle > 0 && _unlockRound > 0, "FireLock: Period and round input errors");
+    require(bytes(_title).length > 0, "FireLock: String must not be empty.");
     address owner = msg.sender;
     uint256 cliffPeriod = block.timestamp.add(_cliffPeriod.mul(ONE_DAY_TIME_STAMP)) ;
     uint256 _ddl = cliffPeriod.add(_unlockCycle.add(_unlockRound).mul(ONE_DAY_TIME_STAMP));
@@ -223,13 +220,13 @@ function isUserUnlock(address _user) public view returns(uint256 _userId) {
             return i;
         }
     }
-    revert("You are not a user of this lock address");
+    revert("FireLock: You are not a user of this lock address");
 }
 
 
 function claim(uint256 _amount) public nonReentrant unlock {
-    require(totalRate == 100, "rate is error");
-    require(block.timestamp > adminLockDetail.cliffPeriod, "still cliffPeriod");
+    require(totalRate == 100, "FireLock: rate is error");
+    require(block.timestamp > adminLockDetail.cliffPeriod, "FireLock: still cliffPeriod");
     uint256 userId = isUserUnlock(msg.sender);
     uint256 amountOfUser = totalAmount;
     address _token = adminLockDetail.token;
@@ -238,10 +235,10 @@ function claim(uint256 _amount) public nonReentrant unlock {
     uint256 userMaxClaim = amountOfUser.mul(adminLockDetail.rate[userId]).div(100);
     uint256 _unLockAmount = userMaxClaim.mul(timeA).div(timeB);
 
-    require(claimed[msg.sender] < userMaxClaim, "You do not have enough balance to claim");
-    require(_amount <= userMaxClaim, "Insufficient quota");
-    require(_amount <= _unLockAmount.add(remaining[msg.sender]), "Claim amount exceeds allowed maximum");
-    require(claimed[msg.sender].add(_amount) <= userMaxClaim, "Claim amount exceeds user's allowed maximum");
+    require(claimed[msg.sender] < userMaxClaim, "FireLock: You do not have enough balance to claim");
+    require(_amount <= userMaxClaim, "FireLock: Insufficient quota");
+    require(_amount <= _unLockAmount.add(remaining[msg.sender]), "FireLock: Claim amount exceeds allowed maximum");
+    require(claimed[msg.sender].add(_amount) <= userMaxClaim, "FireLock: Claim amount exceeds user's allowed maximum");
 
     IERC20(_token).transfer(msg.sender, _amount);
     adminLockDetail.amount = adminLockDetail.amount.sub(_amount);
@@ -273,9 +270,9 @@ function claim(uint256 _amount) public nonReentrant unlock {
     function changeLockAdmin(address _to) public  {
     address sender = msg.sender;
     address lockAdmin = adminLockDetail.admin;
-    require(lockAdmin != address(0), "Lock admin must exist");
-    require(lockAdmin == sender, "Sender must be admin");
-    require(_to != address(0), "transfer address does not exist");
+    require(lockAdmin != address(0), "FireLock: Lock admin must exist");
+    require(lockAdmin == sender, "FireLock: Sender must be admin");
+    require(_to != address(0), "FireLock: transfer address does not exist");
 
     adminLockDetail.admin = _to;
 
@@ -291,11 +288,11 @@ function claim(uint256 _amount) public nonReentrant unlock {
         return true;
     }
 function setLockMemberAddr(uint256 _id, address _to) public  unlock {
-    require(isNotExist(_to), "the address is exist");
-    require(_to != address(0),"the address zero is not allow");
-    require(adminLockDetail.member.length > 0, "user amount error");
+    require(isNotExist(_to), "FireLock: the address is exist");
+    require(_to != address(0),"FireLock: the address zero is not allow");
+    require(adminLockDetail.member.length > 0, "FireLock: user amount error");
     require(msg.sender == adminLockDetail.admin);
-    require(_id < adminLockDetail.member.length, "Invalid member ID");
+    require(_id < adminLockDetail.member.length, "FireLock: Invalid member ID");
 
     address oldAddress = adminLockDetail.member[_id];
 
@@ -316,9 +313,9 @@ function setLockMemberAddr(uint256 _id, address _to) public  unlock {
         return adminLockDetail.member;
     }
     function setMemberRate(uint[] memory _rate) public {
-        require(msg.sender == adminLockDetail.admin,"you are not admin");
-        require(_rate.length == adminLockDetail.rate.length , "rate is not match");
-        require(_rate.length == adminLockDetail.member.length, "rate is not match");
+        require(msg.sender == adminLockDetail.admin,"FireLock: you are not admin");
+        require(_rate.length == adminLockDetail.rate.length , "FireLock: rate is not match");
+        require(_rate.length == adminLockDetail.member.length, "FireLock: rate is not match");
         for(uint256 i =0; i< adminLockDetail.rate.length ;i++){
         
         adminLockDetail.rate[i] = _rate[i];
@@ -328,8 +325,8 @@ function setLockMemberAddr(uint256 _id, address _to) public  unlock {
     
    function calculateClaimableAmount(uint256 userId) public view returns(uint256) {
     address _user = adminLockDetail.member[userId];
-    require(userId < adminLockDetail.member.length , "User does not exist");
-    require(_user != address(0), "User does not exist");
+    require(userId < adminLockDetail.member.length , "FireLock: User does not exist");
+    require(_user != address(0), "FireLock: User does not exist");
     uint256 unLockAmount;
     if (userTime[_user] == 0) {
         unLockAmount = totalAmount.mul(adminLockDetail.rate[userId]).mul(block.timestamp.sub(adminLockDetail.startTime))
