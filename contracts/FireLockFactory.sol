@@ -19,7 +19,6 @@ contract FireLockFactory is Ownable{
     event allLockItem(
         address lockAddr,
         string  title,
-        string  token,
         uint256 lockAmount, 
         uint256 lockTime, 
         uint256 cliffPeriod, 
@@ -50,7 +49,6 @@ contract FireLockFactory is Ownable{
     function addLockItem(
         address _lockAddr,
         string memory _title,
-        string memory _token,
         uint256 _lockAmount, 
         uint256 _lockTime, 
         uint256 _cliffPeriod, 
@@ -64,7 +62,6 @@ contract FireLockFactory is Ownable{
         emit allLockItem(
         _lockAddr,
         _title,
-        _token,
         _lockAmount, 
         _lockTime, 
         _cliffPeriod, 

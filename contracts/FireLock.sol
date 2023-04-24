@@ -6,7 +6,6 @@ interface IFireLockFactory {
     function addLockItem(
         address _lockAddr,
         string memory _title,
-        string memory _token,
         uint256 _lockAmount, 
         uint256 _lockTime, 
         uint256 _cliffPeriod, 
@@ -39,13 +38,16 @@ interface IFireLockFeeTransfer {
 
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "./interface/IERC20ForLock.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interface/IWETH.sol";
 import "./lib/TransferHelper.sol";
 
 contract FireLock {
      using SafeMath for uint256;
+     using Address for address;
+     using SafeERC20 for IERC20;
 
     struct LockDetail{
         string LockTitle;
@@ -115,7 +117,7 @@ contract FireLock {
         uint sum = 0;
         for (uint i = 0; i < nums.length; i++) {
             sum += nums[i];
-            if (sum > 100 || sum < 100) {
+            if (sum > 100) {
                 return false;
             }
         }
@@ -156,7 +158,7 @@ function Lock(
     require(_to.length > 0 && _rate.length > 0 , "FireLock: Address and scale cannot be empty");
     require(_to.length == _rate.length , "FireLock: user amount error");
     for(uint256 i = 0; i < _to.length; i++){
-        require(!isContractAddress(_to[i]), "FireLock: Contract address found in _to array.");
+        require(!_to[i].isContract(), "FireLock: Contract address found in _to array.");
     }
     require(msg.sender == createUser, "FireLock: you are not creat user");
     require(block.timestamp.add(_unlockCycle.mul(_unlockRound).mul(ONE_DAY_TIME_STAMP)) > block.timestamp, "FireLock: Deadline should be bigger than current block number");
@@ -199,7 +201,6 @@ function Lock(
     IFireLockFactory(factoryAddr).addLockItem(
         address(this),
         _LockDetail.LockTitle,
-        getTokenSymbol(),
         _LockDetail.amount,
         block.timestamp,
         _LockDetail.startTime,
@@ -240,7 +241,7 @@ function claim(uint256 _amount) public nonReentrant unlock {
     require(_amount <= _unLockAmount.add(remaining[msg.sender]), "FireLock: Claim amount exceeds allowed maximum");
     require(claimed[msg.sender].add(_amount) <= userMaxClaim, "FireLock: Claim amount exceeds user's allowed maximum");
 
-    IERC20(_token).transfer(msg.sender, _amount);
+    IERC20(_token).safeTransfer(msg.sender, _amount);
     adminLockDetail.amount = adminLockDetail.amount.sub(_amount);
     userTime[msg.sender] = block.timestamp;
     remaining[msg.sender] = _unLockAmount.add(remaining[msg.sender]).sub(_amount);
@@ -343,10 +344,6 @@ function setLockMemberAddr(uint256 _id, address _to) public  unlock {
         return adminLockDetail.LockTitle;
     }
    
-    function getTokenSymbol() public view returns(string memory) {
-        return IERC20(adminLockDetail.token).symbol();
-    }
-
     function feeAmount() public view returns(uint256) {
         return IFireLockFeeTransfer(fireLockFeeTransfer).getFee();
     }
