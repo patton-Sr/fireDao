@@ -14,6 +14,7 @@ contract FireLockFactory is Ownable{
     mapping(address => address )  currentLockAddress;
     mapping(address => address[]) public ownerLock; 
     mapping(address => bool) public lockVerify;
+    mapping(address => bool) public uninitialized;
     event totalLockList(address lockOwner, address lockAddr);
     event allLockItem(
         address lockAddr,
@@ -27,6 +28,8 @@ contract FireLockFactory is Ownable{
         uint256 ddl,
         address admin
     );
+    event claimInfo(address lock, uint256 amount);
+    event changeAdmin(address lock, address admin);
     constructor(address _weth,address _fireLockFeeAddress,address _treasuryDistributionContract){
     weth = _weth;
     fireLockFeeAddress = _fireLockFeeAddress;
@@ -55,8 +58,9 @@ contract FireLockFactory is Ownable{
         uint256 _unlockRound,
         uint256 _ddl,
         address _admin
-        ) external {
+        ) external   {
         require(lockVerify[msg.sender], "address is error");
+
         emit allLockItem(
         _lockAddr,
         _title,
@@ -70,7 +74,20 @@ contract FireLockFactory is Ownable{
         _admin
         );
     }
+    function addClaimInfo(address _lock, uint256 _amount) external {
+        require(lockVerify[msg.sender], "address is error");
 
+        emit claimInfo(_lock, _amount);
+    }
+    function addlockAdmin(address _lock, address _admin) external  {
+        require(lockVerify[msg.sender], "address is error");
+
+        emit changeAdmin(_lock, _admin);
+    }
+    function isNotUninitialized(address _lock,bool _uninitalized) external{
+        require(lockVerify[msg.sender], "address is error");
+        uninitialized[_lock] = _uninitalized;
+    }
     function getUserCurrentLock() public view returns(address) {
         return currentLockAddress[msg.sender];
     }

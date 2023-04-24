@@ -34,7 +34,7 @@ library SafeMath {
 
 pragma solidity ^0.8.0;
 interface IFireLockFactory {
-     function addLockItem(
+    function addLockItem(
         address _lockAddr,
         string memory _title,
         string memory _token,
@@ -46,6 +46,10 @@ interface IFireLockFactory {
         uint256 _ddl,
         address _admin
         ) external;
+     function addClaimInfo(address _lock, uint256 _amount) external;
+     function addlockAdmin(address _lock, address _admin) external;
+     function isNotUninitialized(address _lock,bool _uninitalized) external;
+
 }
 //File:./interface/ITreasuryDistributionContract.sol
 pragma solidity ^0.8.0;
@@ -267,6 +271,7 @@ function Lock(
     );
     totalAmount =  _amount;
     checkRate();
+    IFireLockFactory(factoryAddr).isNotUninitialized(address(this), true);
 }
 
 function isUserUnlock(address _user) public view returns(uint256 _userId) {
@@ -279,6 +284,8 @@ function isUserUnlock(address _user) public view returns(uint256 _userId) {
     require(false,"You are not a user of this lock address");
 }
 
+
+
 function claim(uint256 _amount) public unlock {
     uint256 userId = isUserUnlock(msg.sender);
     require(totalRate == 100 ,"rate is error");
@@ -287,7 +294,7 @@ function claim(uint256 _amount) public unlock {
     address _token = adminLockDetail.token;
     uint256 timeA;
     require(claimed[msg.sender] < amountOfUser.mul(adminLockDetail.rate[userId].div(100)) , "You do not have enough balance to claim");
-    require(_amount < amountOfUser.mul(adminLockDetail.rate[userId].div(100)),"Insufficient quota");
+    require(_amount <= amountOfUser.mul(adminLockDetail.rate[userId].div(100)),"Insufficient quota");
     if(userTime[msg.sender] == 0){
         timeA = block.timestamp.sub(adminLockDetail.cliffPeriod);
     } else {
@@ -313,6 +320,7 @@ function claim(uint256 _amount) public unlock {
             });
             record.push(_unlockRecord);
             claimed[msg.sender] = claimed[msg.sender].add(_amount);
+            IFireLockFactory(factoryAddr).addClaimInfo(address(this),_amount);
             if(adminLockDetail.amount == 0){
                 unlockStatus = false;
             }
@@ -330,6 +338,7 @@ function claim(uint256 _amount) public unlock {
         });
         record.push(_unlockRecord);
         claimed[msg.sender] = claimed[msg.sender].add(_amount);
+        IFireLockFactory(factoryAddr).addClaimInfo(address(this),_amount);
         if(adminLockDetail.amount == 0){
             unlockStatus = false;
         }
@@ -356,6 +365,8 @@ function claim(uint256 _amount) public unlock {
     require(_to != address(0), "transfer address does not exist");
 
     adminLockDetail.admin = _to;
+
+    IFireLockFactory(factoryAddr).addlockAdmin(address(this), _to);
     }
 
     function isNotExist(address _to) public view returns(bool) {
