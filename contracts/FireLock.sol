@@ -285,67 +285,39 @@ function isUserUnlock(address _user) public view returns(uint256 _userId) {
 }
 
 
-
 function claim(uint256 _amount) public unlock {
     uint256 userId = isUserUnlock(msg.sender);
-    require(totalRate == 100 ,"rate is error");
-    require(block.timestamp > adminLockDetail.cliffPeriod,"still cliffPeriod");
+    require(totalRate == 100, "rate is error");
+    require(block.timestamp > adminLockDetail.cliffPeriod, "still cliffPeriod");
+
     uint256 amountOfUser = totalAmount;
     address _token = adminLockDetail.token;
-    uint256 timeA;
-    require(claimed[msg.sender] < amountOfUser.mul(adminLockDetail.rate[userId].div(100)) , "You do not have enough balance to claim");
-    require(_amount <= amountOfUser.mul(adminLockDetail.rate[userId].div(100)),"Insufficient quota");
-    if(userTime[msg.sender] == 0){
-        timeA = block.timestamp.sub(adminLockDetail.cliffPeriod);
-    } else {
-        timeA = block.timestamp.sub(userTime[msg.sender]); 
-    }
-
+    uint256 timeA = (userTime[msg.sender] == 0) ? block.timestamp.sub(adminLockDetail.cliffPeriod) : block.timestamp.sub(userTime[msg.sender]);
     uint256 timeB = adminLockDetail.unlockCycle.mul(adminLockDetail.unlockRound).mul(ONE_DAY_TIME_STAMP);
-    uint256 _unLockAmount = amountOfUser.mul(adminLockDetail.rate[userId]).mul(timeA).div(100).div(timeB);
+    uint256 userMaxClaim = amountOfUser.mul(adminLockDetail.rate[userId]).div(100);
+    uint256 _unLockAmount = userMaxClaim.mul(timeA).div(timeB);
 
+    require(claimed[msg.sender] < userMaxClaim, "You do not have enough balance to claim");
+    require(_amount <= userMaxClaim, "Insufficient quota");
     require(_amount <= _unLockAmount.add(remaining[msg.sender]), "Claim amount exceeds allowed maximum");
-    require(claimed[msg.sender].add(_amount) <= amountOfUser.mul(adminLockDetail.rate[userId]).div(100), "Claim amount exceeds user's allowed maximum");
+    require(claimed[msg.sender].add(_amount) <= userMaxClaim, "Claim amount exceeds user's allowed maximum");
 
-    if(remaining[msg.sender] != 0) {
-        if(_amount > _unLockAmount && _amount < _unLockAmount.add(remaining[msg.sender])){
-            IERC20(_token).transfer(msg.sender, _amount);
-            adminLockDetail.amount = adminLockDetail.amount.sub(_amount);
-            userTime[msg.sender] = block.timestamp;
-            remaining[msg.sender] = _unLockAmount.add(remaining[msg.sender]).sub(_amount);
-            unLockRecord memory _unlockRecord = unLockRecord({
-                user:msg.sender,
-                amount:_amount,
-                time: block.timestamp
-            });
-            record.push(_unlockRecord);
-            claimed[msg.sender] = claimed[msg.sender].add(_amount);
-            IFireLockFactory(factoryAddr).addClaimInfo(address(this),_amount);
-            if(adminLockDetail.amount == 0){
-                unlockStatus = false;
-            }
+    IERC20(_token).transfer(msg.sender, _amount);
+    adminLockDetail.amount = adminLockDetail.amount.sub(_amount);
+    userTime[msg.sender] = block.timestamp;
+    remaining[msg.sender] = _unLockAmount.add(remaining[msg.sender]).sub(_amount);
 
-        }
-    } else if(_amount <= _unLockAmount){
-        IERC20(_token).transfer(msg.sender, _amount);
-        adminLockDetail.amount = adminLockDetail.amount.sub(_amount);
-        userTime[msg.sender] = block.timestamp;
-        remaining[msg.sender] = _unLockAmount.sub(_amount);
-        unLockRecord memory _unlockRecord = unLockRecord({
-            user:msg.sender,
-            amount:_amount,
-            time: block.timestamp
-        });
-        record.push(_unlockRecord);
-        claimed[msg.sender] = claimed[msg.sender].add(_amount);
-        IFireLockFactory(factoryAddr).addClaimInfo(address(this),_amount);
-        if(adminLockDetail.amount == 0){
-            unlockStatus = false;
-        }
+    unLockRecord memory _unlockRecord = unLockRecord({
+        user: msg.sender,
+        amount: _amount,
+        time: block.timestamp
+    });
+    record.push(_unlockRecord);
+    claimed[msg.sender] = claimed[msg.sender].add(_amount);
+    IFireLockFactory(factoryAddr).addClaimInfo(address(this), _amount);
 
-    } else {
-        require(_amount <= _unLockAmount, "Claim amount exceeds unlock amount");
-
+    if (adminLockDetail.amount == 0) {
+        unlockStatus = false;
     }
 }
 
