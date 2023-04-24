@@ -1,3 +1,34 @@
+//File:./lib/SafeMath.sol
+pragma solidity ^0.8.0;
+
+library SafeMath {
+    function add(uint256 a, uint256 b) internal pure returns (uint256) {
+        uint256 c = a + b;
+        require(c >= a, "SafeMath: addition overflow");
+        return c;
+    }
+
+    function sub(uint256 a, uint256 b) internal pure returns (uint256) {
+        require(b <= a, "SafeMath: subtraction overflow");
+        uint256 c = a - b;
+        return c;
+    }
+
+    function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+        if (a == 0) {
+            return 0;
+        }
+        uint256 c = a * b;
+        require(c / a == b, "SafeMath: multiplication overflow");
+        return c;
+    }
+
+    function div(uint256 a, uint256 b) internal pure returns (uint256) {
+        require(b > 0, "SafeMath: division by zero");
+        uint256 c = a / b;
+        return c;
+    }
+}
 
 //File:./interface/IFireLockFactory.sol
 
@@ -34,15 +65,45 @@ interface IFireLockFeeTransfer {
     function getFee() external view returns(uint256);
     function getUseTreasuryDistributionContract() external view returns(bool);
 }
+//File:./lib/TransferHelper.sol
+
+
+pragma solidity >=0.6.0;
+
+// helper methods for interacting with ERC20 tokens and sending ETH that do not consistently return true/false
+library TransferHelper {
+    function safeApprove(address token, address to, uint value) internal {
+        // bytes4(keccak256(bytes('approve(address,uint256)')));
+        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0x095ea7b3, to, value));
+        require(success && (data.length == 0 || abi.decode(data, (bool))), 'TransferHelper: APPROVE_FAILED');
+    }
+
+    function safeTransfer(address token, address to, uint value) internal {
+        // bytes4(keccak256(bytes('transfer(address,uint256)')));
+        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0xa9059cbb, to, value));
+        require(success && (data.length == 0 || abi.decode(data, (bool))), 'TransferHelper: TRANSFER_FAILED');
+    }
+
+    function safeTransferFrom(address token, address from, address to, uint value) internal {
+        // bytes4(keccak256(bytes('transferFrom(address,address,uint256)')));
+        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0x23b872dd, from, to, value));
+        require(success && (data.length == 0 || abi.decode(data, (bool))), 'TransferHelper: TRANSFER_FROM_FAILED');
+    }
+
+    function safeTransferETH(address to, uint value) internal {
+        (bool success,) = to.call{value:value}(new bytes(0));
+        require(success, 'TransferHelper: ETH_TRANSFER_FAILED');
+    }
+}
+
+
 
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./interface/IERC20ForLock.sol";
 import "./interface/IWETH.sol";
-import "./lib/TransferHelper.sol";
 
 contract FireLock {
      using SafeMath for uint256;
@@ -132,14 +193,6 @@ contract FireLock {
         }
         return true;
     }
-function isContractAddress(address addr) private view returns (bool) {
-    uint32 size;
-    assembly {
-        size := extcodesize(addr)
-    }
-    return (size > 0);
-}
-
 
 function Lock(
     address _token,
@@ -155,12 +208,6 @@ function Lock(
     require(isUnique(_to),"address is not unique");
     require(_to.length > 0 && _rate.length > 0 , "Address and scale cannot be empty");
     require(_to.length == _rate.length , "user amount error");
-    for(uint256 i = 0; i < _to.length; i++){
-        for(uint256 j = i+1; j < _to.length; j++){
-            require(_to[i] != _to[j], "FireLock: Duplicate address found.");
-        }
-        require(!isContractAddress(_to[i]), "FireLock: Contract address found in _to array.");
-    }
     require(msg.sender == createUser, "you are not creat user");
     require(block.timestamp.add(_unlockCycle.mul(_unlockRound).mul(ONE_DAY_TIME_STAMP)) > block.timestamp, "Deadline should be bigger than current block number");
     require(_amount > 0, "Token amount should be bigger than zero");
@@ -282,7 +329,7 @@ function claim(uint256 _amount) public nonReentrant unlock {
     IFireLockFactory(factoryAddr).addlockAdmin(address(this), _to);
     }
 
-    function isNotExist(address _to) internal view returns(bool) {
+    function isNotExist(address _to) public view returns(bool) {
         for(uint256 i = 0 ; i < adminLockDetail.member.length; i++) {
             if(_to == adminLockDetail.member[i]){
                 return false;
