@@ -8,33 +8,39 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "operator-filter-registry/src/DefaultOperatorFilterer.sol";
 import "./interface/ITreasuryDistributionContract.sol";
 import "./interface/ISbt007.sol";
-import "./interface/IFireSoul.sol";
 import "./lib/TransferHelper.sol";
 import "./interface/IWETH.sol";
 
 contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable{
 
+    using Counters for Counters.Counter;
     string public constant name = "FireSeed";
     string public constant symbol = "FIRESEED";
 
-    using Counters for Counters.Counter;
     Counters.Counter private _idTracker;
     event passFireSeed(address  from, address  to, uint256  tokenId, uint256  amount, uint256  transferTime);
-    bool public FeeStatus;
     string public baseURI;
     bool public useITreasuryDistributionContract;
-    address  public feeReceiver;
-    address public treasuryDistributionContract;
-    address public weth;
-    address public Sbt007;
-    address public fireSoul;
+    uint256 public maxMint = 1e6;
     uint256 public fee;
     uint256 public amountOfSbt007;
+    uint256 public wListMintMax;
+    uint256 public userMintMax;
+    uint256 public lowestMint;
+    uint256 public whitelistDiscount;
+    address public feeReceiver;
+    address public treasuryDistributionContract;
+    address public rainbowTreasury;
+    address public weth;
+    address public Sbt007;
+    address[] public whiteList;
+
     mapping(address => bool) public isRecommender;
     mapping(address => address) public recommender;
     mapping(address => address[]) public recommenderInfo;
-    mapping(address => bool) public WhiteList;
+    mapping(address => bool) public isNotWhiteListUser;
     mapping(address => uint256[]) public ownerOfId; 
+    mapping(uint256 => uint256) public discountFactors;
 
     constructor(address _Sbt007,address  _feeReceiver, address _weth) ERC1155("https://bafybeiblhsbd5x7rw5ezzr6xoe6u2jpyqexbfbovdao2vj5i3c25vmm7d4.ipfs.nftstorage.link/0.json") {
     _idTracker.increment();
@@ -43,8 +49,41 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable{
     feeReceiver = _feeReceiver;
     weth = _weth;
     baseURI = "https://bafybeiblhsbd5x7rw5ezzr6xoe6u2jpyqexbfbovdao2vj5i3c25vmm7d4.ipfs.nftstorage.link/";
+    wListMintMax = 1000;
+    userMintMax = 100;
+    lowestMint = 1;
+    fee =8e16;
+    setDiscountFactor(11, 20, 90);
+    setDiscountFactor(21, 30, 80);
+    setDiscountFactor(31, 40, 70);
+    setDiscountFactor(41, 50, 60);
+    setDiscountFactor(51, 100, 50);
 }
     //onlyOwner
+    function setRainbowTreasury(address _rainbowTreasury) public onlyOwner{
+        require(_rainbowTreasury != address(0) ,"FireSeed: Invalid address" );
+        rainbowTreasury = _rainbowTreasury;
+    }
+
+    function setDiscountFactor(uint256 _lowerBound, uint256 _upperBound, uint256 _discountFactor) public onlyOwner {
+        require(_lowerBound < _upperBound, "FireSeed: Invalid range");
+        discountFactors[_lowerBound] = _discountFactor;
+        discountFactors[_upperBound] = _discountFactor;
+    }
+    function deleteDiscountFactor(uint256 _bound) public onlyOwner {
+        delete discountFactors[_bound];
+    }
+
+
+    function setLowestMint(uint256 _amount) public onlyOwner{
+        lowestMint = _amount;
+    }
+    function setUserMintMax(uint256 _amount) public onlyOwner{
+        userMintMax = _amount;
+    }
+    function setWListMax(uint256 _amount) public onlyOwner{
+        wListMintMax = _amount;
+    }
     function cancelAddressInvitation(address _addr) public onlyOwner{
         isRecommender[_addr] = true;
     }
@@ -57,21 +96,44 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable{
     function changeFeeReceiver(address payable receiver) external onlyOwner {
       feeReceiver = receiver;
     }
-    function setFee(uint256 fees) public onlyOwner{
-      fee = fees;
+    function setFee(uint256 _fee) public onlyOwner{
+      fee = _fee;
    }
-    function setFeeStatus() public onlyOwner{
-      FeeStatus = !FeeStatus;
-   }
-    function setWhiteListUser(address _user) public onlyOwner{
-        WhiteList[_user] = true;
+
+    function addWhiteListUser(address[] memory _users) public onlyOwner{
+        for(uint256 i = 0; i < _users.length ; i++ ){
+            isNotWhiteListUser[_users[i]] = true;
+            whiteList.push(_users[i]);
+        }
     }
-    function delWhiteListUser(address _user) public onlyOwner{
-        WhiteList[_user] = false;
+
+    function removeFromWhiteList(address[] calldata users) external onlyOwner {
+        for (uint256 i = 0; i < users.length; i++) {
+            require(isNotWhiteListUser[users[i]] == true, "FireSeed: User not in whitelist");
+            uint256 indexToRemove = findIndexOf(whiteList, users[i]);
+            require(indexToRemove < whiteList.length, "FireSeed: User not in whitelist array");
+            removeAtIndex(whiteList, indexToRemove);
+            isNotWhiteListUser[users[i]] = false;
+        }
     }
-    function setFireSoul(address _fireSoul) public onlyOwner {
-        fireSoul = _fireSoul;
+
+    function findIndexOf(address[] memory array, address item) private pure returns (uint256) {
+        for (uint256 i = 0; i < array.length; i++) {
+            if (array[i] == item) {
+                return i;
+            }
+        }
+        return array.length;
     }
+
+    function removeAtIndex(address[] storage array, uint256 index) private {
+        require(index < array.length, "Index out of bounds");
+        for (uint256 i = index; i < array.length - 1; i++) {
+            array[i] = array[i+1];
+        }
+        array.pop();
+    }
+
     function setUseTreasuryDistributionContract(bool _set) public onlyOwner{
         useITreasuryDistributionContract = _set;
     }
@@ -79,66 +141,86 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable{
         treasuryDistributionContract=_treasuryDistributionContract;
     }
 
-    function mintWithETH(uint256 amount) external payable {
-    // 将ownerOfId[msg.sender].push(_idTracker.current())放在函数开头
+function mintWithETH(uint256 _amount) external payable {
+    require(_idTracker.current() > maxMint, "FireSeed: To reach the maximum number of casting ids");
+    require(_amount >= lowestMint, "FireSeed: Below Minting Minimum");
+    address _top = recommender[msg.sender];
+    address _middle = recommender[_top];
+    address _down = recommender[_middle];
     ownerOfId[msg.sender].push(_idTracker.current());
 
-    // 不需要计算手续费的情况可以提前返回，减少条件判断的层数
-    if (!FeeStatus) {
-        _mint(msg.sender, _idTracker.current(), amount, '');
+    if (isNotWhiteListUser[msg.sender] && _amount <= wListMintMax) {
+        uint256 _wlistFee = _amount * fee * whitelistDiscount / 100;
+        require(msg.value == _wlistFee, 'Please send the correct number of ETH');
+        TransferHelper.safeTransferFrom(weth, msg.sender, feeReceiver, _wlistFee);
+        _mint(msg.sender, _idTracker.current(), _amount, '');
         return;
     }
 
-    // 对于使用白名单的情况，可以提前判断，减少条件判断的层数
-    if (WhiteList[msg.sender] && amount <= 1000) {
-        _mint(msg.sender, _idTracker.current(), amount, '');
-        return;
-    }
+    require(_amount <= userMintMax, "FireSeed: You have exceeded the maximum purchase limit");
 
-    uint256 _fee = calculateFee(amount);
+    uint256 _fee = calculateFee(_amount);
+    uint256 _mainFee = _fee * 8 /10;
+    uint256 _referralRewards = _fee - _mainFee;
     if (msg.value == 0) {
-        TransferHelper.safeTransferFrom(weth, msg.sender, feeReceiver, _fee);
+        TransferHelper.safeTransferFrom(weth, msg.sender, feeReceiver, _mainFee);
+        if(_top != address(0) && _middle != address(0) && _down != address(0)){
+        TransferHelper.safeTransferFrom(weth, msg.sender, feeReceiver, _referralRewards * 7 / 10);
+        TransferHelper.safeTransferFrom(weth, msg.sender, feeReceiver, _referralRewards * 2 / 10);
+        TransferHelper.safeTransferFrom(weth, msg.sender, feeReceiver, _referralRewards * 1 / 10);
+        }else if(_top != address(0) && _middle != address(0) && _down == address(0)){
+        TransferHelper.safeTransferFrom(weth, msg.sender, feeReceiver, _referralRewards * 7 / 10);
+        TransferHelper.safeTransferFrom(weth, msg.sender, feeReceiver, _referralRewards * 2 / 10);
+        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards * 1 / 10);
+        }else if(_top != address(0) && _middle == address(0) && _down == address(0)){
+        TransferHelper.safeTransferFrom(weth, msg.sender, feeReceiver, _referralRewards * 7 / 10);
+        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards * 2 / 10);
+        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards * 1 / 10);
+        }else{
+        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards);
+        }
     } else {
         require(msg.value == _fee, 'Please send the correct number of ETH');
         IWETH(weth).deposit{value: _fee}();
-        IWETH(weth).transfer(feeReceiver, _fee);
+        IWETH(weth).transfer(feeReceiver, _mainFee);
+        if(_top != address(0) && _middle != address(0) && _down != address(0)){
+        IWETH(weth).transfer(feeReceiver, _mainFee);
+        IWETH(weth).transfer(feeReceiver, _mainFee);
+        IWETH(weth).transfer(feeReceiver, _mainFee);
+
+        }else if(_top != address(0) && _middle != address(0) && _down == address(0)){
+        TransferHelper.safeTransferFrom(weth, msg.sender, feeReceiver, _referralRewards * 7 / 10);
+        TransferHelper.safeTransferFrom(weth, msg.sender, feeReceiver, _referralRewards * 2 / 10);
+        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards * 1 / 10);
+        }else if(_top != address(0) && _middle == address(0) && _down == address(0)){
+        TransferHelper.safeTransferFrom(weth, msg.sender, feeReceiver, _referralRewards * 7 / 10);
+        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards * 2 / 10);
+        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards * 1 / 10);
+        }else{
+        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards);
+        }
     }
 
-    // 对于使用ITreasuryDistributionContract的情况，可以提前判断，减少条件判断的层数
     if (useITreasuryDistributionContract) {
         ITreasuryDistributionContract(treasuryDistributionContract).setSourceOfIncome(0, 0, _fee);
     }
 
-    _mint(msg.sender, _idTracker.current(), amount, '');
-
-    if (IFireSoul(fireSoul).checkFID(msg.sender)) {
-        ISbt007(Sbt007).mint(IFireSoul(fireSoul).getSoulAccount(msg.sender), amount * amountOfSbt007 * 10 ** 18);
-    }
-
+    _mint(msg.sender, _idTracker.current(), _amount, '');
     _idTracker.increment();
 }
 
-function calculateFee(uint256 amount) internal view returns (uint256) {
-    uint256 calculatedFee = amount * fee;
-    if (amount > 50 && amount <= 100) {
-        calculatedFee /= 2;
-    } else if (amount < 50 && amount > 40) {
-        calculatedFee *= 6;
-        calculatedFee /= 10;
-    } else if (amount > 30 && amount < 40) {
-        calculatedFee *= 7;
-        calculatedFee /= 10;
-    } else if (amount > 20 && amount < 30) {
-        calculatedFee *= 8;
-        calculatedFee /= 10;
-    } else if (amount > 10 && amount < 20) {
-        calculatedFee *= 9;
-        calculatedFee /= 10;
+
+function calculateFee(uint256 _amount) internal view returns (uint256) {
+    uint256 calculatedFee = _amount * fee;
+    uint256 discountFactor = 100; 
+    for (uint256 i = 0; i < _amount; i++) {
+        if (discountFactors[i] > 0) {
+            discountFactor = discountFactors[i];
+        }
     }
+    calculatedFee = calculatedFee * discountFactor / 100;
     return calculatedFee;
 }
-
-    //view
     function getSingleAwardSbt007() external view returns(uint256) {
         return amountOfSbt007;
     }
