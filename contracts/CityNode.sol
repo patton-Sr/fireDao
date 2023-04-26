@@ -28,14 +28,16 @@ contract cityNode is ERC1155, Ownable {
     address public fdTokenAddress;
     uint256 public ctiyNodeId;
     address public pauseAddress;
+    address public fireSeed;
     address public fireSoul;
     address public Reputation;
     uint256 public proportion;
-    mapping(address => bool) public isCityNodeUser;
+    mapping(address => bool) public isNotCityNodeUser;
     mapping(uint256 => bool) public isNotLightCity;
     mapping(address => bool) public cityNodeCreater;
     mapping(uint256 => address[]) public cityNodeMember;
     mapping(address => uint256) public cityNodeUserNum;
+    mapping(uint256 => uint256) public cityNodeIncomeAmount;
     mapping(address => cityNodeInfo) public userInNodeInfo;
     mapping(address => uint256) public userTax;
     mapping(uint256 => address) public cityNodeAdmin;
@@ -46,15 +48,22 @@ contract cityNode is ERC1155, Ownable {
         proportion = 5;
         weth = _weth;
     }
+    
     //external
-    function getCity
+    function isNotCityNodeLight(address _user) external view returns(bool){
+        return isNotLightCity[cityNodeUserNum[_user]];
+    }
+    function cityNodeIncome(address _user, uint256 _income) external {
+        require(msg.sender == fireSeed,"CityNode: invalid call");
+        cityNodeIncomeAmount[cityNodeUserNum[_user]] += _income;
+    }
     function getUserInNodeInfo(address _nodeUser) external view returns(cityNodeInfo memory) {
         return userInNodeInfo[_nodeUser];
     }
 
     function getIsCityNode(address account, uint256 fee) external payable  {
     require(msg.sender == fdTokenAddress, "callback error");
-    require(isCityNodeUser[account],"callback error");
+    require(isNotCityNodeUser[account],"callback error");
     // Calculate admin fee and node treasury fee
     uint256 adminFee = fee * proportion / 10;
     uint256 nodeTreasuryFee = fee * (10 - proportion) / 10;
@@ -110,7 +119,10 @@ contract cityNode is ERC1155, Ownable {
         pauseAddress = _pauseAddress;
     }
     //view
-    function getCityNodeLength() public view returns(uint256){
+    function isNotCityNodeUsers(address _user) external view returns(bool){
+        return isNotCityNodeUser[_user];
+    }
+    function getCityNodeLength() public view returns(uint256){ 
         return cityNodeInfos.length;
     }
     function checkCityNodeId() public view returns(uint256) {
@@ -147,7 +159,7 @@ contract cityNode is ERC1155, Ownable {
     require(!contractStatus,"Status is false");
     require(IFireSoul(fireSoul).checkFID(msg.sender) , "you haven't FID,plz burn fireseed to create"); 
     require(!cityNodeCreater[msg.sender], "you are already a creator");
-    require(!isCityNodeUser[msg.sender], "you are already join a cityNode");
+    require(!isNotCityNodeUser[msg.sender], "you are already join a cityNode");
     require(cityNodeNum < ctiyNodeId, "you input error");
     
     cityNodeMember[cityNodeNum].push(msg.sender);
@@ -171,7 +183,7 @@ contract cityNode is ERC1155, Ownable {
     _mint(msg.sender, cityNodeNum, 1, "test");
 
     userInNodeInfo[msg.sender] = Info;  
-    isCityNodeUser[msg.sender] = true;
+    isNotCityNodeUser[msg.sender] = true;
 }
 
 function changeNodeAdmin(address newAdmin) public {
@@ -196,17 +208,17 @@ function changeNodeAdmin(address newAdmin) public {
     require(msg.sender == cityNodeAdmin[nodeNum], "You are not node admin");
 
     _burn(_nodeUser, nodeNum, 1);
-    isCityNodeUser[_nodeUser] = false;
+    isNotCityNodeUser[_nodeUser] = false;
 }
 
     function quitCityNode() public{
         require(!contractStatus,"Status is false");
-        require(!isCityNodeUser[msg.sender],"you haven't join any citynode");
+        require(!isNotCityNodeUser[msg.sender],"you haven't join any citynode");
         
 
         _burn(msg.sender,cityNodeUserNum[msg.sender],1);
         
-        isCityNodeUser[msg.sender] = false;
+        isNotCityNodeUser[msg.sender] = false;
     }
 
 
