@@ -47,11 +47,12 @@ contract cityNode is ERC1155, Ownable {
         weth = _weth;
     }
     //external
+    function getCity
     function getUserInNodeInfo(address _nodeUser) external view returns(cityNodeInfo memory) {
         return userInNodeInfo[_nodeUser];
     }
 
- function getIsCityNode(address account, uint256 fee) external payable  {
+    function getIsCityNode(address account, uint256 fee) external payable  {
     require(msg.sender == fdTokenAddress, "callback error");
     require(isCityNodeUser[account],"callback error");
     // Calculate admin fee and node treasury fee

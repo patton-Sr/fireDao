@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "operator-filter-registry/src/DefaultOperatorFilterer.sol";
 import "./interface/ITreasuryDistributionContract.sol";
 import "./interface/ISbt007.sol";
+import "./interface/IFireSoul.sol";
 import "./lib/TransferHelper.sol";
 import "./interface/IWETH.sol";
 
@@ -16,6 +17,16 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable{
     using Counters for Counters.Counter;
     string public constant name = "FireSeed";
     string public constant symbol = "FIRESEED";
+
+    uint256 private TOP_FEE_RATIO;
+    uint256 private MIDDLE_FEE_RATIO;
+    uint256 private DOWN_FEE_RATIO;
+    uint256 private TOTAL_REWARD_RATIO_ONE;
+    uint256 private TOTAL_REWARD_RATIO_TWO;
+    uint256 private TOTAL_MAIN_RATIO;
+    uint256 private FEE_RATIO = 100;
+
+    
 
     Counters.Counter private _idTracker;
     event passFireSeed(address  from, address  to, uint256  tokenId, uint256  amount, uint256  transferTime);
@@ -28,11 +39,12 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable{
     uint256 public userMintMax;
     uint256 public lowestMint;
     uint256 public whitelistDiscount;
+    uint256 public fireSeedDiscount;
     address public feeReceiver;
     address public treasuryDistributionContract;
     address public rainbowTreasury;
     address public weth;
-    address public Sbt007;
+    address public fireSoul;    
     address[] public whiteList;
 
     mapping(address => bool) public isRecommender;
@@ -42,10 +54,9 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable{
     mapping(address => uint256[]) public ownerOfId; 
     mapping(uint256 => uint256) public discountFactors;
 
-    constructor(address _Sbt007,address  _feeReceiver, address _weth) ERC1155("https://bafybeiblhsbd5x7rw5ezzr6xoe6u2jpyqexbfbovdao2vj5i3c25vmm7d4.ipfs.nftstorage.link/0.json") {
+    constructor(address  _feeReceiver, address _weth) ERC1155("https://bafybeiblhsbd5x7rw5ezzr6xoe6u2jpyqexbfbovdao2vj5i3c25vmm7d4.ipfs.nftstorage.link/0.json") {
     _idTracker.increment();
-    setSbt007(_Sbt007);
-    setAmountOfSbt007(10);
+
     feeReceiver = _feeReceiver;
     weth = _weth;
     baseURI = "https://bafybeiblhsbd5x7rw5ezzr6xoe6u2jpyqexbfbovdao2vj5i3c25vmm7d4.ipfs.nftstorage.link/";
@@ -58,8 +69,22 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable{
     setDiscountFactor(31, 40, 70);
     setDiscountFactor(41, 50, 60);
     setDiscountFactor(51, 100, 50);
+    TOP_FEE_RATIO = 70;
+    MIDDLE_FEE_RATIO = 20;
+    DOWN_FEE_RATIO = 10;
+    TOTAL_MAIN_RATIO = 70;
+    TOTAL_REWARD_RATIO_ONE = 20;
+    TOTAL_REWARD_RATIO_TWO = 10;
+    fireSeedDiscount = 100;
 }
     //onlyOwner
+    function setFireSeedDiscount(uint256 _fireSeedDiscount) public onlyOwner{
+        require(_fireSeedDiscount != 0, "FireSeed: invalid address");
+        fireSeedDiscount = _fireSeedDiscount;
+    }
+    function setFireSoul(address _fireSoul) public onlyOwner{
+        fireSoul = _fireSoul;
+    }
     function setRainbowTreasury(address _rainbowTreasury) public onlyOwner{
         require(_rainbowTreasury != address(0) ,"FireSeed: Invalid address" );
         rainbowTreasury = _rainbowTreasury;
@@ -86,12 +111,6 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable{
     }
     function cancelAddressInvitation(address _addr) public onlyOwner{
         isRecommender[_addr] = true;
-    }
-    function setSbt007(address _Sbt007) public onlyOwner{
-        Sbt007 = _Sbt007;
-    }
-    function setAmountOfSbt007(uint256 _amountOfSbt007) public onlyOwner{
-        amountOfSbt007 = _amountOfSbt007;
     }
     function changeFeeReceiver(address payable receiver) external onlyOwner {
       feeReceiver = receiver;
@@ -141,7 +160,7 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable{
         treasuryDistributionContract=_treasuryDistributionContract;
     }
 
-function mintWithETH(uint256 _amount) external payable {
+    function mintWithETH(uint256 _amount) external payable {
     require(_idTracker.current() > maxMint, "FireSeed: To reach the maximum number of casting ids");
     require(_amount >= lowestMint, "FireSeed: Below Minting Minimum");
     address _top = recommender[msg.sender];
@@ -160,22 +179,49 @@ function mintWithETH(uint256 _amount) external payable {
     require(_amount <= userMintMax, "FireSeed: You have exceeded the maximum purchase limit");
 
     uint256 _fee = calculateFee(_amount);
-    uint256 _mainFee = _fee * 8 /10;
-    uint256 _referralRewards = _fee - _mainFee;
+    uint256 _mainFee = _fee *  TOTAL_MAIN_RATIO / FEE_RATIO;
+    uint256 _referralRewards = _fee * TOTAL_REWARD_RATIO_ONE / FEE_RATIO;
+    uint256 _cityNodeReferralRewards = _fee * TOTAL_REWARD_RATIO_TWO / FEE_RATIO;
     if (msg.value == 0) {
         TransferHelper.safeTransferFrom(weth, msg.sender, feeReceiver, _mainFee);
         if(_top != address(0) && _middle != address(0) && _down != address(0)){
-        TransferHelper.safeTransferFrom(weth, msg.sender, feeReceiver, _referralRewards * 7 / 10);
-        TransferHelper.safeTransferFrom(weth, msg.sender, feeReceiver, _referralRewards * 2 / 10);
-        TransferHelper.safeTransferFrom(weth, msg.sender, feeReceiver, _referralRewards * 1 / 10);
+            if(IFireSoul(fireSoul).checkFID(_top) && IFireSoul(fireSoul).checkFID(_middle) && IFireSoul(fireSoul).checkFID(_down)){
+        TransferHelper.safeTransferFrom(weth, msg.sender, _top, _referralRewards * TOP_FEE_RATIO / FEE_RATIO);
+        TransferHelper.safeTransferFrom(weth, msg.sender, _middle, _referralRewards * MIDDLE_FEE_RATIO / FEE_RATIO);
+        TransferHelper.safeTransferFrom(weth, msg.sender, _down, _referralRewards * DOWN_FEE_RATIO / FEE_RATIO);
+            }else if(IFireSoul(fireSoul).checkFID(_top) && IFireSoul(fireSoul).checkFID(_middle) && !IFireSoul(fireSoul).checkFID(_down)){
+        TransferHelper.safeTransferFrom(weth, msg.sender, _top, _referralRewards * TOP_FEE_RATIO/ FEE_RATIO);
+        TransferHelper.safeTransferFrom(weth, msg.sender, _middle, _referralRewards * MIDDLE_FEE_RATIO / FEE_RATIO);
+        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards * DOWN_FEE_RATIO/ FEE_RATIO);
+            }else if(IFireSoul(fireSoul).checkFID(_top) && !IFireSoul(fireSoul).checkFID(_middle) && !IFireSoul(fireSoul).checkFID(_down)){
+        TransferHelper.safeTransferFrom(weth, msg.sender, _top, _referralRewards * TOP_FEE_RATIO / FEE_RATIO);
+        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards * (MIDDLE_FEE_RATIO + DOWN_FEE_RATIO) / FEE_RATIO);
+            }else {
+        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards);
+            }
+
         }else if(_top != address(0) && _middle != address(0) && _down == address(0)){
-        TransferHelper.safeTransferFrom(weth, msg.sender, feeReceiver, _referralRewards * 7 / 10);
-        TransferHelper.safeTransferFrom(weth, msg.sender, feeReceiver, _referralRewards * 2 / 10);
-        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards * 1 / 10);
+            if(IFireSoul(fireSoul).checkFID(_top) && IFireSoul(fireSoul).checkFID(_middle)){
+        TransferHelper.safeTransferFrom(weth, msg.sender, _top, _referralRewards * TOP_FEE_RATIO / FEE_RATIO);
+        TransferHelper.safeTransferFrom(weth, msg.sender, _middle, _referralRewards * MIDDLE_FEE_RATIO / FEE_RATIO);
+        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards * TOP_FEE_RATIO / FEE_RATIO);
+            }else if(IFireSoul(fireSoul).checkFID(_top) && !IFireSoul(fireSoul).checkFID(_middle)){
+        TransferHelper.safeTransferFrom(weth, msg.sender, _top, _referralRewards * TOP_FEE_RATIO / FEE_RATIO);
+        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards * (MIDDLE_FEE_RATIO + DOWN_FEE_RATIO) / FEE_RATIO);
+            }else {
+        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards);
+
+            }
+   
         }else if(_top != address(0) && _middle == address(0) && _down == address(0)){
-        TransferHelper.safeTransferFrom(weth, msg.sender, feeReceiver, _referralRewards * 7 / 10);
-        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards * 2 / 10);
-        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards * 1 / 10);
+            if(IFireSoul(fireSoul).checkFID(_top)){
+            TransferHelper.safeTransferFrom(weth, msg.sender, _top, _referralRewards * TOP_FEE_RATIO / FEE_RATIO);
+        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards * (MIDDLE_FEE_RATIO + DOWN_FEE_RATIO) / FEE_RATIO);
+            }else {
+            TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards);
+
+            }
+   
         }else{
         TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards);
         }
@@ -184,18 +230,44 @@ function mintWithETH(uint256 _amount) external payable {
         IWETH(weth).deposit{value: _fee}();
         IWETH(weth).transfer(feeReceiver, _mainFee);
         if(_top != address(0) && _middle != address(0) && _down != address(0)){
-        IWETH(weth).transfer(feeReceiver, _mainFee);
-        IWETH(weth).transfer(feeReceiver, _mainFee);
-        IWETH(weth).transfer(feeReceiver, _mainFee);
+            if(IFireSoul(fireSoul).checkFID(_top) && IFireSoul(fireSoul).checkFID(_middle) && IFireSoul(fireSoul).checkFID(_down)){
 
+        IWETH(weth).transfer(_top, _referralRewards * TOP_FEE_RATIO /FEE_RATIO);
+        IWETH(weth).transfer(_middle, _referralRewards * MIDDLE_FEE_RATIO / FEE_RATIO);
+        IWETH(weth).transfer(_down, _referralRewards * DOWN_FEE_RATIO / FEE_RATIO);
+                       }else if(IFireSoul(fireSoul).checkFID(_top) && IFireSoul(fireSoul).checkFID(_middle) && !IFireSoul(fireSoul).checkFID(_down)){
+                               IWETH(weth).transfer(_top, _referralRewards * TOP_FEE_RATIO /FEE_RATIO);
+        IWETH(weth).transfer(_middle, _referralRewards * MIDDLE_FEE_RATIO / FEE_RATIO);
+        IWETH(weth).transfer(rainbowTreasury, _referralRewards * DOWN_FEE_RATIO / FEE_RATIO);
+                                             }else if(IFireSoul(fireSoul).checkFID(_top) && !IFireSoul(fireSoul).checkFID(_middle) && !IFireSoul(fireSoul).checkFID(_down)){
+    IWETH(weth).transfer(_top, _referralRewards * TOP_FEE_RATIO /FEE_RATIO);
+        IWETH(weth).transfer(rainbowTreasury, _referralRewards * MIDDLE_FEE_RATIO / FEE_RATIO);
+                                             }else {
+        IWETH(weth).transfer(rainbowTreasury, _referralRewards );
+
+                                             }
         }else if(_top != address(0) && _middle != address(0) && _down == address(0)){
-        TransferHelper.safeTransferFrom(weth, msg.sender, feeReceiver, _referralRewards * 7 / 10);
-        TransferHelper.safeTransferFrom(weth, msg.sender, feeReceiver, _referralRewards * 2 / 10);
-        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards * 1 / 10);
+            if(IFireSoul(fireSoul).checkFID(_top) && IFireSoul(fireSoul).checkFID(_middle)){
+        IWETH(weth).transfer(_top, _referralRewards * TOP_FEE_RATIO /FEE_RATIO);
+        IWETH(weth).transfer(_middle, _referralRewards * MIDDLE_FEE_RATIO / FEE_RATIO);
+        IWETH(weth).transfer(rainbowTreasury, _referralRewards * DOWN_FEE_RATIO/ FEE_RATIO);
+            }else if(IFireSoul(fireSoul).checkFID(_top) && !IFireSoul(fireSoul).checkFID(_middle)){
+                IWETH(weth).transfer(_top, _referralRewards * TOP_FEE_RATIO / FEE_RATIO);
+                IWETH(weth).transfer(rainbowTreasury ,_referralRewards * (MIDDLE_FEE_RATIO + DOWN_FEE_RATIO)/FEE_RATIO);
+            }else {
+                IWETH(weth).transfer(rainbowTreasury, _referralRewards);
+            }
+      
+   
         }else if(_top != address(0) && _middle == address(0) && _down == address(0)){
-        TransferHelper.safeTransferFrom(weth, msg.sender, feeReceiver, _referralRewards * 7 / 10);
-        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards * 2 / 10);
-        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards * 1 / 10);
+            if(IFireSoul(fireSoul).checkFID(_top)){
+        IWETH(weth).transfer(_top, _referralRewards * TOP_FEE_RATIO /FEE_RATIO);
+        IWETH(weth).transfer(rainbowTreasury, _referralRewards * (MIDDLE_FEE_RATIO + DOWN_FEE_RATIO)/ FEE_RATIO);
+            }else {
+        IWETH(weth).transfer(rainbowTreasury, _referralRewards);
+
+            }
+      
         }else{
         TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards);
         }
@@ -211,7 +283,7 @@ function mintWithETH(uint256 _amount) external payable {
 
 
 function calculateFee(uint256 _amount) internal view returns (uint256) {
-    uint256 calculatedFee = _amount * fee;
+    uint256 calculatedFee = _amount * fee * fireSeedDiscount / FEE_RATIO;
     uint256 discountFactor = 100; 
     for (uint256 i = 0; i < _amount; i++) {
         if (discountFactors[i] > 0) {
