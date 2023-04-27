@@ -345,7 +345,6 @@ function calculateFee(uint256 _amount) internal view returns (uint256) {
         }
         return false;
     }
-
     function safeTransferFrom(address from, address to, uint256 tokenId, uint256 amount, bytes memory data)
         public
         override
