@@ -170,6 +170,7 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
     function setTreasuryDistributionContract(address _treasuryDistributionContract) public onlyOwner{
         treasuryDistributionContract=_treasuryDistributionContract;
     }
+    
     function mintWithETH(uint256 _amount) external payable whenNotPaused {
     _idTracker.increment();
     require(_idTracker.current() > maxMint, "FireSeed: To reach the maximum number of casting ids");
