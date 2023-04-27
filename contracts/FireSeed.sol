@@ -26,6 +26,7 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
     Counters.Counter private _idTracker;
     event passFireSeed(address  from, address  to, uint256  tokenId, uint256  amount, uint256  transferTime);
     string public baseURI;
+    bool private locked;
     bool public useITreasuryDistributionContract;
     address private guarding;
     uint256 public maxMint = 1e6;
@@ -71,6 +72,13 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
     TOTAL_REWARD_RATIO_TWO = 10;
     fireSeedDiscount = 100;
 }   
+  modifier nonReentrant() {
+        require(!locked, "FireLock: ReentrancyGuard: reentrant call");
+        locked = true;
+        _;
+        locked = false;
+    }
+
     function setGuarding(address _guarding) public onlyOwner{
         guarding = _guarding;
     }
@@ -163,6 +171,7 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
         treasuryDistributionContract=_treasuryDistributionContract;
     }
     function mintWithETH(uint256 _amount) external payable whenNotPaused {
+    _idTracker.increment();
     require(_idTracker.current() > maxMint, "FireSeed: To reach the maximum number of casting ids");
     require(_amount >= lowestMint, "FireSeed: Below Minting Minimum");
     address _top = recommender[msg.sender];
@@ -227,8 +236,10 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
         }
     } else {
         require(msg.value == _fee, 'Please send the correct number of ETH');
+
         IWETH(weth).deposit{value: _fee}();
         IWETH(weth).transfer(feeReceiver, _mainFee);
+
         if(ICityNode(cityNode).isNotCityNodeUsers(msg.sender) && ICityNode(cityNode).isNotCityNodeLight(msg.sender)){
         IWETH(weth).transfer(cityNode, _cityNodeReferralRewards);
         ICityNode(cityNode).cityNodeIncome( msg.sender,  _cityNodeReferralRewards);
@@ -276,19 +287,27 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
         ITreasuryDistributionContract(treasuryDistributionContract).setSourceOfIncome(0, 0, _fee);
     }
     _mint(msg.sender, _idTracker.current(), _amount, '');
-    _idTracker.increment();
+ 
 }
 function calculateFee(uint256 _amount) internal view returns (uint256) {
     uint256 calculatedFee = _amount * fee * fireSeedDiscount / FEE_RATIO;
-    uint256 discountFactor = 100; 
+    uint256 discountFactor = 100;
+
     for (uint256 i = 0; i < _amount; i++) {
         if (discountFactors[i] > 0) {
             discountFactor = discountFactors[i];
         }
     }
+
     calculatedFee = calculatedFee * discountFactor / 100;
+
+    if (msg.value != calculatedFee) {
+        revert("FireSeed: Incorrect ETH amount sent");
+    }
+
     return calculatedFee;
 }
+
     function recommenderNumber(address account) external view returns (uint256) {
         return recommenderInfo[account].length;
     }
@@ -307,34 +326,34 @@ function calculateFee(uint256 _amount) internal view returns (uint256) {
     function getOwnerIdlength() public view returns(uint256){
         return ownerOfId[msg.sender].length;
     }
-    function getBalance() public view returns(uint256){
-      return address(this).balance;
-  }
     function mintBatch(
         address to,
         uint256[] memory ids,
-        uint256[] memory amounts,
-        address[] memory royaltyRecipients,
-        uint256[] memory royaltyValues
+        uint256[] memory amounts
     ) external {
+        require(false, "FireSeed: Batch casting is invalid");
         require(msg.sender == owner() );
-        require(
-            ids.length == royaltyRecipients.length &&
-                ids.length == royaltyValues.length,
-            'ERC1155: Arrays length mismatch'
-        );
         _mintBatch(to, ids, amounts, '');
     }
     function setApprovalForAll(address operator, bool approved) public override onlyAllowedOperatorApproval(operator) {
         super.setApprovalForAll(operator, approved);
     }
+
+    function check(address _from, address _to) internal pure returns(bool) {
+        if(_from != address(0) && _to != address(0)){
+            return true;
+        }
+        return false;
+    }
+
     function safeTransferFrom(address from, address to, uint256 tokenId, uint256 amount, bytes memory data)
         public
         override
         onlyAllowedOperator(from)
+        nonReentrant
     {   
-            require(from != address(0));
-            require(to != address(0));
+            require(from != to, "FireSeed: invalid transfer");
+            require(check(from, to), "FireSeed: The from or to address is invalid");
          if (recommender[to] == address(0) &&  recommender[from] != to && !isRecommender[to]) {
              recommender[to] = from;
              recommenderInfo[from].push(to);
@@ -358,9 +377,8 @@ function calculateFee(uint256 _amount) internal view returns (uint256) {
         uint256[] memory ids,
         uint256[] memory amounts,
         bytes memory data
-    ) public virtual override onlyAllowedOperator(from) {
-            require(from != address(0));
-            require(to != address(0));
+    ) public virtual override onlyAllowedOperator(from) nonReentrant {
+        require(check(from, to), "FireSeed: The from or to address is invalid");
          if (recommender[to] == address(0) &&  recommender[from] != to && !isRecommender[to]) {
              recommender[to] = from;
              recommenderInfo[from].push(to);
@@ -369,14 +387,15 @@ function calculateFee(uint256 _amount) internal view returns (uint256) {
         super.safeBatchTransferFrom(from, to, ids, amounts, data);
     }
     function burnFireSeed(address _account, uint256 _idOfUser, uint256 _value) public  {
+        require(msg.sender == fireSoul,"FireSeed: Only the cauldron can burn tokens");
         _burn(_account,_idOfUser,_value);
     }
     function pauseContract() external  {
-        require(msg.sender == guarding, "Only the guardian contract can suspend the contract");
+        require(msg.sender == guarding, "FireSeed: Only the guardian contract can suspend the contract");
      _pause(); 
     }
     function unpauseContract() external {
-        require(msg.sender == guarding, "Only the guardian contract can suspend the contract");
+        require(msg.sender == guarding, "FireSeed: Only the guardian contract can suspend the contract");
     _unpause();
     }
     receive() external payable {}
