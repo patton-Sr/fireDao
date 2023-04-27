@@ -237,10 +237,8 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
         }
     } else {
         require(msg.value == _fee, 'Please send the correct number of ETH');
-
         IWETH(weth).deposit{value: _fee}();
         IWETH(weth).transfer(feeReceiver, _mainFee);
-
         if(ICityNode(cityNode).isNotCityNodeUsers(msg.sender) && ICityNode(cityNode).isNotCityNodeLight(msg.sender)){
         IWETH(weth).transfer(cityNode, _cityNodeReferralRewards);
         ICityNode(cityNode).cityNodeIncome( msg.sender,  _cityNodeReferralRewards);
@@ -307,7 +305,7 @@ function calculateFee(uint256 _amount) internal view returns (uint256) {
     }
 
     return calculatedFee;
-}
+} 
 
     function recommenderNumber(address account) external view returns (uint256) {
         return recommenderInfo[account].length;
