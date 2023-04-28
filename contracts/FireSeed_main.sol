@@ -191,42 +191,96 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
     uint256 _mainFee = _fee *  TOTAL_MAIN_RATIO / FEE_RATIO;
     uint256 _referralRewards = _fee * TOTAL_REWARD_RATIO_ONE / FEE_RATIO;
     uint256 _cityNodeReferralRewards = _fee * TOTAL_REWARD_RATIO_TWO / FEE_RATIO;
-
     if (msg.value == 0) {
         TransferHelper.safeTransferFrom(weth, msg.sender, feeReceiver, _mainFee);
-        address[3] memory referrals = [_top, _middle, _down];
-        uint256 totalRatio = FEE_RATIO;
-        uint256[3] memory ratios = [TOP_FEE_RATIO, MIDDLE_FEE_RATIO, DOWN_FEE_RATIO];
-        uint256 sumRatios = ratios[0] + ratios[1] + ratios[2];
-        if (sumRatios > 0) {
-        uint256 feeDivided = _referralRewards * totalRatio / sumRatios;
-        for (uint8 i = 0; i < referrals.length; i++) {
-        if (referrals[i] != address(0) && IFireSoul(fireSoul).checkFID(referrals[i])) {
-        TransferHelper.safeTransferFrom(weth, msg.sender, referrals[i], feeDivided * ratios[i] / totalRatio);
-        } else {
-            sumRatios -= ratios[i];
+        if(ICityNode(cityNode).isNotCityNodeUsers(msg.sender) && ICityNode(cityNode).isNotCityNodeLight(msg.sender)){
+        TransferHelper.safeTransferFrom(weth, msg.sender, cityNode, _cityNodeReferralRewards);
+        ICityNode(cityNode).cityNodeIncome( msg.sender,  _cityNodeReferralRewards);
+        }else{
+        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _cityNodeReferralRewards);
         }
-    }
-    if (sumRatios > 0) {
-        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards * sumRatios / totalRatio);
-    }
-    }
-    if (ICityNode(cityNode).isNotCityNodeUsers(msg.sender) && ICityNode(cityNode).isNotCityNodeLight(msg.sender)) {
-    TransferHelper.safeTransferFrom(weth, msg.sender, cityNode, _cityNodeReferralRewards);
-    ICityNode(cityNode).cityNodeIncome(msg.sender, _cityNodeReferralRewards);
+        if(_top != address(0) && _middle != address(0) && _down != address(0)){
+            if(IFireSoul(fireSoul).checkFID(_top) && IFireSoul(fireSoul).checkFID(_middle) && IFireSoul(fireSoul).checkFID(_down)){
+        TransferHelper.safeTransferFrom(weth, msg.sender, _top, _referralRewards * TOP_FEE_RATIO / FEE_RATIO);
+        TransferHelper.safeTransferFrom(weth, msg.sender, _middle, _referralRewards * MIDDLE_FEE_RATIO / FEE_RATIO);
+        TransferHelper.safeTransferFrom(weth, msg.sender, _down, _referralRewards * DOWN_FEE_RATIO / FEE_RATIO);
+            }else if(IFireSoul(fireSoul).checkFID(_top) && IFireSoul(fireSoul).checkFID(_middle) && !IFireSoul(fireSoul).checkFID(_down)){
+        TransferHelper.safeTransferFrom(weth, msg.sender, _top, _referralRewards * TOP_FEE_RATIO/ FEE_RATIO);
+        TransferHelper.safeTransferFrom(weth, msg.sender, _middle, _referralRewards * MIDDLE_FEE_RATIO / FEE_RATIO);
+        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards * DOWN_FEE_RATIO/ FEE_RATIO);
+            }else if(IFireSoul(fireSoul).checkFID(_top) && !IFireSoul(fireSoul).checkFID(_middle) && !IFireSoul(fireSoul).checkFID(_down)){
+        TransferHelper.safeTransferFrom(weth, msg.sender, _top, _referralRewards * TOP_FEE_RATIO / FEE_RATIO);
+        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards * (MIDDLE_FEE_RATIO + DOWN_FEE_RATIO) / FEE_RATIO);
+            }else {
+        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards);
+            }
+        }else if(_top != address(0) && _middle != address(0) && _down == address(0)){
+            if(IFireSoul(fireSoul).checkFID(_top) && IFireSoul(fireSoul).checkFID(_middle)){
+        TransferHelper.safeTransferFrom(weth, msg.sender, _top, _referralRewards * TOP_FEE_RATIO / FEE_RATIO);
+        TransferHelper.safeTransferFrom(weth, msg.sender, _middle, _referralRewards * MIDDLE_FEE_RATIO / FEE_RATIO);
+        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards * TOP_FEE_RATIO / FEE_RATIO);
+            }else if(IFireSoul(fireSoul).checkFID(_top) && !IFireSoul(fireSoul).checkFID(_middle)){
+        TransferHelper.safeTransferFrom(weth, msg.sender, _top, _referralRewards * TOP_FEE_RATIO / FEE_RATIO);
+        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards * (MIDDLE_FEE_RATIO + DOWN_FEE_RATIO) / FEE_RATIO);
+            }else {
+        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards);
+            }
+        }else if(_top != address(0) && _middle == address(0) && _down == address(0)){
+            if(IFireSoul(fireSoul).checkFID(_top)){
+            TransferHelper.safeTransferFrom(weth, msg.sender, _top, _referralRewards * TOP_FEE_RATIO / FEE_RATIO);
+        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards * (MIDDLE_FEE_RATIO + DOWN_FEE_RATIO) / FEE_RATIO);
+            }else {
+            TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards);
+            }
+        }else{
+        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards);
+        }
     } else {
-    TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _cityNodeReferralRewards);
-    }
-    } else {
-    require(msg.value == _fee, 'Please send the correct number of ETH');
-    IWETH(weth).deposit{value: _fee}();
-    IWETH(weth).transfer(feeReceiver, _mainFee);
-    if (ICityNode(cityNode).isNotCityNodeUsers(msg.sender) && ICityNode(cityNode).isNotCityNodeLight(msg.sender)) {
-    IWETH(weth).transfer(cityNode, _cityNodeReferralRewards);
-    ICityNode(cityNode).cityNodeIncome(msg.sender, _cityNodeReferralRewards);
-    } else {
-    IWETH(weth).transfer(rainbowTreasury, _cityNodeReferralRewards);
-    }
+        require(msg.value == _fee, 'Please send the correct number of ETH');
+        IWETH(weth).deposit{value: _fee}();
+        IWETH(weth).transfer(feeReceiver, _mainFee);
+        if(ICityNode(cityNode).isNotCityNodeUsers(msg.sender) && ICityNode(cityNode).isNotCityNodeLight(msg.sender)){
+        IWETH(weth).transfer(cityNode, _cityNodeReferralRewards);
+        ICityNode(cityNode).cityNodeIncome( msg.sender,  _cityNodeReferralRewards);
+        }else{
+        IWETH(weth).transfer(rainbowTreasury, _cityNodeReferralRewards);
+        }
+        if(_top != address(0) && _middle != address(0) && _down != address(0)){
+            if(IFireSoul(fireSoul).checkFID(_top) && IFireSoul(fireSoul).checkFID(_middle) && IFireSoul(fireSoul).checkFID(_down)){
+        IWETH(weth).transfer(_top, _referralRewards * TOP_FEE_RATIO /FEE_RATIO);
+        IWETH(weth).transfer(_middle, _referralRewards * MIDDLE_FEE_RATIO / FEE_RATIO);
+        IWETH(weth).transfer(_down, _referralRewards * DOWN_FEE_RATIO / FEE_RATIO);
+                       }else if(IFireSoul(fireSoul).checkFID(_top) && IFireSoul(fireSoul).checkFID(_middle) && !IFireSoul(fireSoul).checkFID(_down)){
+                               IWETH(weth).transfer(_top, _referralRewards * TOP_FEE_RATIO /FEE_RATIO);
+        IWETH(weth).transfer(_middle, _referralRewards * MIDDLE_FEE_RATIO / FEE_RATIO);
+        IWETH(weth).transfer(rainbowTreasury, _referralRewards * DOWN_FEE_RATIO / FEE_RATIO);
+                                             }else if(IFireSoul(fireSoul).checkFID(_top) && !IFireSoul(fireSoul).checkFID(_middle) && !IFireSoul(fireSoul).checkFID(_down)){
+    IWETH(weth).transfer(_top, _referralRewards * TOP_FEE_RATIO /FEE_RATIO);
+        IWETH(weth).transfer(rainbowTreasury, _referralRewards * MIDDLE_FEE_RATIO / FEE_RATIO);
+                                             }else {
+        IWETH(weth).transfer(rainbowTreasury, _referralRewards );
+                                             }
+        }else if(_top != address(0) && _middle != address(0) && _down == address(0)){
+            if(IFireSoul(fireSoul).checkFID(_top) && IFireSoul(fireSoul).checkFID(_middle)){
+        IWETH(weth).transfer(_top, _referralRewards * TOP_FEE_RATIO /FEE_RATIO);
+        IWETH(weth).transfer(_middle, _referralRewards * MIDDLE_FEE_RATIO / FEE_RATIO);
+        IWETH(weth).transfer(rainbowTreasury, _referralRewards * DOWN_FEE_RATIO/ FEE_RATIO);
+            }else if(IFireSoul(fireSoul).checkFID(_top) && !IFireSoul(fireSoul).checkFID(_middle)){
+                IWETH(weth).transfer(_top, _referralRewards * TOP_FEE_RATIO / FEE_RATIO);
+                IWETH(weth).transfer(rainbowTreasury ,_referralRewards * (MIDDLE_FEE_RATIO + DOWN_FEE_RATIO)/FEE_RATIO);
+            }else {
+                IWETH(weth).transfer(rainbowTreasury, _referralRewards);
+            }
+        }else if(_top != address(0) && _middle == address(0) && _down == address(0)){
+            if(IFireSoul(fireSoul).checkFID(_top)){
+        IWETH(weth).transfer(_top, _referralRewards * TOP_FEE_RATIO /FEE_RATIO);
+        IWETH(weth).transfer(rainbowTreasury, _referralRewards * (MIDDLE_FEE_RATIO + DOWN_FEE_RATIO)/ FEE_RATIO);
+            }else {
+        IWETH(weth).transfer(rainbowTreasury, _referralRewards);
+            }
+        }else{
+        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards);
+        }
     }
     if (useITreasuryDistributionContract) {
         ITreasuryDistributionContract(treasuryDistributionContract).setSourceOfIncome(0, 0, _fee);
