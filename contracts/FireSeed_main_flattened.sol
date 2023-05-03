@@ -2093,15 +2093,16 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
     mapping(address => bool) public isNotWhiteListUser;
     mapping(address => uint256[]) public ownerOfId; 
     mapping(uint256 => uint256) public discountFactors;
-    constructor(address  _feeReceiver, address _weth) ERC1155("https://bafybeiblhsbd5x7rw5ezzr6xoe6u2jpyqexbfbovdao2vj5i3c25vmm7d4.ipfs.nftstorage.link/0.json") {
+    constructor(address  _feeReceiver,address _treasuryDistributionContract,address _cityNode,address _rainbowTreasury, address _weth) ERC1155("https://bafybeiblhsbd5x7rw5ezzr6xoe6u2jpyqexbfbovdao2vj5i3c25vmm7d4.ipfs.nftstorage.link/0.json") {
     _idTracker.increment();
     feeReceiver = _feeReceiver;
     weth = _weth;
     baseURI = "https://bafybeiblhsbd5x7rw5ezzr6xoe6u2jpyqexbfbovdao2vj5i3c25vmm7d4.ipfs.nftstorage.link/";
     wListMintMax = 1000;
     userMintMax = 100;
+    whitelistDiscount = 100;
     lowestMint = 1;
-    fee =8e16;
+    fee = 80000000000000000; //80000000000000000
     setDiscountFactor(11, 20, 90);
     setDiscountFactor(21, 30, 80);
     setDiscountFactor(31, 40, 70);
@@ -2114,6 +2115,10 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
     TOTAL_REWARD_RATIO_ONE = 20;
     TOTAL_REWARD_RATIO_TWO = 10;
     fireSeedDiscount = 100;
+    treasuryDistributionContract=_treasuryDistributionContract;
+    cityNode = _cityNode;
+    rainbowTreasury = _rainbowTreasury;
+
 }   
   modifier nonReentrant() {
         require(!locked, "FireLock: ReentrancyGuard: reentrant call");
@@ -2179,8 +2184,12 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
    }
     function addWhiteListUser(address[] memory _users) public onlyOwner{
         for(uint256 i = 0; i < _users.length ; i++ ){
+            if(!isNotWhiteListUser[_users[i]]){
             isNotWhiteListUser[_users[i]] = true;
             whiteList.push(_users[i]);
+            }else{
+                require(false,"FireSeed: Please make sure there is no duplicate address");
+            }
         }
     }
     function removeFromWhiteList(address[] calldata users) external onlyOwner {
@@ -2216,7 +2225,7 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
     
     function mintWithETH(uint256 _amount) external payable whenNotPaused {
     _idTracker.increment();
-    require(_idTracker.current() > maxMint, "FireSeed: To reach the maximum number of casting ids");
+    require(_idTracker.current() < maxMint, "FireSeed: To reach the maximum number of casting ids");
     require(_amount >= lowestMint, "FireSeed: Below Minting Minimum");
     address _top = recommender[msg.sender];
     address _middle = recommender[_top];
@@ -2224,10 +2233,15 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
     ownerOfId[msg.sender].push(_idTracker.current());
     if (isNotWhiteListUser[msg.sender] && _amount <= wListMintMax) {
         uint256 _wlistFee = _amount * fee * whitelistDiscount / 100;
+        if(whitelistDiscount == 100){
+        _mint(msg.sender, _idTracker.current(), _amount, '');
+        return;
+        }else{
         require(msg.value == _wlistFee, 'Please send the correct number of ETH');
         TransferHelper.safeTransferFrom(weth, msg.sender, feeReceiver, _wlistFee);
         _mint(msg.sender, _idTracker.current(), _amount, '');
         return;
+        }
     }
     require(_amount <= userMintMax, "FireSeed: You have exceeded the maximum purchase limit");
     uint256 _fee = calculateFee(_amount);
@@ -2298,9 +2312,10 @@ function calculateFee(uint256 _amount) internal view returns (uint256) {
 
     calculatedFee = calculatedFee * discountFactor / 100;
 
-    if (msg.value != calculatedFee) {
-        revert("FireSeed: Incorrect ETH amount sent");
+    if(msg.value != calculatedFee){
+        require(false ,"FireSeed: ETH amount error");
     }
+   
 
     return calculatedFee;
 } 
@@ -2381,6 +2396,9 @@ function calculateFee(uint256 _amount) internal view returns (uint256) {
              isRecommender[to] = true;
          }
         super.safeBatchTransferFrom(from, to, ids, amounts, data);
+    }
+    function wListLength() public view returns(uint256) {
+       return  whiteList.length;
     }
     function burnFireSeed(address _account, uint256 _idOfUser, uint256 _value) public  {
         require(msg.sender == fireSoul,"FireSeed: Only the cauldron can burn tokens");
