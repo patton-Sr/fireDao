@@ -191,51 +191,7 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
     uint256 _mainFee = _fee *  TOTAL_MAIN_RATIO / FEE_RATIO;
     uint256 _referralRewards = _fee * TOTAL_REWARD_RATIO_ONE / FEE_RATIO;
     uint256 _cityNodeReferralRewards = _fee * TOTAL_REWARD_RATIO_TWO / FEE_RATIO;
-    if (msg.value == 0) {
-        TransferHelper.safeTransferFrom(weth, msg.sender, feeReceiver, _mainFee);
-        if(ICityNode(cityNode).isNotCityNodeUsers(msg.sender) && ICityNode(cityNode).isNotCityNodeLight(msg.sender)){
-        TransferHelper.safeTransferFrom(weth, msg.sender, cityNode, _cityNodeReferralRewards);
-        ICityNode(cityNode).cityNodeIncome( msg.sender,  _cityNodeReferralRewards);
-        }else{
-        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _cityNodeReferralRewards);
-        }
-        if(_top != address(0) && _middle != address(0) && _down != address(0)){
-            if(IFireSoul(fireSoul).checkFID(_top) && IFireSoul(fireSoul).checkFID(_middle) && IFireSoul(fireSoul).checkFID(_down)){
-        TransferHelper.safeTransferFrom(weth, msg.sender, _top, _referralRewards * TOP_FEE_RATIO / FEE_RATIO);
-        TransferHelper.safeTransferFrom(weth, msg.sender, _middle, _referralRewards * MIDDLE_FEE_RATIO / FEE_RATIO);
-        TransferHelper.safeTransferFrom(weth, msg.sender, _down, _referralRewards * DOWN_FEE_RATIO / FEE_RATIO);
-            }else if(IFireSoul(fireSoul).checkFID(_top) && IFireSoul(fireSoul).checkFID(_middle) && !IFireSoul(fireSoul).checkFID(_down)){
-        TransferHelper.safeTransferFrom(weth, msg.sender, _top, _referralRewards * TOP_FEE_RATIO/ FEE_RATIO);
-        TransferHelper.safeTransferFrom(weth, msg.sender, _middle, _referralRewards * MIDDLE_FEE_RATIO / FEE_RATIO);
-        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards * DOWN_FEE_RATIO/ FEE_RATIO);
-            }else if(IFireSoul(fireSoul).checkFID(_top) && !IFireSoul(fireSoul).checkFID(_middle) && !IFireSoul(fireSoul).checkFID(_down)){
-        TransferHelper.safeTransferFrom(weth, msg.sender, _top, _referralRewards * TOP_FEE_RATIO / FEE_RATIO);
-        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards * (MIDDLE_FEE_RATIO + DOWN_FEE_RATIO) / FEE_RATIO);
-            }else {
-        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards);
-            }
-        }else if(_top != address(0) && _middle != address(0) && _down == address(0)){
-            if(IFireSoul(fireSoul).checkFID(_top) && IFireSoul(fireSoul).checkFID(_middle)){
-        TransferHelper.safeTransferFrom(weth, msg.sender, _top, _referralRewards * TOP_FEE_RATIO / FEE_RATIO);
-        TransferHelper.safeTransferFrom(weth, msg.sender, _middle, _referralRewards * MIDDLE_FEE_RATIO / FEE_RATIO);
-        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards * TOP_FEE_RATIO / FEE_RATIO);
-            }else if(IFireSoul(fireSoul).checkFID(_top) && !IFireSoul(fireSoul).checkFID(_middle)){
-        TransferHelper.safeTransferFrom(weth, msg.sender, _top, _referralRewards * TOP_FEE_RATIO / FEE_RATIO);
-        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards * (MIDDLE_FEE_RATIO + DOWN_FEE_RATIO) / FEE_RATIO);
-            }else {
-        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards);
-            }
-        }else if(_top != address(0) && _middle == address(0) && _down == address(0)){
-            if(IFireSoul(fireSoul).checkFID(_top)){
-            TransferHelper.safeTransferFrom(weth, msg.sender, _top, _referralRewards * TOP_FEE_RATIO / FEE_RATIO);
-        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards * (MIDDLE_FEE_RATIO + DOWN_FEE_RATIO) / FEE_RATIO);
-            }else {
-            TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards);
-            }
-        }else{
-        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards);
-        }
-    } else {
+
         require(msg.value == _fee, 'Please send the correct number of ETH');
         IWETH(weth).deposit{value: _fee}();
         IWETH(weth).transfer(feeReceiver, _mainFee);
@@ -279,9 +235,8 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
         IWETH(weth).transfer(rainbowTreasury, _referralRewards);
             }
         }else{
-        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _referralRewards);
+        IWETH(weth).transfer( rainbowTreasury, _referralRewards);
         }
-    }
     if (useITreasuryDistributionContract) {
         ITreasuryDistributionContract(treasuryDistributionContract).setSourceOfIncome(0, 0, _fee);
     }
