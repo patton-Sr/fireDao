@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: MIT
 
 // File: contracts/lib/TransferHelper.sol
-
-
 
 pragma solidity >=0.6.0;
 
@@ -57,7 +56,6 @@ interface IWETH {
 }
 // File: contracts/interface/IFireSoul.sol
 
-//	SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 interface IFireSoul {
@@ -67,7 +65,6 @@ interface IFireSoul {
 }
 // File: contracts/interface/ITreasuryDistributionContract.sol
 
-//	SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 interface ITreasuryDistributionContract {
