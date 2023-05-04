@@ -93,8 +93,6 @@ contract FireSoul is ERC721,Ownable{
         ? string(abi.encodePacked(currentBaseURI, Strings.toString(tokenId), baseExtension))
         : "";
   }
-  
- 
 
     function burnToMint(uint256 _tokenId) external payable {
         require(!status, "status is error");
