@@ -2062,6 +2062,11 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
     string public baseURI;
     bool private locked;
     bool public useITreasuryDistributionContract;
+    struct ratioDetail {
+        uint256 lower;
+        uint256 upper;
+        uint256 rate;
+    }
     address private guarding;
     uint256 public maxMint = 1e6;
     uint256 public fee;
@@ -2076,8 +2081,8 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
     address public weth;
     address public fireSoul;
     address public cityNode;
-    uint256[] public lowestAmount;
     address[] public whiteList;
+    ratioDetail[] public ratioDetails;
     mapping(address => bool) public isRecommender;
     mapping(address => address) public recommender;
     mapping(address => address[]) public recommenderInfo;
@@ -2151,16 +2156,26 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
     }
     function setDiscountFactor(uint256 _lowerBound, uint256 _upperBound, uint256 _discountFactor) public onlyOwner {
         require(_lowerBound < _upperBound, "FireSeed: Invalid range");
+        require(discountFactors[_upperBound] == 0 ,"FireSeed: Invalid setting");
+        require(discountFactors[_lowerBound] == 0 ,"FireSeed: Invalid setting");
+
         discountFactors[_lowerBound] = _discountFactor;
         discountFactors[_upperBound] = _discountFactor;
-        lowestAmount.push(_lowerBound);
+        ratioDetail memory _ratioDetail = ratioDetail({
+            lower:_lowerBound,
+            upper:_upperBound,
+            rate:_discountFactor
+        });
+        ratioDetails.push(_ratioDetail);
+
     }
-    function deleteDiscountFactor(uint256 _bound) public onlyOwner {
-        delete discountFactors[_bound];
-        for(uint256 i = 0 ; i< lowestAmount.length ;i ++){
-            if(_bound == lowestAmount[i]){
-                lowestAmount[i] = lowestAmount[lowestAmount.length - 1];
-                lowestAmount.pop();
+    function deleteDiscountFactor(uint256 _lowerBound,uint256 _upperBound) public onlyOwner {
+        delete discountFactors[_lowerBound];
+        delete discountFactors[_upperBound];
+        for(uint256 i = 0 ; i< ratioDetails.length ;i ++){
+            if(_lowerBound == ratioDetails[i].lower && _upperBound == ratioDetails[i].upper){
+                ratioDetails[i] = ratioDetails[ratioDetails.length - 1];
+                ratioDetails.pop();
             }
         }
     }
@@ -2397,8 +2412,8 @@ function calculateFee(uint256 _amount) internal view returns (uint256) {
     function wListLength() public view returns(uint256) {
        return  whiteList.length;
     }
-    function lowestAmountLength() public view returns(uint256) {
-        return lowestAmount.length;
+    function ratioDetailsLength() public view returns(uint256) {
+        return ratioDetails.length;
     }
     function burnFireSeed(address _account, uint256 _idOfUser, uint256 _value) public  {
         require(msg.sender == fireSoul,"FireSeed: Only the cauldron can burn tokens");
