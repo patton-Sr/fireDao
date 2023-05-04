@@ -1360,7 +1360,6 @@ contract FireSoul is ERC721,Ownable{
     string public baseURI;
     string public baseExtension = ".json";
     address public FireSeedAddress;
-    address public FLAME;
     uint256 public FID;
     uint256 public FEE_RATIO;
     uint256 public DOWN_FEE_RATIO;
@@ -1461,6 +1460,7 @@ contract FireSoul is ERC721,Ownable{
         DOWN_FEE_RATIO = down;
     }
     function setSbt003AmountRate(uint256 top , uint256 middle ,uint256 down) public onlyOwner{
+        require(top + middle + down == 100 ,"FireSoul: invalid setting");
         SBT003_RATE_ONE  = top;
         SBT003_RATE_TWO  = middle;
         SBT003_RATE_THREE = down;
@@ -1520,7 +1520,6 @@ contract FireSoul is ERC721,Ownable{
         address superior = IFireSeed(FireSeedAddress).upclass(middle);
         
         if(feeOn){
-            
         uint256 feeReceiverAmount = fee * FEE_RATIO / BASE_FEE;
         uint256 downAmount = fee * DOWN_FEE_RATIO/BASE_FEE;
         uint256 middleAmount = fee * MIDDLE_FEE_RATIO/BASE_FEE;
@@ -1569,9 +1568,7 @@ contract FireSoul is ERC721,Ownable{
     function getSoulAccount(address _user) external view returns(address){
         return UserToSoul[_user];
     }
-    function setFlameAddress(address _FLAME) public onlyOwner{
-        FLAME = _FLAME;
-    }
+   
 
     function setFireSeedAddress(address _FireSeedAddress) public onlyOwner{
             FireSeedAddress = _FireSeedAddress;
