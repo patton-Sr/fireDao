@@ -162,7 +162,9 @@ contract FireSoul is ERC721,Ownable{
     function setFireSeedAddress(address _FireSeedAddress) public onlyOwner{
             FireSeedAddress = _FireSeedAddress;
     }
-
+    function checkFIDA(address _user) external view returns(uint256) {
+        return  UserFID[_user];
+    }
       /**
      * @dev See {IERC721-transferFrom}.
      */
