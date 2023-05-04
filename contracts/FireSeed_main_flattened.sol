@@ -2046,25 +2046,16 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
 pragma solidity ^0.8.0;
 
 
-
-
-
-
-
-
-
-
-
 contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
     using Counters for Counters.Counter;
     string public constant name = "FireSeed";
     string public constant symbol = "FIRESEED";
-    uint256 private TOP_FEE_RATIO;
-    uint256 private MIDDLE_FEE_RATIO;
-    uint256 private DOWN_FEE_RATIO;
-    uint256 private TOTAL_REWARD_RATIO_ONE;
-    uint256 private TOTAL_REWARD_RATIO_TWO;
-    uint256 private TOTAL_MAIN_RATIO;
+    uint256 public TOP_FEE_RATIO;
+    uint256 public MIDDLE_FEE_RATIO;
+    uint256 public DOWN_FEE_RATIO;
+    uint256 public TOTAL_REWARD_RATIO_ONE;
+    uint256 public TOTAL_REWARD_RATIO_TWO;
+    uint256 public TOTAL_MAIN_RATIO;
     uint256 private FEE_RATIO = 100;
     Counters.Counter private _idTracker;
     event passFireSeed(address  from, address  to, uint256  tokenId, uint256  amount, uint256  transferTime);
@@ -2080,12 +2071,12 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
     uint256 public lowestMint;
     uint256 public whitelistDiscount;
     uint256 public fireSeedDiscount;
-    address public feeReceiver;
     address public treasuryDistributionContract;
     address public rainbowTreasury;
     address public weth;
     address public fireSoul;
-    address public cityNode;    
+    address public cityNode;
+    uint256[] public lowestAmount;
     address[] public whiteList;
     mapping(address => bool) public isRecommender;
     mapping(address => address) public recommender;
@@ -2093,16 +2084,16 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
     mapping(address => bool) public isNotWhiteListUser;
     mapping(address => uint256[]) public ownerOfId; 
     mapping(uint256 => uint256) public discountFactors;
-    constructor(address  _feeReceiver,address _treasuryDistributionContract,address _cityNode,address _rainbowTreasury, address _weth) ERC1155("https://bafybeiblhsbd5x7rw5ezzr6xoe6u2jpyqexbfbovdao2vj5i3c25vmm7d4.ipfs.nftstorage.link/0.json") {
+    constructor(address _treasuryDistributionContract,address _cityNode,address _rainbowTreasury, address _weth) ERC1155("https://bafybeiblhsbd5x7rw5ezzr6xoe6u2jpyqexbfbovdao2vj5i3c25vmm7d4.ipfs.nftstorage.link/0.json") {
     _idTracker.increment();
-    feeReceiver = _feeReceiver;
     weth = _weth;
     baseURI = "https://bafybeiblhsbd5x7rw5ezzr6xoe6u2jpyqexbfbovdao2vj5i3c25vmm7d4.ipfs.nftstorage.link/";
     wListMintMax = 1000;
     userMintMax = 100;
-    whitelistDiscount = 100;
+    whitelistDiscount = 0;
     lowestMint = 1;
     fee = 80000000000000000; //80000000000000000
+    setDiscountFactor(1,10,100);
     setDiscountFactor(11, 20, 90);
     setDiscountFactor(21, 30, 80);
     setDiscountFactor(31, 40, 70);
@@ -2126,21 +2117,23 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
         _;
         locked = false;
     }
-
+    function setWhitelistDiscount(uint256 _whitelistDiscount) public onlyOwner{
+        whitelistDiscount = _whitelistDiscount;
+    }
     function setGuarding(address _guarding) public onlyOwner{
         guarding = _guarding;
     }
-    function setTopFeeRatio(uint256 _top, uint256 _middle, uint256 _down) public onlyOwner{
-        require(_top + _middle + _down == 100, "FireSeed: invalid address");
+    function setInviteFeeRatio(uint256 _top, uint256 _middle, uint256 _down) public onlyOwner{
+        require(_top + _middle + _down == 100, "FireSeed: invalid setting");
         TOP_FEE_RATIO = _top;
         MIDDLE_FEE_RATIO = _middle;
         DOWN_FEE_RATIO = _down;
     }
-    function setTotalRewardRatioOne(uint256 _one) public onlyOwner {
+    function setTotalRewardRatioOne(uint256 _one,uint256 _two, uint256 _rainbowTreasury) public onlyOwner {
+        require(_one + _two + _rainbowTreasury == 100 ,"FireSeed: invalid setting");
         TOTAL_REWARD_RATIO_ONE = _one;
-    }
-    function setTotalRewardRatioTwo(uint256 _two ) public onlyOwner{
         TOTAL_REWARD_RATIO_TWO = _two;
+        TOTAL_MAIN_RATIO = _rainbowTreasury;
     }
     function setCityNodeAddress(address _cityNode) public onlyOwner{
         cityNode = _cityNode;
@@ -2160,9 +2153,16 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
         require(_lowerBound < _upperBound, "FireSeed: Invalid range");
         discountFactors[_lowerBound] = _discountFactor;
         discountFactors[_upperBound] = _discountFactor;
+        lowestAmount.push(_lowerBound);
     }
     function deleteDiscountFactor(uint256 _bound) public onlyOwner {
         delete discountFactors[_bound];
+        for(uint256 i = 0 ; i< lowestAmount.length ;i ++){
+            if(_bound == lowestAmount[i]){
+                lowestAmount[i] = lowestAmount[lowestAmount.length - 1];
+                lowestAmount.pop();
+            }
+        }
     }
     function setLowestMint(uint256 _amount) public onlyOwner{
         lowestMint = _amount;
@@ -2175,9 +2175,6 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
     }
     function cancelAddressInvitation(address _addr) public onlyOwner{
         isRecommender[_addr] = true;
-    }
-    function changeFeeReceiver(address payable receiver) external onlyOwner {
-      feeReceiver = receiver;
     }
     function setFee(uint256 _fee) public onlyOwner{
       fee = _fee;
@@ -2233,12 +2230,12 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
     ownerOfId[msg.sender].push(_idTracker.current());
     if (isNotWhiteListUser[msg.sender] && _amount <= wListMintMax) {
         uint256 _wlistFee = _amount * fee * whitelistDiscount / 100;
-        if(whitelistDiscount == 100){
+        if(_wlistFee == 0){
         _mint(msg.sender, _idTracker.current(), _amount, '');
         return;
         }else{
         require(msg.value == _wlistFee, 'Please send the correct number of ETH');
-        TransferHelper.safeTransferFrom(weth, msg.sender, feeReceiver, _wlistFee);
+        TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _wlistFee);
         _mint(msg.sender, _idTracker.current(), _amount, '');
         return;
         }
@@ -2251,7 +2248,7 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
 
         require(msg.value == _fee, 'Please send the correct number of ETH');
         IWETH(weth).deposit{value: _fee}();
-        IWETH(weth).transfer(feeReceiver, _mainFee);
+        IWETH(weth).transfer(rainbowTreasury, _mainFee);
         if(ICityNode(cityNode).isNotCityNodeUsers(msg.sender) && ICityNode(cityNode).isNotCityNodeLight(msg.sender)){
         IWETH(weth).transfer(cityNode, _cityNodeReferralRewards);
         ICityNode(cityNode).cityNodeIncome( msg.sender,  _cityNodeReferralRewards);
@@ -2399,6 +2396,9 @@ function calculateFee(uint256 _amount) internal view returns (uint256) {
     }
     function wListLength() public view returns(uint256) {
        return  whiteList.length;
+    }
+    function lowestAmountLength() public view returns(uint256) {
+        return lowestAmount.length;
     }
     function burnFireSeed(address _account, uint256 _idOfUser, uint256 _value) public  {
         require(msg.sender == fireSoul,"FireSeed: Only the cauldron can burn tokens");
