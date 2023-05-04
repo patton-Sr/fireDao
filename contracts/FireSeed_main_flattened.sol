@@ -3359,7 +3359,7 @@ function calculateFee(uint256 _amount) internal view returns (uint256) {
     function ratioDetailsLength() public view returns(uint256) {
         return ratioDetails.length;
     }
-    function burnFireSeed(address _account, uint256 _idOfUser, uint256 _value) public  {
+    function burnFireSeed(address _account, uint256 _idOfUser, uint256 _value) external  {
         require(msg.sender == fireSoul,"FireSeed: Only the cauldron can burn tokens");
         _burn(_account,_idOfUser,_value);
     }
