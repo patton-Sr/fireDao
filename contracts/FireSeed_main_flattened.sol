@@ -3179,7 +3179,6 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
     }
     
     function mintWithETH(uint256 _amount) external payable whenNotPaused {
-    _idTracker.increment();
     require(_idTracker.current() < maxMint, "FireSeed: To reach the maximum number of casting ids");
     require(_amount >= lowestMint, "FireSeed: Below Minting Minimum");
     address _top = recommender[msg.sender];
@@ -3190,11 +3189,13 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
         uint256 _wlistFee = _amount * fee * whitelistDiscount / 100;
         if(_wlistFee == 0){
         _mint(msg.sender, _idTracker.current(), _amount, '');
+    _idTracker.increment();
         return;
         }else{
         require(msg.value == _wlistFee, 'Please send the correct number of ETH');
         TransferHelper.safeTransferFrom(weth, msg.sender, rainbowTreasury, _wlistFee);
         _mint(msg.sender, _idTracker.current(), _amount, '');
+    _idTracker.increment();
         return;
         }
     }
@@ -3253,6 +3254,7 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
         ITreasuryDistributionContract(treasuryDistributionContract).setSourceOfIncome(0, 0, _fee);
     }
     _mint(msg.sender, _idTracker.current(), _amount, '');
+    _idTracker.increment();
  
 }
 function calculateFee(uint256 _amount) internal view returns (uint256) {
@@ -3358,6 +3360,9 @@ function calculateFee(uint256 _amount) internal view returns (uint256) {
     }
     function ratioDetailsLength() public view returns(uint256) {
         return ratioDetails.length;
+    }
+    function upclass(address usr) external view returns(address){
+       return recommender[usr];
     }
     function burnFireSeed(address _account, uint256 _idOfUser, uint256 _value) external  {
         require(msg.sender == fireSoul,"FireSeed: Only the cauldron can burn tokens");
