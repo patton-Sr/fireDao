@@ -16,23 +16,39 @@ contract Reputation is Ownable {
     }
 
     function addTokenAddress(address _token, uint256 _coefficient) external onlyOwner {
-        require(coefficients[_token] == 0, "token already exists");
+        require(coefficients[_token] == 0, "FireReputation: token already exists");
         tokens.push(_token);
         coefficients[_token] = _coefficient;
     }
     function subTokenAddress(address _token, uint256 _coefficient) external onlyOwner{
-        require(coefficients[_token] == 0, "token already exists");
+        require(coefficients[_token] == 0, "FireReputation: token already exists");
         subTokens.push(_token);
         coefficients[_token] = _coefficient;
         
     }
     function setCoefficient(address _token, uint256 _coefficient) external onlyOwner {
-        require(coefficients[_token] > 0, "token does not exist");
+        require(coefficients[_token] > 0, "FireReputation: token does not exist");
         coefficients[_token] = _coefficient;
     }
     function deleteToken(address _token) external onlyOwner{
-        require(coefficients[_token] > 0, "token does not exist");
+        require(coefficients[_token] > 0, "FireReputation: token does not exist");
         delete coefficients[_token];
+        for(uint256 i = 0 ; i < tokens.length ; i++) {
+            if(tokens[i] == _token) {
+                tokens[i] = tokens[tokens.length - 1];
+                tokens.pop();
+            }
+        }
+    }
+    function deleteSubToken(address _token) external onlyOwner {
+        require(coefficients[_token] > 0, "FireReputation: token does not exist");
+        delete coefficients[_token];
+        for(uint256 i = 0 ; i< subTokens.length ; i++ ){
+            if(subTokens[i] == _token){
+                subTokens[i] = subTokens[subTokens.length - 1];
+                subTokens.pop();
+            }
+        }
     }
     function checkReputation(address _user) external view returns (uint256) {
         uint256 reputationPoints;

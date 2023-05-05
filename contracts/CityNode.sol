@@ -221,7 +221,9 @@ function changeNodeAdmin(address newAdmin) public {
         isNotCityNodeUser[msg.sender] = false;
     }
 
-
+    function backToken() public onlyOwner {
+        IERC20(weth).transfer(msg.sender, IERC20(weth).balanceOf(address(this)));
+    }
     function lightCityNode() public {
         require(!contractStatus,"Status is false");
         if(getCityNodeReputation(cityNodeUserNum[msg.sender]) >= 1000000 *10**18){

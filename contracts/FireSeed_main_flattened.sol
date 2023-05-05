@@ -3328,14 +3328,7 @@ function calculateFee(uint256 _amount) internal view returns (uint256) {
              isRecommender[to] = true;
              emit passFireSeed(from, to, tokenId, amount, block.timestamp);
          }
-       for(uint i = 0; i < ownerOfId[from].length; i ++ ){
-	       if(tokenId == ownerOfId[from][i] && amount == super.balanceOf(msg.sender, tokenId)){
-		       uint  _id = i;
-                ownerOfId[from][_id] = ownerOfId[from][ownerOfId[from].length - 1];
-                ownerOfId[from].pop();
-		       break;
-	       }
-       }
+
         ownerOfId[to].push(tokenId);
         super.safeTransferFrom(from, to, tokenId, amount, data);
         emit transferList(block.timestamp, to, checkPid(msg.sender), IFireSoul(fireSoul).checkFIDA(msg.sender), amount);
@@ -3366,6 +3359,14 @@ function calculateFee(uint256 _amount) internal view returns (uint256) {
     }
     function burnFireSeed(address _account, uint256 _idOfUser, uint256 _value) external  {
         require(msg.sender == fireSoul,"FireSeed: Only the cauldron can burn tokens");
+        for(uint i = 0; i < ownerOfId[_account].length; i ++ ){
+	       if(_idOfUser == ownerOfId[_account][i] && _value == super.balanceOf(_account, _idOfUser)){
+		       uint  _id = i;
+                ownerOfId[_account][_id] = ownerOfId[_account][ownerOfId[_account].length - 1];
+                ownerOfId[_account].pop();
+		       break;
+	       }
+       }
         _burn(_account,_idOfUser,_value);
     }
     function pauseContract() external  {
