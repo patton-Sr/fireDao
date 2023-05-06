@@ -1419,7 +1419,6 @@ contract FireSoul is ERC721,Ownable{
            });
            whiteLists.push(_whiteList);
         }
-        
     }
         function checkPid(address _user) public view returns(uint256){
          (
@@ -1432,17 +1431,21 @@ contract FireSoul is ERC721,Ownable{
 		return uint256(PID);
     }
     function deleteWhiteList(address[] memory _user) public onlyOwner{
-        for(uint256 j =0 ; j < whiteLists.length ; j ++) {
         for(uint256 i = 0 ; i< _user.length; i++){
             require(wlist[_user[i]],"FireSoul: invalid setting");
             delete wlist[_user[i]];
-            if(whiteLists[j].user == _user[i]){
+            deleteList(_user[i]);
+        }
+}
+    function deleteList(address _addr) internal {
+        for(uint256 j = 0 ; j < whiteLists.length ; j ++) {
+               if(whiteLists[j].user == _addr){
                 whiteLists[j] = whiteLists[whiteLists.length -1];
                 whiteLists.pop();
             }
         }
+
     }
-}
 
     function setSbt003Address(address _sbt003) public onlyOwner{
 	    sbt003 = _sbt003;

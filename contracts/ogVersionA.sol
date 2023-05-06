@@ -1065,6 +1065,7 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
                 adminInviter[msg.sender].pop();
                 WhiteListUser[_addr] = false;
                 removeWhiteListTotal(_addr);
+                isRecommender[_addr] = false;
                 emit AllRemoveWList(getPid(_addr),getName(_addr),_addr);
                 return;
             }

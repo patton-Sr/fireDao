@@ -11,6 +11,7 @@ import "./interface/IReputation.sol";
 
 contract TreasuryDistributionContract is Ownable {
     uint256 public intervalTime;
+    uint256 public firstTime;
     address[] public AllocationFundAddress;
     uint private rate;
     uint private userTime;
@@ -26,6 +27,9 @@ contract TreasuryDistributionContract is Ownable {
     mapping(uint => address) public tokenList;
     mapping(address => bool) public allowAddr;
     constructor()  {
+        rate = 80;
+        intervalTime = 3600;
+        ReputationAmount = 0;
     }
 
     //onlyOwner
@@ -35,12 +39,18 @@ contract TreasuryDistributionContract is Ownable {
     function setWeth(address _weth) public onlyOwner{
         weth = _weth;
     }
+    function setIntervalTime(uint256 _time) public onlyOwner{
+        intervalTime = _time;
+    }
     function setUerIntverTime(uint256 _time) public onlyOwner{
         userTime = _time;
     }
     function setTotalDistributionRatio(address _addr, uint _rate) public onlyOwner{
+        require(_addr != address(0), "FireDao: address is not be zero address");
+        require(_rate <= 100, "FireDao: rate must be small 100 ");
         distributionRatio[_addr] = _rate;
     }
+    
     function removeAddr(address _addr) public onlyOwner{
         uint _num;
         for(uint i = 0; i<AllocationFundAddress.length;i++){
@@ -50,9 +60,10 @@ contract TreasuryDistributionContract is Ownable {
         }
         AllocationFundAddress[_num] = AllocationFundAddress[AllocationFundAddress.length - 1];
         AllocationFundAddress.pop();
+        delete distributionRatio[_addr];
     }
     function setTokenList(uint tokenNum, address tokenAddr)public onlyOwner {
-        require(tokenNum < 10,"input error");
+        require(tokenNum < 10,"FireDao: input error");
         tokenList[tokenNum] = tokenAddr;
     }
     function setReputation(address _Reputation) public onlyOwner{
@@ -68,19 +79,22 @@ contract TreasuryDistributionContract is Ownable {
     }
     
     function addAllocationFundAddress(address[] memory assigned) public onlyOwner {
+        
         for(uint i = 0 ; i < assigned.length ; i++){
+            require(assigned[i] != address(0), "FireDao: allocation Address is not zero address");
             AllocationFundAddress.push(assigned[i]);
         }
     }
     function setAddr(uint256 _id,address _addr) public onlyOwner{
+        require(_addr != address(0) , "the address is not be zero address");
         AllocationFundAddress[_id] = _addr;
     }
-    function withdraw() public onlyOwner {
-        IERC20(weth).transfer(msg.sender, getWETHBalance());
+    function withdraw(uint256 _tokenNum) public onlyOwner {
+        IERC20(tokenList[_tokenNum]).transfer(msg.sender, IERC20(tokenList[_tokenNum]).balanceOf(address(this)));
     }
     //getSource
     function setSourceOfIncome(uint num,uint tokenNum,uint256 amount) external {
-        require(allowAddr[msg.sender],"no access");
+        require(allowAddr[msg.sender],"FireDao: no access");
         sourceOfIncome[num][tokenNum].push(amount);
     }
     function getSourceOfIncomeLength(uint num,uint tokenNum) public view returns(uint256){
@@ -94,7 +108,7 @@ contract TreasuryDistributionContract is Ownable {
     }
     //main
     function setStatus() external {
-        require(msg.sender == controlAddress || msg.sender == owner(),"the callback address is error");
+        require(msg.sender == controlAddress || msg.sender == owner(),"FireDao: the callback address is error");
         pause = !pause;
     }
     function setReputationAmount(uint256 _amount) public onlyOwner{
@@ -102,17 +116,17 @@ contract TreasuryDistributionContract is Ownable {
     }
     
     function AllocationFund(uint _tokenNum) public {
-        require(!pause, "contract is pause");
+        require(!pause, "FireDao: contract is pause");
         require(checkRate() == 100,'rate error');
         require(IReputation(Reputation).checkReputation(msg.sender) > ReputationAmount*10*18 || msg.sender == owner() ,"Reputation Points is not enough");
-        require( block.timestamp > intervalTime + 3600,"AllocationFund need interval 30 minute");
-        require( block.timestamp >  AllocationFundUserTime[msg.sender] + userTime ,"wallet need 12 hours to callback that");
-        require(getWETHBalance() > 0, "the balance of WETH is error");
+        require( block.timestamp > firstTime + intervalTime ,"FireDao: AllocationFund need interval 30 minute");
+        require( block.timestamp >  AllocationFundUserTime[msg.sender] + userTime ,"FireDao: wallet need 12 hours to callback that");
+        require(getWETHBalance() > 0, "FireDao: the balance of WETH is error");
         uint256 totalBalance = getTokenBalance(_tokenNum);
         for(uint i = 0 ; i < AllocationFundAddress.length; i ++){
-        ERC20(tokenList[_tokenNum]).transfer(AllocationFundAddress[i], totalBalance*rate*distributionRatio[AllocationFundAddress[i]]/10000);
+        ERC20(tokenList[_tokenNum]).transfer(AllocationFundAddress[i], totalBalance * rate * distributionRatio[AllocationFundAddress[i]]/10000);
     }
-        intervalTime = block.timestamp;
+        firstTime = block.timestamp;
         AllocationFundUserTime[msg.sender] = block.timestamp;
         IERC20(weth).transfer(msg.sender, 5 * 10**16);
     }
@@ -126,8 +140,6 @@ contract TreasuryDistributionContract is Ownable {
     function getTokenBalance(uint num) public view returns(uint256) {
         return IERC20(tokenList[num]).balanceOf(address(this));
     }
-    function version() public pure returns (string memory) {
-        return "1";
-    }
+
 
 }
