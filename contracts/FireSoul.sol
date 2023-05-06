@@ -1418,12 +1418,20 @@ function setFp(address payable _fp) public onlyOwner {
     function setWhiteList(address[] memory _user) public onlyOwner {
         for(uint256 i = 0; i < _user.length; i++) {
             require(!wlist[_user[i]],"FireSoul: invalid setting");
+            checkRepeat(_user[i]);
             wlist[_user[i]] = true;
            whiteList memory _whiteList = whiteList({
                user:msg.sender,
                pid:checkPid(msg.sender)
            });
            whiteLists.push(_whiteList);
+        }
+    }
+    function checkRepeat(address _addr) internal{
+        for(uint256 i = 0 ; i < whiteLists.length; i++) {
+            if(_addr == whiteLists[i].user){
+                require(false, "FireSoul: invalid setting");
+            }
         }
     }
         function checkPid(address _user) public view returns(uint256){

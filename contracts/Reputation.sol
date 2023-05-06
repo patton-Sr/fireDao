@@ -16,12 +16,16 @@ contract Reputation is Ownable {
     }
 
     function addTokenAddress(address _token, uint256 _coefficient) external onlyOwner {
-        require(coefficients[_token] == 0, "FireReputation: token already exists");
+        for(uint256 i = 0 ; i < tokens.length; i ++ ) {
+            require(tokens[i] != _token, "FireReputation: token is exist");
+        }
         tokens.push(_token);
         coefficients[_token] = _coefficient;
     }
     function subTokenAddress(address _token, uint256 _coefficient) external onlyOwner{
-        require(coefficients[_token] == 0, "FireReputation: token already exists");
+        for(uint256 i = 0 ; i < subTokens.length; i ++ ) {
+            require(subTokens[i] != _token, "FireReputation: token is exist");
+        }
         subTokens.push(_token);
         coefficients[_token] = _coefficient;
         
