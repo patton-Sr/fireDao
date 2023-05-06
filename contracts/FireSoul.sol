@@ -1388,9 +1388,8 @@ contract FireSoul is ERC721,Ownable{
     mapping(address => uint256[]) public sbtTokenAmount; 
     mapping(address => address) public UserToSoul;
        //set fireSeed, BaseUri, sbt003
-    constructor(address payable _fp,address _fireseed, address _firePassport,address _weth) ERC721("FireSoul", "FireSoul"){
+    constructor(address _fireseed, address _firePassport,address _weth) ERC721("FireSoul", "FireSoul"){
     firePassport = _firePassport;
-    fp = FirePassport(_fp);
     FireSeedAddress =_fireseed;
     weth = _weth;
     BASE_FEE = 100;
@@ -1404,6 +1403,13 @@ contract FireSoul is ERC721,Ownable{
     SBT003_RATE_THREE = 10;
 
     baseURI = "https://bafybeidfu5kotsr2tap72pg6uuipv7yhb47pcnzidcxqszg5z2vrewsdce.ipfs.nftstorage.link/";
+
+
+}
+function setFp(address payable _fp) public onlyOwner {
+    require(_fp != address(0) , "fail setting");
+    fp = FirePassport(_fp);
+
 }
     function getWListLength() public view returns(uint256) {
         return whiteLists.length;
