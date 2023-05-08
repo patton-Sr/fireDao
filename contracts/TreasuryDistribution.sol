@@ -19,9 +19,10 @@ contract TreasuryDistribution is Ownable {
     address public Reputation;
     uint256 public ReputationAmount;
     address public weth;
+    uint256 public award;
     uint public allTokenNum;
     event incomeRecord(uint256 num, uint256  tokenNum, address user, uint256 amount);
-    mapping(address => uint) public distributionRatio;
+    mapping(address => uint256) public distributionRatio;
     mapping(address => uint256) public AllocationFundUserTime;
     mapping(uint =>mapping(uint => uint256[])) public sourceOfIncome;
     mapping(uint => address) public tokenList;
@@ -81,11 +82,13 @@ contract TreasuryDistribution is Ownable {
         controlAddress = _controlAddress;
     }
     
-    function addAllocationFundAddress(address[] memory assigned) public onlyOwner {
+    function addAllocationFundAddress(address[] memory assigned, uint256[] memory _rate) public onlyOwner {
         
         for(uint i = 0 ; i < assigned.length ; i++){
             require(assigned[i] != address(0), "FireDao: allocation Address is not zero address");
             AllocationFundAddress.push(assigned[i]);
+            distributionRatio[assigned[i]] = _rate[i];
+
         }
     }
     function setAddr(uint256 _id,address _addr) public onlyOwner{
@@ -95,6 +98,9 @@ contract TreasuryDistribution is Ownable {
     function withdraw(uint256 _tokenNum) public onlyOwner {
         IERC20(tokenList[_tokenNum]).transfer(msg.sender, IERC20(tokenList[_tokenNum]).balanceOf(address(this)));
     }
+    function setAward(uint256 _award) public onlyOwner{
+        award = _award;
+    } 
     //getSource
     function setSourceOfIncome(uint num,uint tokenNum, address user, uint256 amount) external {
         require(allowAddr[msg.sender],"FireDao: no access");
@@ -132,7 +138,7 @@ contract TreasuryDistribution is Ownable {
     }
         firstTime = block.timestamp;
         AllocationFundUserTime[msg.sender] = block.timestamp;
-        IERC20(weth).transfer(msg.sender, 5 * 10**16);
+        IERC20(weth).transfer(msg.sender, award);
     }
     function checkRate() public view returns(uint256){
         uint256 num;
