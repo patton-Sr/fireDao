@@ -13,14 +13,14 @@ contract TreasuryDistributionContract is Ownable {
     uint256 public intervalTime;
     uint256 public firstTime;
     address[] public AllocationFundAddress;
-    uint private rate;
-    uint private userTime;
+    uint public rate;
+    uint public userTime;
     bool public pause;
     address public controlAddress;
     address public Reputation;
     uint256 public ReputationAmount;
-    address public GovernanceAddress;
     address public weth;
+    uint public allTokenNum;
     mapping(address => uint) public distributionRatio;
     mapping(address => uint256) public AllocationFundUserTime;
     mapping(uint =>mapping(uint => uint256[])) public sourceOfIncome;
@@ -30,9 +30,13 @@ contract TreasuryDistributionContract is Ownable {
         rate = 80;
         intervalTime = 3600;
         ReputationAmount = 0;
+        userTime = 43200;
     }
 
     //onlyOwner
+    function setRate(uint _rate) public onlyOwner{
+        rate = _rate;
+    }
     function setAllowAddr(address _addr, bool _status) public onlyOwner{
         allowAddr[_addr] = _status;
     }
@@ -62,20 +66,17 @@ contract TreasuryDistributionContract is Ownable {
         AllocationFundAddress.pop();
         delete distributionRatio[_addr];
     }
-    function setTokenList(uint tokenNum, address tokenAddr)public onlyOwner {
-        require(tokenNum < 10,"FireDao: input error");
-        tokenList[tokenNum] = tokenAddr;
+    function addTokenList(address tokenAddr)public onlyOwner {
+        tokenList[allTokenNum] = tokenAddr;
+        allTokenNum ++;
     }
+    function deleteTokenList() public
     function setReputation(address _Reputation) public onlyOwner{
         Reputation = _Reputation;
     }
     
     function setControlAddress(address _controlAddress) public onlyOwner{
         controlAddress = _controlAddress;
-    }
-    
-    function setGovernanceAddress(address _GovernanceAddress) public onlyOwner{
-        GovernanceAddress = _GovernanceAddress;
     }
     
     function addAllocationFundAddress(address[] memory assigned) public onlyOwner {
@@ -140,6 +141,8 @@ contract TreasuryDistributionContract is Ownable {
     function getTokenBalance(uint num) public view returns(uint256) {
         return IERC20(tokenList[num]).balanceOf(address(this));
     }
-
+    function getAllocationFundAddressLength() public view returns(uint256) {
+        return AllocationFundAddress.length;
+    }
 
 }
