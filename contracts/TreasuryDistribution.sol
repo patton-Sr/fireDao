@@ -4,12 +4,11 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./interface/IUniswapV2Router02.sol";
 import "./interface/IReputation.sol";
 
 
 
-contract TreasuryDistributionContract is Ownable {
+contract TreasuryDistribution is Ownable {
     uint256 public intervalTime;
     uint256 public firstTime;
     address[] public AllocationFundAddress;
@@ -70,7 +69,9 @@ contract TreasuryDistributionContract is Ownable {
         tokenList[allTokenNum] = tokenAddr;
         allTokenNum ++;
     }
-    function deleteTokenList() public
+    function deleteTokenList() public onlyOwner {
+        delete tokenList[allTokenNum];
+    }
     function setReputation(address _Reputation) public onlyOwner{
         Reputation = _Reputation;
     }
