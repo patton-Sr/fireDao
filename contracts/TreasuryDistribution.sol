@@ -20,6 +20,7 @@ contract TreasuryDistribution is Ownable {
     uint256 public ReputationAmount;
     address public weth;
     uint public allTokenNum;
+    event incomeRecord(uint256 num, uint256  tokenNum, address user, uint256 amount);
     mapping(address => uint) public distributionRatio;
     mapping(address => uint256) public AllocationFundUserTime;
     mapping(uint =>mapping(uint => uint256[])) public sourceOfIncome;
@@ -95,9 +96,10 @@ contract TreasuryDistribution is Ownable {
         IERC20(tokenList[_tokenNum]).transfer(msg.sender, IERC20(tokenList[_tokenNum]).balanceOf(address(this)));
     }
     //getSource
-    function setSourceOfIncome(uint num,uint tokenNum,uint256 amount) external {
+    function setSourceOfIncome(uint num,uint tokenNum, address user, uint256 amount) external {
         require(allowAddr[msg.sender],"FireDao: no access");
         sourceOfIncome[num][tokenNum].push(amount);
+        emit incomeRecord(num, tokenNum, user,amount);
     }
     function getSourceOfIncomeLength(uint num,uint tokenNum) public view returns(uint256){
         return sourceOfIncome[num][tokenNum].length;
