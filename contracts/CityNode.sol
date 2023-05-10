@@ -21,17 +21,22 @@ contract cityNode is ERC1155, Ownable {
         uint256 createTime;
         uint256 joinCityNodeTime;
         address Treasury;
+        uint256 memberLength;
     }
  
     address public weth;
     bool public contractStatus; 
     address public fdTokenAddress;
     uint256 public ctiyNodeId;
+    uint256 public creationScore;
+    uint256 public activationScore;
     address public pauseAddress;
     address public fireSeed;
     address public fireSoul;
     address public Reputation;
     uint256 public proportion;
+    mapping(string => string) public nodeInfo;
+    mapping(address => bool) public whiteUser;
     mapping(address => bool) public isNotCityNodeUser;
     mapping(uint256 => bool) public isNotLightCity;
     mapping(address => bool) public cityNodeCreater;
@@ -42,6 +47,7 @@ contract cityNode is ERC1155, Ownable {
     mapping(address => uint256) public userTax;
     mapping(uint256 => address) public cityNodeAdmin;
     mapping(address => address) public nodeTreasuryAdmin;
+    mapping(uint256 => address) public idToNodeTreasury;
     cityNodeInfo[] public cityNodeInfos;
 
     constructor(address _weth) ERC1155("test") {
@@ -50,12 +56,23 @@ contract cityNode is ERC1155, Ownable {
     }
     
     //external
+    function getCityNodeMemberLength(uint256 _num) public view returns(uint256) {
+       return cityNodeMember[_num].length;
+    }
+    function setWhiteUser(address _to,bool _set) public onlyOwner {
+        whiteUser[_to] = _set;
+    }
     function isNotCityNodeLight(address _user) external view returns(bool){
         return isNotLightCity[cityNodeUserNum[_user]];
     }
     function cityNodeIncome(address _user, uint256 _income) external {
         require(msg.sender == fireSeed,"CityNode: invalid call");
         cityNodeIncomeAmount[cityNodeUserNum[_user]] += _income;
+    }
+    function cityNodeTreasuryAddr(address _user)  external view returns(address) {
+        require(msg.sender == fireSeed,"CityNode: invalid call");
+
+        return idToNodeTreasury[cityNodeUserNum[_user]] ;
     }
     function getUserInNodeInfo(address _nodeUser) external view returns(cityNodeInfo memory) {
         return userInNodeInfo[_nodeUser];
@@ -102,6 +119,12 @@ contract cityNode is ERC1155, Ownable {
         contractStatus = !contractStatus;   
     }
     //onlyOwner
+    function setActivationScore(uint256 _score) public onlyOwner{
+        activationScore = _score;
+    }
+    function setCreationScore(uint256 _score) public onlyOwner{
+        creationScore = _score;
+    }
     function setProportion(uint256 _proportion) public onlyOwner {
         proportion = _proportion;
     }
@@ -130,10 +153,10 @@ contract cityNode is ERC1155, Ownable {
     }
 
     //main
-    function createCityNode(string memory cityNodeName) public {
+    function createCityNode(string memory cityNodeName ,string memory _info) public {
     require(!contractStatus, "Contract status is false");
     require(IFireSoul(fireSoul).checkFID(msg.sender), "You haven't FID, please burn fireseed to create"); 
-    require(IReputation(Reputation).checkReputation(msg.sender) > 100000*10*18,"not enough");
+    require(IReputation(Reputation).checkReputation(msg.sender) > creationScore*10**18 || whiteUser[msg.sender],"not enough");
 
     // Create a new CityNodeTreasury contract and transfer ownership to the creator.
     CityNodeTreasury nodeTreasury = new CityNodeTreasury(payable(msg.sender), address(this));
@@ -141,14 +164,15 @@ contract cityNode is ERC1155, Ownable {
     // Mint a new NFT with the current user as the owner.
     uint256 tokenId = ctiyNodeId;
     _mint(msg.sender, tokenId, 1, "test");
-
+    nodeInfo[cityNodeName] = _info;
     // Update the city node data structures.
     cityNodeCreater[msg.sender] = true;
     cityNodeMember[tokenId].push(msg.sender);
     cityNodeUserNum[msg.sender] = tokenId;
     cityNodeAdmin[tokenId] = msg.sender;
     nodeTreasuryAdmin[msg.sender] = address(nodeTreasury);
-    cityNodeInfo memory info = cityNodeInfo(tokenId, cityNodeName, msg.sender, block.timestamp, block.timestamp, address(nodeTreasury));
+    idToNodeTreasury[tokenId] = address(nodeTreasury);
+    cityNodeInfo memory info = cityNodeInfo(tokenId, cityNodeName, msg.sender, block.timestamp, block.timestamp, address(nodeTreasury),cityNodeMember[tokenId].length);
     cityNodeInfos.push(info);
     userInNodeInfo[msg.sender] = info;
     ctiyNodeId++;
@@ -176,7 +200,8 @@ contract cityNode is ERC1155, Ownable {
         nodeAdmin,
         createTime,
         block.timestamp,
-        nodeTreasury
+        nodeTreasury,
+        cityNodeMember[cityNodeNum].length
     );
     cityNodeInfos.push(Info);
 
@@ -226,7 +251,7 @@ function changeNodeAdmin(address newAdmin) public {
     }
     function lightCityNode() public {
         require(!contractStatus,"Status is false");
-        if(getCityNodeReputation(cityNodeUserNum[msg.sender]) >= 1000000 *10**18){
+        if(getCityNodeReputation(cityNodeUserNum[msg.sender]) >= activationScore *10**18){
             isNotLightCity[cityNodeUserNum[msg.sender]] = true;
         }
     }

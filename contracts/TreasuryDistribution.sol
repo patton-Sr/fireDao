@@ -21,17 +21,18 @@ contract TreasuryDistribution is Ownable {
     address public weth;
     uint256 public award;
     uint public allTokenNum;
-    event incomeRecord(uint256 num, uint256  tokenNum, address user, uint256 amount);
+    event incomeRecord(uint256 num, address user, uint256 amount);
+    event distributionRecord(address distributionAddr, uint256 amount);
     mapping(address => uint256) public distributionRatio;
     mapping(address => uint256) public AllocationFundUserTime;
     mapping(uint =>mapping(uint => uint256[])) public sourceOfIncome;
-    mapping(uint => address) public tokenList;
     mapping(address => bool) public allowAddr;
     constructor()  {
         rate = 80;
         intervalTime = 3600;
         ReputationAmount = 0;
         userTime = 43200;
+        award = 50000000000000000;
     }
 
     //onlyOwner
@@ -67,13 +68,7 @@ contract TreasuryDistribution is Ownable {
         AllocationFundAddress.pop();
         delete distributionRatio[_addr];
     }
-    function addTokenList(address tokenAddr)public onlyOwner {
-        tokenList[allTokenNum] = tokenAddr;
-        allTokenNum ++;
-    }
-    function deleteTokenList() public onlyOwner {
-        delete tokenList[allTokenNum];
-    }
+
     function setReputation(address _Reputation) public onlyOwner{
         Reputation = _Reputation;
     }
@@ -95,17 +90,16 @@ contract TreasuryDistribution is Ownable {
         require(_addr != address(0) , "the address is not be zero address");
         AllocationFundAddress[_id] = _addr;
     }
-    function withdraw(uint256 _tokenNum) public onlyOwner {
-        IERC20(tokenList[_tokenNum]).transfer(msg.sender, IERC20(tokenList[_tokenNum]).balanceOf(address(this)));
+    function withdraw() public onlyOwner {
+        IERC20(weth).transfer(msg.sender, IERC20(weth).balanceOf(address(this)));
     }
     function setAward(uint256 _award) public onlyOwner{
         award = _award;
     } 
     //getSource
-    function setSourceOfIncome(uint num,uint tokenNum, address user, uint256 amount) external {
+    function setSourceOfIncome(uint num,address user, uint256 amount) external {
         require(allowAddr[msg.sender],"FireDao: no access");
-        sourceOfIncome[num][tokenNum].push(amount);
-        emit incomeRecord(num, tokenNum, user,amount);
+        emit incomeRecord(num, user,amount);
     }
     function getSourceOfIncomeLength(uint num,uint tokenNum) public view returns(uint256){
         return sourceOfIncome[num][tokenNum].length;
@@ -125,16 +119,17 @@ contract TreasuryDistribution is Ownable {
         ReputationAmount = _amount; 
     }
     
-    function AllocationFund(uint _tokenNum) public {
+    function AllocationFund() public {
         require(!pause, "FireDao: contract is pause");
         require(checkRate() == 100,'rate error');
         require(IReputation(Reputation).checkReputation(msg.sender) > ReputationAmount*10*18 || msg.sender == owner() ,"Reputation Points is not enough");
         require( block.timestamp > firstTime + intervalTime ,"FireDao: AllocationFund need interval 30 minute");
         require( block.timestamp >  AllocationFundUserTime[msg.sender] + userTime ,"FireDao: wallet need 12 hours to callback that");
         require(getWETHBalance() > 0, "FireDao: the balance of WETH is error");
-        uint256 totalBalance = getTokenBalance(_tokenNum);
+        uint256 totalBalance = getTokenBalance();
         for(uint i = 0 ; i < AllocationFundAddress.length; i ++){
-        ERC20(tokenList[_tokenNum]).transfer(AllocationFundAddress[i], totalBalance * rate * distributionRatio[AllocationFundAddress[i]]/10000);
+        ERC20(weth).transfer(AllocationFundAddress[i], totalBalance * rate * distributionRatio[AllocationFundAddress[i]]/10000);
+        emit distributionRecord(AllocationFundAddress[i], totalBalance * rate * distributionRatio[AllocationFundAddress[i]]/10000);
     }
         firstTime = block.timestamp;
         AllocationFundUserTime[msg.sender] = block.timestamp;
@@ -147,8 +142,8 @@ contract TreasuryDistribution is Ownable {
         }
         return num;
     }
-    function getTokenBalance(uint num) public view returns(uint256) {
-        return IERC20(tokenList[num]).balanceOf(address(this));
+    function getTokenBalance() public view returns(uint256) {
+        return IERC20(weth).balanceOf(address(this));
     }
     function getAllocationFundAddressLength() public view returns(uint256) {
         return AllocationFundAddress.length;

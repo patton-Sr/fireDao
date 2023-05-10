@@ -1087,7 +1087,7 @@ pragma solidity ^0.8.0;
 
 interface ITreasuryDistributionContract {
   function AllocationFund() external;
-  function setSourceOfIncome(uint num,uint tokenNum,uint256 amount) external;
+  function setSourceOfIncome(uint num,address user,uint256 amount) external;
 }
 
 contract FirePassport is IFirePassport,ERC721URIStorage {
@@ -1159,7 +1159,7 @@ contract FirePassport is IFirePassport,ERC721URIStorage {
       usernameExists[username] = true;
       _mint(msg.sender, id);
       if(useTreasuryDistributionContract) {
-         ITreasuryDistributionContract(treasuryDistributionContract).setSourceOfIncome(1,1,fee);
+         ITreasuryDistributionContract(treasuryDistributionContract).setSourceOfIncome(5,msg.sender,fee);
       }
       emit Register(id,trueUsername,msg.sender,email,block.timestamp,information);
    }
@@ -1377,6 +1377,7 @@ contract FireSoul is ERC721,Ownable{
     uint256 public fee;
     address public weth;
     address public feeReceiver;
+    address public treasuryDistributionContract;
     address public pauseControlAddress;
     address[] public sbt;
     uint[] public  coefficient;
@@ -1415,6 +1416,9 @@ function setFp(address payable _fp) public onlyOwner {
         return whiteLists.length;
     }
     //onlyOwner
+    function setTreasuryDistributionContract(address _addr) public onlyOwner {
+        treasuryDistributionContract = _addr;
+    }
     function setWhiteList(address[] memory _user) public onlyOwner {
         for(uint256 i = 0; i < _user.length; i++) {
             require(!wlist[_user[i]],"FireSoul: invalid setting");
@@ -1548,8 +1552,12 @@ function setFp(address payable _fp) public onlyOwner {
               TransferHelper.safeTransferFrom(weth,msg.sender,down,downAmount);
               TransferHelper.safeTransferFrom(weth,msg.sender,middle,middleAmount);
               TransferHelper.safeTransferFrom(weth,msg.sender,superior,superiorAmount);
+          ITreasuryDistributionContract(treasuryDistributionContract).setSourceOfIncome(5,msg.sender,feeReceiverAmount );
+
               } else{
               TransferHelper.safeTransferFrom(weth,msg.sender,feeReceiver,fee);
+          ITreasuryDistributionContract(treasuryDistributionContract).setSourceOfIncome(5,msg.sender,fee );
+
               }
           } else {
               require(msg.value == fee,"provide the error number on ETH");
@@ -1559,8 +1567,12 @@ function setFp(address payable _fp) public onlyOwner {
               IWETH(weth).transfer(down,downAmount);
               IWETH(weth).transfer(middle,middleAmount);
               IWETH(weth).transfer(superior,superiorAmount);
+          ITreasuryDistributionContract(treasuryDistributionContract).setSourceOfIncome(5,msg.sender,feeReceiverAmount );
+
               }else{
               IWETH(weth).transfer(feeReceiver,fee);
+          ITreasuryDistributionContract(treasuryDistributionContract).setSourceOfIncome(5,msg.sender, fee);
+
               }
 
           }

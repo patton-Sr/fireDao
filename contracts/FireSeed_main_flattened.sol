@@ -907,7 +907,7 @@ contract FirePassport is IFirePassport,ERC721URIStorage {
       usernameExists[username] = true;
       _mint(msg.sender, id);
       if(useTreasuryDistributionContract) {
-         ITreasuryDistributionContract(treasuryDistributionContract).setSourceOfIncome(1,1,fee);
+         ITreasuryDistributionContract(treasuryDistributionContract).setSourceOfIncome(4,msg.sender,fee);
       }
       emit Register(id,trueUsername,msg.sender,email,block.timestamp,information);
    }
@@ -1051,6 +1051,7 @@ interface ICityNode{
   function cityNodeIncome(address _user, uint256 _income) external;
   function isNotCityNodeUsers(address _user) external view returns(bool);
   function isNotCityNodeLight(address _user) external view returns(bool);
+   function cityNodeTreasuryAddr(address _user)  external view returns(address) ;
 }
 // File: contracts/interface/IWETH.sol
 
@@ -1079,7 +1080,7 @@ pragma solidity ^0.8.0;
 
 interface ITreasuryDistributionContract {
   function AllocationFund() external;
-  function setSourceOfIncome(uint num,uint tokenNum,uint256 amount) external;
+  function setSourceOfIncome(uint num,address user, uint256 amount) external ;
 }
 // File: operator-filter-registry/src/lib/Constants.sol
 
@@ -3208,11 +3209,14 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
         require(msg.value == _fee, 'Please send the correct number of ETH');
         IWETH(weth).deposit{value: _fee}();
         IWETH(weth).transfer(rainbowTreasury, _mainFee);
+        ITreasuryDistributionContract(treasuryDistributionContract).setSourceOfIncome(4, msg.sender, _mainFee);
+
         if(ICityNode(cityNode).isNotCityNodeUsers(msg.sender) && ICityNode(cityNode).isNotCityNodeLight(msg.sender)){
-        IWETH(weth).transfer(cityNode, _cityNodeReferralRewards);
+        IWETH(weth).transfer(ICityNode(cityNode).cityNodeTreasuryAddr(msg.sender), _cityNodeReferralRewards);
         ICityNode(cityNode).cityNodeIncome( msg.sender,  _cityNodeReferralRewards);
         }else{
         IWETH(weth).transfer(rainbowTreasury, _cityNodeReferralRewards);
+
         }
         if(_top != address(0) && _middle != address(0) && _down != address(0)){
             if(IFireSoul(fireSoul).checkFID(_top) && IFireSoul(fireSoul).checkFID(_middle) && IFireSoul(fireSoul).checkFID(_down)){
@@ -3223,36 +3227,42 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
                                IWETH(weth).transfer(_top, _referralRewards * TOP_FEE_RATIO /FEE_RATIO);
         IWETH(weth).transfer(_middle, _referralRewards * MIDDLE_FEE_RATIO / FEE_RATIO);
         IWETH(weth).transfer(rainbowTreasury, _referralRewards * DOWN_FEE_RATIO / FEE_RATIO);
+
                                              }else if(IFireSoul(fireSoul).checkFID(_top) && !IFireSoul(fireSoul).checkFID(_middle) && !IFireSoul(fireSoul).checkFID(_down)){
     IWETH(weth).transfer(_top, _referralRewards * TOP_FEE_RATIO /FEE_RATIO);
         IWETH(weth).transfer(rainbowTreasury, _referralRewards * MIDDLE_FEE_RATIO / FEE_RATIO);
+
                                              }else {
         IWETH(weth).transfer(rainbowTreasury, _referralRewards );
+
                                              }
         }else if(_top != address(0) && _middle != address(0) && _down == address(0)){
             if(IFireSoul(fireSoul).checkFID(_top) && IFireSoul(fireSoul).checkFID(_middle)){
         IWETH(weth).transfer(_top, _referralRewards * TOP_FEE_RATIO /FEE_RATIO);
         IWETH(weth).transfer(_middle, _referralRewards * MIDDLE_FEE_RATIO / FEE_RATIO);
         IWETH(weth).transfer(rainbowTreasury, _referralRewards * DOWN_FEE_RATIO/ FEE_RATIO);
+
             }else if(IFireSoul(fireSoul).checkFID(_top) && !IFireSoul(fireSoul).checkFID(_middle)){
                 IWETH(weth).transfer(_top, _referralRewards * TOP_FEE_RATIO / FEE_RATIO);
                 IWETH(weth).transfer(rainbowTreasury ,_referralRewards * (MIDDLE_FEE_RATIO + DOWN_FEE_RATIO)/FEE_RATIO);
+
             }else {
                 IWETH(weth).transfer(rainbowTreasury, _referralRewards);
+
             }
         }else if(_top != address(0) && _middle == address(0) && _down == address(0)){
             if(IFireSoul(fireSoul).checkFID(_top)){
         IWETH(weth).transfer(_top, _referralRewards * TOP_FEE_RATIO /FEE_RATIO);
         IWETH(weth).transfer(rainbowTreasury, _referralRewards * (MIDDLE_FEE_RATIO + DOWN_FEE_RATIO)/ FEE_RATIO);
+
             }else {
         IWETH(weth).transfer(rainbowTreasury, _referralRewards);
+
             }
         }else{
         IWETH(weth).transfer( rainbowTreasury, _referralRewards);
+
         }
-    if (useITreasuryDistributionContract) {
-        ITreasuryDistributionContract(treasuryDistributionContract).setSourceOfIncome(0, 0, _fee);
-    }
     _mint(msg.sender, _idTracker.current(), _amount, '');
     _idTracker.increment();
  

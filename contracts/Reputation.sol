@@ -55,7 +55,7 @@ contract Reputation is Ownable {
         }
     }
     function checkReputation(address _user) external view returns (uint256) {
-        uint256 reputationPoints;
+        uint256 reputationPoints = 0;
         for (uint256 i = 0; i < tokens.length; i++) {
             reputationPoints += IERC20(tokens[i]).balanceOf(IFireSoul(fireSoul).getSoulAccount(_user)) * coefficients[tokens[i]];
         }

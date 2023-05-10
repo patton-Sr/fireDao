@@ -76,7 +76,7 @@ contract FirePassport is IFirePassport,ERC721URIStorage {
       usernameExists[username] = true;
       _mint(msg.sender, id);
       if(useTreasuryDistributionContract) {
-         ITreasuryDistributionContract(treasuryDistributionContract).setSourceOfIncome(1,1,fee);
+         ITreasuryDistributionContract(treasuryDistributionContract).setSourceOfIncome(1,msg.sender,fee);
       }
       emit Register(id,trueUsername,msg.sender,email,block.timestamp,information);
    }
