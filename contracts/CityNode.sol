@@ -51,6 +51,7 @@ contract cityNode is ERC1155, Ownable {
     mapping(address => address) public nodeTreasuryAdmin;
     mapping(uint256 => address) public idToNodeTreasury;
     mapping(uint256 => string ) public nodeIdInfo;
+    mapping(string => bool) public checkCity;
     cityNodeInfo[] public cityNodeInfos;
 
     constructor(address _weth) ERC1155("test") {
@@ -164,6 +165,7 @@ contract cityNode is ERC1155, Ownable {
 
     //main
     function createCityNode(string memory cityNodeName ,string memory _info) public {
+    require(!checkCity[cityNodeName] ,"cityNode is exist");
     require(!isNotCityNodeUser[msg.sender], "you already joined");
     require(!contractStatus, "Contract status is false");
     require(IFireSoul(fireSoul).checkFID(msg.sender)|| whiteUser[msg.sender], "You haven't FID, please burn fireseed to create"); 
@@ -189,6 +191,7 @@ contract cityNode is ERC1155, Ownable {
     userInNodeInfo[msg.sender] = info;
     idOfNodeInfo[tokenId] = info;
     isNotCityNodeUser[msg.sender] = true;
+    checkCity[cityNodeName] = true;
     ctiyNodeId++;
 }
 
