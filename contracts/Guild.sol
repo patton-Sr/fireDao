@@ -11,10 +11,11 @@ contract Guild is ERC1155,Ownable {
         string guildName;
         string logo;
         string guildDescribe;
-        address[3] guildManager;
+        address guildManager;
     }
 
     uint256 public guildId;
+    address[] public secondaryAdministrators;
     mapping(address => bool) public isnotWhitelistUser; 
     mapping(uint256 =>mapping(address => bool)) public isnotcreater;
     mapping(address => uint256) public userGuildNum;
@@ -24,19 +25,36 @@ contract Guild is ERC1155,Ownable {
     guildInFo[] public guildInFos;
     constructor()ERC1155("uri") {
     }
-    function Whitelist(address user) public onlyOwner{
-        isnotWhitelistUser[user] = true;
+    function getSecondaryAdministratorsLength() public view returns(uint256) {
+        return secondaryAdministrators.length;
     }
-    function batchWitelist(address[] memory users) public onlyOwner{
-        for(uint i = 0 ; i<users.length; i++){
+
+    function setBatchSecondaryAdministrator(address[] memory users) public onlyOwner{
+        for(uint256 i = 0 ; i<users.length; i++){
+            require(!isnotWhitelistUser[users[i]],"WhiteList added repeatedly");
             isnotWhitelistUser[users[i]] = true;
+            secondaryAdministrators.push(users[i]);
         }
     }
-    function createGuild(string memory _guildName , string memory _logo,string memory _guildDescribe, address[3] memory managers) public {
-        require(isnotWhitelistUser[msg.sender] == true , "you not aprove");
-        if(guildId >10) {
-            revert();
+    function deleteBatchSecondaryAdministrator(address[] memory users) public onlyOwner {
+        for(uint256 i = 0 ; i < users.length; i ++) {
+            require(isnotWhitelistUser[users[i]],"WhiteList added repeatedly");
+            isnotWhitelistUser[users[i]] = false;
+            deleteWlistArray(users[i]);
+
         }
+    }
+    function deleteWlistArray(address _user) internal {
+        for(uint256 i = 0 ; i < secondaryAdministrators.length; i++) {
+            if(_user == secondaryAdministrators[i]){
+                secondaryAdministrators[i] = secondaryAdministrators[secondaryAdministrators.length -1];
+                secondaryAdministrators.pop();
+            }
+        }
+    }
+    function createGuild(string memory _guildName , string memory _logo,string memory _guildDescribe, address  managers) public {
+        require(isnotWhitelistUser[msg.sender] == true , "you not aprove");
+        
         _mint(msg.sender ,guildId, 1,"test" );
         guildInFo memory info = guildInFo(_guildName,_logo,_guildDescribe,managers);
         guildInFos.push(info);
@@ -51,7 +69,7 @@ contract Guild is ERC1155,Ownable {
         _mint(msg.sender ,_guildId, 1 , "test");
         userGuildNum[msg.sender] = _guildId;
     }
-    function addguildManagers(address[3] memory manager) public  {
+    function addguildManagers(address  manager) public  {
         require(isnotcreater[userGuildNum[msg.sender]][msg.sender] == true, "you are not manager" );
         guildInFoOWner[msg.sender][userGuildNum[msg.sender]][userGuildNum[msg.sender]].guildManager = manager;
     }
