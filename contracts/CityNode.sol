@@ -22,6 +22,7 @@ contract cityNode is ERC1155, Ownable {
         uint256 joinCityNodeTime;
         address Treasury;
         uint256 memberLength;
+        string hash;
     }
  
     address public weth;
@@ -44,10 +45,12 @@ contract cityNode is ERC1155, Ownable {
     mapping(address => uint256) public cityNodeUserNum;
     mapping(uint256 => uint256) public cityNodeIncomeAmount;
     mapping(address => cityNodeInfo) public userInNodeInfo;
+    mapping(uint256 => cityNodeInfo) public idOfNodeInfo;
     mapping(address => uint256) public userTax;
     mapping(uint256 => address) public cityNodeAdmin;
     mapping(address => address) public nodeTreasuryAdmin;
     mapping(uint256 => address) public idToNodeTreasury;
+    mapping(uint256 => string ) public nodeIdInfo;
     cityNodeInfo[] public cityNodeInfos;
 
     constructor(address _weth) ERC1155("test") {
@@ -59,15 +62,22 @@ contract cityNode is ERC1155, Ownable {
     function getCityNodeMemberLength(uint256 _num) public view returns(uint256) {
        return cityNodeMember[_num].length;
     }
+    function getCityNodeAdmin(address _user) external returns(address) {
+        return cityNodeAdmin[cityNodeUserNum[_user]];
+    }
     function setWhiteUser(address _to,bool _set) public onlyOwner {
         whiteUser[_to] = _set;
     }
     function isNotCityNodeLight(address _user) external view returns(bool){
         return isNotLightCity[cityNodeUserNum[_user]];
     }
+    function setFireSeedAddress(address _addr) public onlyOwner {
+        fireSeed = _addr;
+    }
     function cityNodeIncome(address _user, uint256 _income) external {
         require(msg.sender == fireSeed,"CityNode: invalid call");
         cityNodeIncomeAmount[cityNodeUserNum[_user]] += _income;
+        
     }
     function cityNodeTreasuryAddr(address _user)  external view returns(address) {
         require(msg.sender == fireSeed,"CityNode: invalid call");
@@ -154,8 +164,9 @@ contract cityNode is ERC1155, Ownable {
 
     //main
     function createCityNode(string memory cityNodeName ,string memory _info) public {
+    require(!isNotCityNodeUser[msg.sender], "you already joined");
     require(!contractStatus, "Contract status is false");
-    require(IFireSoul(fireSoul).checkFID(msg.sender), "You haven't FID, please burn fireseed to create"); 
+    require(IFireSoul(fireSoul).checkFID(msg.sender)|| whiteUser[msg.sender], "You haven't FID, please burn fireseed to create"); 
     require(IReputation(Reputation).checkReputation(msg.sender) > creationScore*10**18 || whiteUser[msg.sender],"not enough");
 
     // Create a new CityNodeTreasury contract and transfer ownership to the creator.
@@ -165,6 +176,7 @@ contract cityNode is ERC1155, Ownable {
     uint256 tokenId = ctiyNodeId;
     _mint(msg.sender, tokenId, 1, "test");
     nodeInfo[cityNodeName] = _info;
+    nodeIdInfo[tokenId] = _info;
     // Update the city node data structures.
     cityNodeCreater[msg.sender] = true;
     cityNodeMember[tokenId].push(msg.sender);
@@ -172,19 +184,22 @@ contract cityNode is ERC1155, Ownable {
     cityNodeAdmin[tokenId] = msg.sender;
     nodeTreasuryAdmin[msg.sender] = address(nodeTreasury);
     idToNodeTreasury[tokenId] = address(nodeTreasury);
-    cityNodeInfo memory info = cityNodeInfo(tokenId, cityNodeName, msg.sender, block.timestamp, block.timestamp, address(nodeTreasury),cityNodeMember[tokenId].length);
+    cityNodeInfo memory info = cityNodeInfo(tokenId, cityNodeName, msg.sender, block.timestamp, block.timestamp, address(nodeTreasury),cityNodeMember[tokenId].length,_info);
     cityNodeInfos.push(info);
     userInNodeInfo[msg.sender] = info;
+    idOfNodeInfo[tokenId] = info;
+    isNotCityNodeUser[msg.sender] = true;
     ctiyNodeId++;
 }
 
 
  function joinCityNode(uint256 cityNodeNum) public {
     require(!contractStatus,"Status is false");
-    require(IFireSoul(fireSoul).checkFID(msg.sender) , "you haven't FID,plz burn fireseed to create"); 
+    require(IFireSoul(fireSoul).checkFID(msg.sender) || whiteUser[msg.sender], "you haven't FID,plz burn fireseed to create"); 
     require(!cityNodeCreater[msg.sender], "you are already a creator");
     require(!isNotCityNodeUser[msg.sender], "you are already join a cityNode");
     require(cityNodeNum < ctiyNodeId, "you input error");
+
     
     cityNodeMember[cityNodeNum].push(msg.sender);
     cityNodeUserNum[msg.sender] = cityNodeNum;
@@ -194,20 +209,22 @@ contract cityNode is ERC1155, Ownable {
     address nodeAdmin = cityNodeAdmin[cityNodeNum];
     address nodeTreasury = nodeTreasuryAdmin[nodeAdmin];
 
-    cityNodeInfo memory Info = cityNodeInfo(
+    cityNodeInfo memory _Info = cityNodeInfo(
         cityNodeNum,
         cityName,
         nodeAdmin,
         createTime,
         block.timestamp,
         nodeTreasury,
-        cityNodeMember[cityNodeNum].length
+        cityNodeMember[cityNodeNum].length,
+        nodeIdInfo[cityNodeNum]
+
     );
-    cityNodeInfos.push(Info);
+    userInNodeInfo[nodeAdmin].memberLength = cityNodeMember[cityNodeNum].length;
 
     _mint(msg.sender, cityNodeNum, 1, "test");
 
-    userInNodeInfo[msg.sender] = Info;  
+    userInNodeInfo[msg.sender] = _Info;  
     isNotCityNodeUser[msg.sender] = true;
 }
 
@@ -236,12 +253,19 @@ function changeNodeAdmin(address newAdmin) public {
     isNotCityNodeUser[_nodeUser] = false;
 }
 
-    function quitCityNode() public{
+    function quitCityNode(uint256 _num) public{
         require(!contractStatus,"Status is false");
-        require(!isNotCityNodeUser[msg.sender],"you haven't join any citynode");
-        
-
+        require(isNotCityNodeUser[msg.sender],"you haven't join any citynode");
+        require(_num == cityNodeUserNum[msg.sender], "you is not citynode user");
+        address user = msg.sender;
+        for(uint256 i = 0 ; i < cityNodeMember[_num].length; i++) {
+            if(cityNodeMember[_num][i] == user ){
+                cityNodeMember[_num][i] = cityNodeMember[_num][cityNodeMember[_num].length - 1];
+                cityNodeMember[_num].pop();
+            }
+        }
         _burn(msg.sender,cityNodeUserNum[msg.sender],1);
+        
         
         isNotCityNodeUser[msg.sender] = false;
     }

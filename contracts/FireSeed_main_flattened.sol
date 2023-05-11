@@ -1052,6 +1052,7 @@ interface ICityNode{
   function isNotCityNodeUsers(address _user) external view returns(bool);
   function isNotCityNodeLight(address _user) external view returns(bool);
    function cityNodeTreasuryAddr(address _user)  external view returns(address) ;
+   function getCityNodeAdmin(address _user) external returns(address) ;
 }
 // File: contracts/interface/IWETH.sol
 
@@ -2986,6 +2987,7 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
     uint256 public TOTAL_REWARD_RATIO_ONE;
     uint256 public TOTAL_REWARD_RATIO_TWO;
     uint256 public TOTAL_MAIN_RATIO;
+    uint256 public CITY_NODE_RATE;
     uint256 private FEE_RATIO = 100;
     Counters.Counter private _idTracker;
     event passFireSeed(address  from, address  to, uint256  tokenId, uint256  amount, uint256  transferTime);
@@ -3045,6 +3047,7 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
     treasuryDistributionContract=_treasuryDistributionContract;
     cityNode = _cityNode;
     rainbowTreasury = _rainbowTreasury;
+    CITY_NODE_RATE = 90;
 
 }   
   modifier nonReentrant() {
@@ -3178,6 +3181,10 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
     function setTreasuryDistributionContract(address _treasuryDistributionContract) public onlyOwner{
         treasuryDistributionContract=_treasuryDistributionContract;
     }
+    function setCityNodeRate(uint256 _rate) public onlyOwner {
+        require(_rate <= 100 ,"_rate error");
+        CITY_NODE_RATE = _rate;
+    }
     
     function mintWithETH(uint256 _amount) external payable whenNotPaused {
     require(_idTracker.current() < maxMint, "FireSeed: To reach the maximum number of casting ids");
@@ -3212,7 +3219,9 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
         ITreasuryDistributionContract(treasuryDistributionContract).setSourceOfIncome(4, msg.sender, _mainFee);
 
         if(ICityNode(cityNode).isNotCityNodeUsers(msg.sender) && ICityNode(cityNode).isNotCityNodeLight(msg.sender)){
-        IWETH(weth).transfer(ICityNode(cityNode).cityNodeTreasuryAddr(msg.sender), _cityNodeReferralRewards);
+        IWETH(weth).transfer(ICityNode(cityNode).cityNodeTreasuryAddr(msg.sender), _cityNodeReferralRewards * CITY_NODE_RATE/ FEE_RATIO);
+        IWETH(weth).transfer(ICityNode(cityNode).getCityNodeAdmin(msg.sender), _cityNodeReferralRewards * FEE_RATIO - CITY_NODE_RATE/ FEE_RATIO);
+
         ICityNode(cityNode).cityNodeIncome( msg.sender,  _cityNodeReferralRewards);
         }else{
         IWETH(weth).transfer(rainbowTreasury, _cityNodeReferralRewards);
