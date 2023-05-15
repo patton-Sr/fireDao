@@ -2587,6 +2587,7 @@ contract Guild is ERC1155,Ownable {
         string logo;
         string guildDescribe;
         address guildManager;
+        uint256 asset;
     }
 
     struct application{
@@ -2596,6 +2597,12 @@ contract Guild is ERC1155,Ownable {
         string applicationLink;
         address applicationer;
 
+    }
+    struct memberInfo{
+        address member;
+        uint256 PID;
+        uint256 FID;
+        uint256 DATE;
     }
     FirePassport fp;
 
@@ -2607,6 +2614,7 @@ contract Guild is ERC1155,Ownable {
     address[] public secondaryAdministrators;
     address[] public toBeAdded;
     address public reputation;
+    address public TreasuryDistributionContract;
     bool public status;
     mapping(address => bool) public joinStatus;
     mapping(address => bool) public isnotWhitelistUser; 
@@ -2618,7 +2626,7 @@ contract Guild is ERC1155,Ownable {
     mapping(address => bool) public userStatus;
     mapping(address => bool) public isNotdeputyGuildManager;
     mapping(uint256 => address[]) public idDeputyGuildManager;
-    mapping(uint256 => address[]) public member;
+    mapping(uint256 => memberInfo[]) public member;
 
 
     guildInFo[] public guildInFos;
@@ -2627,6 +2635,15 @@ contract Guild is ERC1155,Ownable {
         weth = _weth;
 
     }
+    function setTreasuryDistributionContract(address _addr) public onlyOwner{
+        TreasuryDistributionContract = _addr;
+    }
+
+    function guildIncome(uint256 _id,uint256 amount) external {
+        require(msg.sender == TreasuryDistributionContract,"no access");
+        userGuildInFo[_id].asset = amount;
+    }
+
     function getmemberLength(uint256 _guildNum) public view returns(uint256) {
         return member[_guildNum].length;
     }
@@ -2707,13 +2724,14 @@ contract Guild is ERC1155,Ownable {
     function createGuild(string memory _guildName , string memory _logo,string memory _guildDescribe ) public {
         require(isnotWhitelistUser[msg.sender] == true , "you not aprove");
         _mint(msg.sender ,guildId, 1,"test" );
-        guildInFo memory info = guildInFo(_guildName,_logo,_guildDescribe,msg.sender);
+        guildInFo memory info = guildInFo(_guildName,_logo,_guildDescribe,msg.sender,0);
+        memberInfo memory mInfo = memberInfo(msg.sender,checkPid(msg.sender),IFireSoul(fireSoul).checkFIDA(msg.sender),block.timestamp);
         guildInFos.push(info);
         guildInFoOWner[msg.sender][guildId] = guildInFos;
         userGuildInFo[guildId] = info;
         userGuildNum[msg.sender] = guildId;
         isnotcreater[guildId][msg.sender] =true;
-        member[guildId].push(msg.sender);
+        member[guildId].push(mInfo);
         guildId++;
     }
 
@@ -2723,7 +2741,7 @@ contract Guild is ERC1155,Ownable {
         guildInFoOWner[msg.sender][userGuildNum[msg.sender]][userGuildNum[msg.sender]].guildManager = manager;
     }
     function submitApplication(uint256 num,string memory _applicationLink) public {
-        require(IReputation(reputation).checkReputation(msg.sender)>joinRestrictions,"you cannot submit the application");
+        require(IReputation(reputation).checkReputation(msg.sender) > joinRestrictions,"you cannot submit the application");
         require(!userStatus[msg.sender],"you are queuing to apply");
         application memory app = application({
             GuildNum:num,
@@ -2740,7 +2758,8 @@ contract Guild is ERC1155,Ownable {
         require(msg.sender == userGuildInFo[_userGuildNum].guildManager || isNotdeputyGuildManager[msg.sender],"you are not a union auditor");
         _mint(_user,_userGuildNum, 1 , "test");
         userGuildNum[_user] = _userGuildNum;
-        member[_userGuildNum].push(_user);
+        memberInfo memory mInfo = memberInfo(_user,checkPid(_user),IFireSoul(fireSoul).checkFIDA(_user),block.timestamp);
+        member[_userGuildNum].push(mInfo);
     }
     function rejectedApp(uint256 _userGuildNum,address _user) public {
         require(msg.sender == userGuildInFo[_userGuildNum].guildManager || isNotdeputyGuildManager[msg.sender],"you are not a union auditor");
@@ -2783,6 +2802,15 @@ contract Guild is ERC1155,Ownable {
             }
         }
         
+    }
+    function quitGuild(uint256 _GuildNum) public {
+        for(uint256 i = 0; i < member[_GuildNum].length; i ++){
+            if(msg.sender == member[_GuildNum][i].member){
+                member[_GuildNum][i] = member[_GuildNum][member[_GuildNum].length - 1];
+                member[_GuildNum].pop();
+            }
+        }
+        require(false,"you have not join a guild");
     }
     function safeTransferFrom(
         address from,
