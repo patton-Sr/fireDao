@@ -2596,6 +2596,7 @@ contract Guild is ERC1155,Ownable {
         uint256 FID;
         string applicationLink;
         address applicationer;
+        uint256 time;
 
     }
     struct memberInfo{
@@ -2603,6 +2604,19 @@ contract Guild is ERC1155,Ownable {
         uint256 PID;
         uint256 FID;
         uint256 DATE;
+    }
+    struct inComeInfo{
+        uint256 id;
+        address transfer;
+        uint256 amount;
+        uint256 time;
+    }
+    struct transferOperate{
+        uint256 id;
+        address operate;
+        address _to;
+        uint256 amount;
+        uint256 time;
     }
     FirePassport fp;
 
@@ -2613,6 +2627,8 @@ contract Guild is ERC1155,Ownable {
     address public weth;
     address[] public secondaryAdministrators;
     address[] public toBeAdded;
+    inComeInfo[] public inComeInfos;
+    transferOperate[] public transferOperates;
     address public reputation;
     address public TreasuryDistributionContract;
     bool public status;
@@ -2628,9 +2644,6 @@ contract Guild is ERC1155,Ownable {
     mapping(uint256 => memberInfo[]) public member;
     mapping(address => bool) public isNotguildManager;
     mapping(address => bool) public isNotdeputyGuildManager;
-
-
-
     guildInFo[] public guildInFos;
     constructor(address _weth)ERC1155("uri") {
         MAX = 10000000000000000000;
@@ -2639,6 +2652,12 @@ contract Guild is ERC1155,Ownable {
         // setFpAddr(0x1853B8d43B9500F60cc68b672642A02eC26667B6);
         setReputation(0x87a0941bBdE86Cf5C5b3DC68da4A2018a49BFaaB);
         setTreasuryDistributionContract(0xA8FcF03CDEc12CF19767d12aC4c627FF6e5D1c21);
+    }
+    function getinComeInfosLength() public view returns(uint256) {
+        return inComeInfos.length;
+    }
+    function gettransferOperatesLength() public view returns(uint256 ) {
+        return transferOperates.length;
     }
     function gettoBeAdded() public view returns(uint256) {
        return toBeAdded.length;
@@ -2653,9 +2672,11 @@ contract Guild is ERC1155,Ownable {
         TreasuryDistributionContract = _addr;
     }
 
-    function guildIncome(uint256 _id,uint256 amount) external {
+    function guildIncome(uint256 _id,uint256 _amount) external {
         require(msg.sender == TreasuryDistributionContract,"no access");
-        userGuildInFo[_id].asset = amount;
+        userGuildInFo[_id].asset += _amount;
+        inComeInfo memory _info = inComeInfo(_id,msg.sender, _amount, block.timestamp);
+        inComeInfos.push(_info);
     }
 
     function getmemberLength(uint256 _guildNum) public view returns(uint256) {
@@ -2757,14 +2778,15 @@ contract Guild is ERC1155,Ownable {
         isNotguildManager[msg.sender] =true;
     }
     function submitApplication(uint256 num,string memory _applicationLink) public {
-        require(IReputation(reputation).checkReputation(msg.sender) > joinRestrictions,"you cannot submit the application");
+        require(IReputation(reputation).checkReputation(msg.sender) >= joinRestrictions,"you cannot submit the application");
         require(!userStatus[msg.sender],"you are queuing to apply");
         application memory app = application({
             GuildNum:num,
             PID:checkPid(msg.sender),
             FID:IFireSoul(fireSoul).checkFIDA(msg.sender),
             applicationLink:_applicationLink,
-            applicationer:msg.sender
+            applicationer:msg.sender,
+            time:block.timestamp
         });
         userStatus[msg.sender] =true;
         userApplication[msg.sender] = app;
@@ -2772,6 +2794,7 @@ contract Guild is ERC1155,Ownable {
     }
    function allowJoinGuild(uint256 _userGuildNum,address _user) public {
         require(msg.sender == userGuildInFo[_userGuildNum].guildManager || isNotdeputyGuildManager[msg.sender],"you are not a union auditor");
+        require(super.balanceOf(msg.sender,_userGuildNum) == 1,"the address is exist");
         _mint(_user,_userGuildNum, 1 , "test");
         userGuildNum[_user] = _userGuildNum;
         memberInfo memory mInfo = memberInfo(_user,checkPid(_user),IFireSoul(fireSoul).checkFIDA(_user),block.timestamp);
@@ -2779,7 +2802,7 @@ contract Guild is ERC1155,Ownable {
     }
     function rejectedApp(uint256 _userGuildNum,address _user) public {
         require(msg.sender == userGuildInFo[_userGuildNum].guildManager || isNotdeputyGuildManager[msg.sender],"you are not a union auditor");
-        userStatus[msg.sender] =false;
+        userStatus[msg.sender] = false;
         delete userApplication[msg.sender];
         for(uint256 i =0 ; i< toBeAdded.length; i++){
             if(toBeAdded[i] == _user){
@@ -2795,6 +2818,8 @@ contract Guild is ERC1155,Ownable {
         if(status){
             require(msg.sender == owner(),"no access");
         }
+        transferOperate memory info = transferOperate(userGuildNum[msg.sender],msg.sender, _to, _amount,block.timestamp);
+        transferOperates.push(info);
         IWETH(weth).transfer(_to,_amount );
     }
     function setGuildManager(uint256 _GuildNum, address _to) public onlyOwner{
@@ -2827,6 +2852,7 @@ contract Guild is ERC1155,Ownable {
             if(msg.sender == member[_GuildNum][i].member){
                 member[_GuildNum][i] = member[_GuildNum][member[_GuildNum].length - 1];
                 member[_GuildNum].pop();
+                _burn(msg.sender, _GuildNum,1);
             }
         }
         require(false,"you have not join a guild");
