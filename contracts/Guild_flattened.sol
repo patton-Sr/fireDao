@@ -2388,6 +2388,7 @@ interface IWETH {
     function deposit() external payable;
     function transfer(address to, uint value) external returns (bool);
     function withdraw(uint) external;
+    function balanceOf(address _addr) external returns(uint256);
 }
 
 // File: contracts/interface/ITreasuryDistributionContract.sol
@@ -2815,6 +2816,7 @@ contract Guild is ERC1155,Ownable {
     function transferWeth(address _to, uint256 _amount)  public {
         require(msg.sender == owner() || msg.sender == userGuildInFo[userGuildNum[msg.sender]].guildManager,"no access");
         require(_amount <= MAX, "Exceeded the maximum transfer amount");
+        require(IWETH(weth).balanceOf(address(this)) > 0 , "balance of this no amount");
         if(status){
             require(msg.sender == owner(),"no access");
         }
