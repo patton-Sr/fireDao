@@ -111,6 +111,9 @@ contract FireDaoToken is ERC20 ,Ownable{
 
     receive() external payable {}
 
+function mint(uint256 amount) public onlyOwner{
+    _mint(msg.sender , amount);
+}
 function setstatus() public onlyOwner{
     status = !status;
 }
