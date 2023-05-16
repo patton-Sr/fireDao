@@ -35,7 +35,6 @@ contract FireDaoToken is ERC20 ,Ownable{
     uint256 public TREASURY_RATIO;
     uint256 public CITY_NODE_RATIO;
     uint256 public THREE_RATIO;
-    uint256 public swapTokensAtAmount;
     uint256 public StartBlock;
     uint256 _destroyMaxAmount;
     mapping(address => bool) public _isExcludedFromFees;
@@ -85,25 +84,26 @@ contract FireDaoToken is ERC20 ,Ownable{
         // uniswapV2Router = _uniswapV2Router;
         // uniswapV2Pair = _uniswapV2Pair;
         // _bnbPool = _uniswapV2Pair;
+
         _tokenOwner = tokenOwner;
         excludeFromFees(tokenOwner, true);
         excludeFromFees(owner(), true);
         excludeFromFees(address(this), true);
         whiteListOfAddLP(tokenOwner, true);
         whiteListOfAddLP(owner(), true);
+
         // WETH = IERC20(_uniswapV2Router.WETH());
         // pair = IERC20(_uniswapV2Pair);
+        
         uint256 total = 10**28;
-        swapTokensAtAmount = 5 * 10**19;
         _mint(tokenOwner, total);
         _addDelegates(tokenOwner, safe96(total,"erc20: vote amount underflows"));
         _currentSupply = total;
         currentTime = block.timestamp;
         _tax = 5;
-        setProportion(5);
-        distributeRates[0] = 70;
-        distributeRates[1] = 20;
-        distributeRates[2] = 10;
+        // distributeRates[0] = 70;
+        // distributeRates[1] = 20;
+        // distributeRates[2] = 10;
         TREASURY_RATIO = 80;
         CITY_NODE_RATIO = 10;
         THREE_RATIO = 10;
@@ -122,6 +122,11 @@ function setCITY_NODE_RATIO(uint256 _num) public onlyOwner{
 }
 function setTREASURY_RATIO(uint256 _num)public onlyOwner{
     TREASURY_RATIO = _num;
+}
+function adddistributeRates(uint256[] memory _num) public onlyOwner{
+    for(uint256 i =0 ;i <distributeRates.length; i++){
+        distributeRates.push(_num[i]);
+    }
 }
 function setdistributeRates( uint256 _id ,uint256 _num) public onlyOwner{ 
     require(_id <= 3,"over limit");
@@ -174,9 +179,6 @@ function setdistributeRates( uint256 _id ,uint256 _num) public onlyOwner{
         }
     }
 
-    function setProportion(uint256 _proportion) public onlyOwner{
-        proportion = _proportion;
-    }
     function setCityNode(address _cityNode) public onlyOwner{
         cityNode = _cityNode;
     }
@@ -266,10 +268,7 @@ function setdistributeRates( uint256 _id ,uint256 _num) public onlyOwner{
        }
     }
 
-    function setSwapTokensAtAmount(uint256 _swapTokensAtAmount) public onlyOwner {
-        swapTokensAtAmount = _swapTokensAtAmount;
-    }
-	
+  
 	function changeSwapWarp(GetWarp _warp) public onlyOwner {
         warp = _warp;
     }
