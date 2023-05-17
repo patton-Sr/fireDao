@@ -127,7 +127,8 @@ function setTREASURY_RATIO(uint256 _num)public onlyOwner{
     TREASURY_RATIO = _num;
 }
 function adddistributeRates(uint256[] memory _num) public onlyOwner{
-    for(uint256 i =0 ;i <distributeRates.length; i++){
+    require(distributeRates.length <= 3 ,"over ratio");
+    for(uint256 i =0 ;i <_num.length; i++){
         distributeRates.push(_num[i]);
     }
 }
