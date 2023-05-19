@@ -2642,7 +2642,7 @@ contract FlameExchangeFdt is Ownable{
 
 
     }
-        function checkCanClaim(uint256 _id) internal view returns(uint256) {
+    function checkCanClaim(uint256 _id) internal view returns(uint256) {
       return  userexchangeRecord[msg.sender][_id].lockedAmount * (block.number -  userexchangeRecord[msg.sender][_id].time)  / TOW_YEAR;
     }
     function CanClaim() public view returns(uint256) {
@@ -2659,17 +2659,17 @@ contract FlameExchangeFdt is Ownable{
                 continue;
             }
             totalAmount += checkCanClaim(i);
-      
-            if(_amount <= totalAmount) {
-                userexchangeRecord[msg.sender][i].time = block.number;
-                userexchangeRecord[msg.sender][i].lockedAmount -= checkCanClaim(i) ;
-                TransferHelper.safeTransfer(fdt, msg.sender,checkCanClaim(i));
-                ISbt001(sbt_001).burn(msg.sender, checkCanClaim(i));
-          
-            }else{
-                assert(false);
-            }
+            userexchangeRecord[msg.sender][i].time = block.number;
+            userexchangeRecord[msg.sender][i].lockedAmount -= checkCanClaim(i) ;
+  
         }
+            if(_amount <= totalAmount) {
+                TransferHelper.safeTransfer(fdt, msg.sender,_amount);
+                ISbt001(sbt_001).burn(msg.sender, _amount);
+                emit allClaimRecord(checkPid(msg.sender),checkUsername(msg.sender),msg.sender,_amount,block.number);
+            }else{
+                revert("Missing withdrawal amount");
+            }
     }
          function checkPid(address _user) public view returns(uint256){
          (
