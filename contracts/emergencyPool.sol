@@ -2573,105 +2573,103 @@ contract FirePassport is IFirePassport,ERC721URIStorage {
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./interface/ISbt001.sol";
-import "./interface/ISbt002.sol";
+import "./interface/IUniswapV2Router02.sol";
 
-
-
-contract FlameExchangeFdt is Ownable{
-
-    bool public status;
+contract normalPool is Ownable {
     FirePassport fp;
-    uint256 public minAmount;
-    address public flame;
+    bool public status;
+    uint256 public reputationAmount;
+    uint256 public contractCall;
+    uint256 public AWARD_RATIO;
+    uint256 public PURCHASE_RATIO;
+    uint256 constant FEE_BASE = 100;
+    uint256 public intervals;
+    uint256 public contractIntervals;
+    uint256 public tokenAmount;
+    address public weth;
     address public fdt;
-    uint256 public exchangeRatio;
-    uint256 public mint002Ratio;
-    address public sbt_001;
-    address public sbt_002;
-    
+    address public reputation;
+    address public DEAD = address(0x000000000000000000000000000000000000dEaD);
+    mapping(address => uint256) public userCall;
+    event record(uint256 pid, string username,uint256 fidScore,address user, uint256 burn,uint256 rewards,uint256 time);
 
-    uint256 public TOW_YEAR = 5259487;
-    event allExchangeRecord(uint256 pid,string name,address user, uint256 lockedAmount, uint256 time );
-    event allClaimRecord(uint256 pid, string name, address user , uint256 amount, uint256 time);
-      struct exchangeRecord{
-        uint256 pid;
-        string name;
-        address user;
-        uint256 lockedAmount; 
-        uint256 time;
-    }
-    exchangeRecord[] public exchangeRecords;
-    mapping(address => exchangeRecord[]) public userexchangeRecord;
-    
-    constructor(FirePassport _fp,address _fdt,address _flame,address _sbt_001,address _sbt_002){
+    IUniswapV2Router02 public uniswapV2Router;
+
+
+    constructor ( FirePassport _fp,address _reputation,address _fdt,address _weth) {
+        
+        // IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(uniswapV2Router_);
+        // uniswapV2Router = _uniswapV2Router;
+        reputation = _reputation;
         fdt = _fdt;
-        flame = _flame;
-        exchangeRatio= 100;
+        weth = _weth;
+        tokenAmount = 500000000000000000;
+        AWARD_RATIO = 5;
+        PURCHASE_RATIO = 95;
+        intervals = 3600;
+        contractIntervals = 60;
         fp = _fp;
-        mint002Ratio = 10;
-        sbt_001 = _sbt_001;
-        sbt_002 = _sbt_002;
-        minAmount = 10000000000000000000000;
     }
-    function setmint001Ratio(uint256 _ratio) public onlyOwner {
-        mint002Ratio = _ratio;
+    function setUniswapV2Router(IUniswapV2Router02 _uniswapV2Router) public onlyOwner {
+        uniswapV2Router = _uniswapV2Router;
     }
-    function setstatus() public onlyOwner{
+    function setReputationAmount(uint256 _amount) public onlyOwner {
+        reputationAmount = _amount;
+    }
+    function setStatus() public onlyOwner{
         status = !status;
     }
-    function setexchangeRatio(uint256 _exchangeRatio) public onlyOwner {
-        exchangeRatio = _exchangeRatio;
+    function setIntervals(uint256 _time) public onlyOwner {
+        intervals = _time;
     }
-    function setMinAmount(uint256 _amount) public onlyOwner{
-        minAmount = _amount;
+    function setContractIntervals(uint256 _time) public onlyOwner {
+        contractIntervals = _time;
     }
-    function backToken(uint256 _amount) public onlyOwner{
-        require(IERC20(fdt).balanceOf(address(this)) >= _amount);
-        TransferHelper.safeTransfer(fdt, msg.sender, _amount);
+    function setTokenAmount(uint256 _amount) public onlyOwner {
+        tokenAmount =_amount;
     }
-    function exchange(uint256 _amount) public {
-        require(!status,"contracts status is error");
-        require(_amount >= minAmount,"The quantity you buy must be greater than the minimum quantity");
-        TransferHelper.safeTransferFrom(flame, msg.sender, address(this), _amount);
-        exchangeRecord memory record = exchangeRecord(checkPid(msg.sender),checkUsername(msg.sender),msg.sender,_amount/exchangeRatio,block.number);
-        userexchangeRecord[msg.sender].push(record);
-        exchangeRecords.push(record);
-        ISbt001(sbt_001).mint(msg.sender, _amount);
-        ISbt002(sbt_002).mint(msg.sender, _amount/mint002Ratio);
-        emit allExchangeRecord(checkPid(msg.sender),checkUsername(msg.sender),msg.sender,_amount , block.timestamp);
-
+    function setAwardRatio(uint256 _ratio) public onlyOwner {
+        AWARD_RATIO = _ratio;
+        PURCHASE_RATIO = FEE_BASE - _ratio;
     }
-    function checkCanClaim(uint256 _id) internal view returns(uint256) {
-      return  userexchangeRecord[msg.sender][_id].lockedAmount * (block.number -  userexchangeRecord[msg.sender][_id].time)  / TOW_YEAR;
+    
+    function swapTokensForOther() private {
+        require(!status,"The contract is being maintained");
+        require(checkBalanceOfETH() > tokenAmount ,"Insufficient contract balance");
+        require(contractCall + contractIntervals < block.timestamp && userCall[msg.sender] + intervals < block.timestamp, "contract or wallet not ready");
+        require(IReputation(reputation).checkReputation(msg.sender) >= reputationAmount,"You don't have enough reputation points");
+        // generate the uniswap pair path of token -> weth
+		userCall[msg.sender] = block.timestamp;
+        contractCall = block.timestamp;
+        address[] memory path = new address[](2);
+        path[0] = weth;
+        path[1] = fdt ;//testnet
+        uniswapV2Router.swapExactTokensForTokensSupportingFeeOnTransferTokens(
+            tokenAmount / FEE_BASE * PURCHASE_RATIO,
+            0,
+            path,
+            address(this),
+            block.timestamp
+        );
+        uint256 contractBalanceOfFDT = checkBalanceOfFDT();
+        IERC20(fdt).transfer(DEAD, contractBalanceOfFDT);
+        IERC20(weth).transfer(msg.sender, tokenAmount / FEE_BASE * AWARD_RATIO);
+        emit record(checkPid(msg.sender),
+                    checkUsername(msg.sender),
+                    IReputation(reputation).checkReputation(msg.sender),
+                    msg.sender,
+                    contractBalanceOfFDT,
+                    tokenAmount / FEE_BASE * AWARD_RATIO,
+                    block.timestamp
+                    );
     }
-    function CanClaim() public view returns(uint256) {
-        uint256  total = 0;
-        for(uint256 i = 0 ; i < userexchangeRecord[msg.sender].length ;i ++) {
-            total+=checkCanClaim(i);
-        }
-        return total;
+    function checkBalanceOfFDT() public view returns(uint256){
+        return IERC20(fdt).balanceOf(address(this));
     }
-    function Claim(uint256 _amount) public {
-        uint256 totalAmount  = 0;
-        for(uint256 i = 0 ; i < userexchangeRecord[msg.sender].length; i++){
-            if(checkCanClaim(i) == 0 ) {
-                continue;
-            }
-            totalAmount += checkCanClaim(i);
-            userexchangeRecord[msg.sender][i].time = block.number;
-            userexchangeRecord[msg.sender][i].lockedAmount -= checkCanClaim(i) ;
-  
-        }
-            if(_amount <= totalAmount) {
-                TransferHelper.safeTransfer(fdt, msg.sender,_amount);
-                ISbt001(sbt_001).burn(msg.sender, _amount);
-                emit allClaimRecord(checkPid(msg.sender),checkUsername(msg.sender),msg.sender,_amount,block.number);
-            }else{
-                revert("Missing withdrawal amount");
-            }
+    function checkBalanceOfETH() public view returns(uint256) {
+        return IERC20(weth).balanceOf(address(this));
     }
-         function checkPid(address _user) public view returns(uint256){
+    function checkPid(address _user) public view returns(uint256){
          (
              uint256 PID,
              ,
@@ -2681,7 +2679,7 @@ contract FlameExchangeFdt is Ownable{
          ) = fp.userInfo(_user);
 		return uint256(PID);
     }
-       function checkUsername(address _user) public view returns(string memory){
+    function checkUsername(address _user) public view returns(string memory){
          (
              ,
              ,
@@ -2691,4 +2689,5 @@ contract FlameExchangeFdt is Ownable{
          ) = fp.userInfo(_user);
 		return string(username);
     }
+
 }
