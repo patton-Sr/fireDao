@@ -2575,7 +2575,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interface/IUniswapV2Router02.sol";
 
-contract normalPool is Ownable {
+contract emergencyPool is Ownable {
     FirePassport fp;
     bool public status;
     uint256 public reputationAmount;
