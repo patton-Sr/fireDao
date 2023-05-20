@@ -2575,7 +2575,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interface/IUniswapV2Router02.sol";
 
-contract emergencyPool is Ownable {
+contract emergencyPool  {
     FirePassport fp;
     bool public status;
     uint256 public reputationAmount;
@@ -2589,14 +2589,16 @@ contract emergencyPool is Ownable {
     address public weth;
     address public fdt;
     address public reputation;
+    address public poolManager;
     address public DEAD = address(0x000000000000000000000000000000000000dEaD);
     mapping(address => uint256) public userCall;
     event record(uint256 pid, string username,uint256 fidScore,address user, uint256 burn,uint256 rewards,uint256 time);
 
     IUniswapV2Router02 public uniswapV2Router;
 
+ 
 
-    constructor ( FirePassport _fp,address _reputation,address _fdt,address _weth) {
+    constructor ( FirePassport _fp,address _reputation,address _fdt,address _weth,address _poolManager) {
         
         // IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(uniswapV2Router_);
         // uniswapV2Router = _uniswapV2Router;
@@ -2609,31 +2611,46 @@ contract emergencyPool is Ownable {
         intervals = 3600;
         contractIntervals = 60;
         fp = _fp;
+        poolManager = _poolManager;
     }
-    function setUniswapV2Router(IUniswapV2Router02 _uniswapV2Router) public onlyOwner {
+    function setUniswapV2Router(IUniswapV2Router02 _uniswapV2Router) external  {
+        require(msg.sender == poolManager, 'no access');
+
         uniswapV2Router = _uniswapV2Router;
     }
-    function setReputationAmount(uint256 _amount) public onlyOwner {
+    function setReputationAmount(uint256 _amount) external  {
+        require(msg.sender == poolManager, 'no access');
+
         reputationAmount = _amount;
     }
-    function setStatus() public onlyOwner{
+    function setStatus() external {
+        require(msg.sender == poolManager, 'no access');
+
         status = !status;
     }
-    function setIntervals(uint256 _time) public onlyOwner {
+    function setIntervals(uint256 _time) external  {
+        require(msg.sender == poolManager, 'no access');
+
         intervals = _time;
     }
-    function setContractIntervals(uint256 _time) public onlyOwner {
+    function setContractIntervals(uint256 _time) external  {
+        require(msg.sender == poolManager, 'no access');
+
         contractIntervals = _time;
     }
-    function setTokenAmount(uint256 _amount) public onlyOwner {
+    function setTokenAmount(uint256 _amount) external  {
+        require(msg.sender == poolManager, 'no access');
+
         tokenAmount =_amount;
     }
-    function setAwardRatio(uint256 _ratio) public onlyOwner {
+    function setAwardRatio(uint256 _ratio) external  {
+        require(msg.sender == poolManager, 'no access');
+
         AWARD_RATIO = _ratio;
         PURCHASE_RATIO = FEE_BASE - _ratio;
     }
     
-    function swapTokensForOther() private {
+    function swapTokensForOther() public {
         require(!status,"The contract is being maintained");
         require(checkBalanceOfETH() > tokenAmount ,"Insufficient contract balance");
         require(contractCall + contractIntervals < block.timestamp && userCall[msg.sender] + intervals < block.timestamp, "contract or wallet not ready");
