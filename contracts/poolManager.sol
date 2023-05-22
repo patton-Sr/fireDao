@@ -59,6 +59,7 @@ contract poolManager is Ownable {
         uint256 wethAmount  = getContractBalance();
         TransferHelper.safeTransfer(weth, normalPool, wethAmount * NORMAL_POOL_RATIO / FEE_RATIO);
         TransferHelper.safeTransfer(weth, emergencyPool, wethAmount * EMERGENCY_POOL_RATIO / FEE_RATIO);
+        
 
     }
     function getContractBalance() public view returns(uint256) {
