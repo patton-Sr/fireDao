@@ -26,6 +26,7 @@ contract poolManager is Ownable {
     uint256 public EMERGENCY_POOL_RATIO;
     constructor(address _weth) {
       
+      
         weth = _weth;
         NORMAL_POOL_RATIO = 50;
         EMERGENCY_POOL_RATIO = 50;
