@@ -2608,7 +2608,7 @@ contract poolManager is Ownable {
         weth = _weth;
         NORMAL_POOL_RATIO = 50;
         EMERGENCY_POOL_RATIO = 50;
-        reputationAmount = 100000 * 1e18;
+        reputationAmount = 100000;
         contractIntervals = 1800;
         interval = 21600;
         reward = 2e16;
