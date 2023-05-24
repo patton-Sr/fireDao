@@ -1,5 +1,6 @@
 
 
+
 // File: contracts/interface/IReputation.sol
 
 pragma solidity ^0.8.0;
@@ -2574,125 +2575,115 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interface/IUniswapV2Router02.sol";
-
-
-interface Pool{
-     function setUniswapV2Router(IUniswapV2Router02 _uniswapV2Router) external ;
-     function setReputationAmount(uint256 _amount) external;
-     function setStatus() external ;
-     function setIntervals(uint256 _time) external ;
-     function setContractIntervals(uint256 _time) external;
-     function setTokenAmount(uint256 _amount) external; 
-     function setAwardRatio(uint256 _ratio) external;
-}
-
-
-contract poolManager is Ownable {
+import "./interface/IUniswapV2Pair.sol";
+import "./interface/IUniswapV2Factory.sol";
+contract autoLp is Ownable {
     FirePassport fp;
-    address public weth;
-    address public normalPool;
-    address public emergencyPool;
+    address public  uniswapV2Pair;
     address public reputation;
-    uint256 public contractIntervals;
-    uint256 public contractInterval;
-    uint256 public interval;
-    uint256 public reward;
+    address public fdt;
+    address public guarding;
+    address public lpReceiver;
+    IUniswapV2Router02 public uniswapV2Router;
+    uint256 immutable public FEE_BASE = 100;
+    uint256 public PURCHASE_RATIO;
     uint256 public reputationAmount;
-    uint256 immutable public FEE_RATIO = 100;
-    uint256 public NORMAL_POOL_RATIO;
-    uint256 public EMERGENCY_POOL_RATIO;
-    mapping(address => uint256 ) public userTime;
-    event record(uint256 pid,string username,uint256 fid,address user,uint256 award, uint256 time);
-    constructor(address _weth, address _reputation) {
-        reputation = _reputation;
-        weth = _weth;
-        NORMAL_POOL_RATIO = 50;
-        EMERGENCY_POOL_RATIO = 50;
-        reputationAmount = 100000;
-        contractIntervals = 1800;
-        interval = 21600;
-        reward = 2e16;
-    }
+    uint256 public reward;
+    uint256 public contractInterval;
+    uint256 public contractIntervals;
+    uint256 public interval;
+    bool public status;
+    event record(uint256 pid,string username,uint256 fidScore,address user, uint256 amount,uint256 rewards, uint256 time);
+    mapping (address => uint256) public userTime;
 
-    function init(address _normalPool, address _emergencyPool) public onlyOwner {
-        require(_normalPool != address(0) && _emergencyPool != address(0), "address error");
-        normalPool = _normalPool;
-        emergencyPool = _emergencyPool;
+    constructor(address _reputation,IUniswapV2Router02 _uniswapV2Router_,address _fdt) {
+        IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(_uniswapV2Router_);
+        address _uniswapV2Pair = IUniswapV2Factory(_uniswapV2Router.factory())
+        .createPair(_fdt, _uniswapV2Router.WETH());
+        IERC20(fdt).approve(address(_uniswapV2Router_), 10**34);
+        uniswapV2Router = _uniswapV2Router;
+        uniswapV2Pair = _uniswapV2Pair;
+        reputation = _reputation;
+        fdt = _fdt;
+        PURCHASE_RATIO = 50;
+        reward = 2* 1e16;
+        contractIntervals = 300;
+        interval = 7200;
+        lpReceiver = msg.sender;
     }
-    function setfp(FirePassport _fp) public onlyOwner {
+     function setfp(FirePassport _fp) public onlyOwner {
         fp = _fp;
     }
-    function setreward(uint256 _amount) public onlyOwner {
-        reward = _amount;
+    function setlpReceiver(address _lpReceiver) public onlyOwner {
+        lpReceiver = _lpReceiver;
     }
-    function setcontractIntervals(uint256 _time) public onlyOwner{
-        contractIntervals = _time;
+    function setguarding(address _guarding) public onlyOwner {
+        guarding = _guarding;
     }
-    function setinterval(uint256 _time) public onlyOwner {
-        interval = _time;
+    function setstatus() public  {
+        require(msg.sender == guarding,"no access");
+        status = !status;
     }
-    function setreputationAmount(uint256 _amount) public onlyOwner {
-        reputationAmount = _amount;
+    function setinterval(uint256 _interval) public onlyOwner {
+        interval = _interval;
     }
-    function _setStatus() public onlyOwner {
-        Pool(normalPool).setStatus();
-        Pool(emergencyPool).setStatus();
+    function setcontractIntervals(uint256 _contractIntervals) public onlyOwner {
+        contractIntervals = _contractIntervals;
     }
-    function _setReputationAmount(uint256 _amount) public onlyOwner {
-        Pool(normalPool).setReputationAmount(_amount);
-        Pool(emergencyPool).setReputationAmount(_amount);
+    function setreputationAmount(uint256 _reputationAmount) public onlyOwner {
+        reputationAmount = _reputationAmount;
     }
-    function setNORMAL_POOL_RATIO(uint256 _ratio) public onlyOwner {
-        NORMAL_POOL_RATIO = _ratio;
+    function setreward(uint256 _reward) public onlyOwner{
+        reward = _reward;
     }
-    function setEMERGENCY_POOL_RATIO(uint256 _ratio) public onlyOwner {
-        EMERGENCY_POOL_RATIO = _ratio;
+    function buyFdt() internal returns(uint256){
+        uint256 wethAmount = IERC20(uniswapV2Router.WETH()).balanceOf(address(this));
+        if(wethAmount >= 1e18){
+            wethAmount = 1e18;
+        }
+        address[] memory path = new address[](2);
+        path[0] = uniswapV2Router.WETH();
+        path[1] = fdt ;//testnet
+        uniswapV2Router.swapExactTokensForTokensSupportingFeeOnTransferTokens(
+            wethAmount / FEE_BASE * PURCHASE_RATIO,
+            0,
+            path,
+            address(this),
+            block.timestamp
+        );
+        return wethAmount / FEE_BASE *(FEE_BASE - PURCHASE_RATIO);
     }
-    function _setUniswapV2Router(IUniswapV2Router02 _uniswapV2Router) public onlyOwner {
-        Pool(normalPool).setUniswapV2Router(_uniswapV2Router);
-        Pool(emergencyPool).setUniswapV2Router(_uniswapV2Router);
-    }
-    function fundAllocation() public onlyOwner {
-        require(NORMAL_POOL_RATIO + EMERGENCY_POOL_RATIO == 100, "allocation ration is error");
-        require(getContractBalance() > 0 , "contract balance is error");
-        require(IReputation(reputation).checkReputation(msg.sender) >= reputationAmount, "you don't have enough points");
-        require(block.timestamp >= contractInterval && block.timestamp >= userTime[msg.sender],"contract not ready");
-        uint256 wethAmount  = getContractBalance() - reward;
+    
+    function autoAddLp() public {
+        require(!status,"Contract has been suspended");
+        require(IReputation(reputation).checkReputation(msg.sender) >= reputationAmount,"You don't have enough reputation points" );
+        require(block.timestamp >= contractInterval && block.timestamp >= userTime[msg.sender],"please come later");
+        require(IERC20(uniswapV2Router.WETH()).balanceOf(address(this)) >= 1e17,"Insufficient contract amount");
+        uint256 fdtAmount = IERC20(fdt).balanceOf(address(this));
+        uint256 wethAmount = buyFdt() - reward;
+     
         contractInterval = block.timestamp + contractIntervals;
         userTime[msg.sender] = block.timestamp + interval;
-        TransferHelper.safeTransfer(weth, normalPool, wethAmount * NORMAL_POOL_RATIO / FEE_RATIO);
-        TransferHelper.safeTransfer(weth, emergencyPool, wethAmount * EMERGENCY_POOL_RATIO / FEE_RATIO);
-        TransferHelper.safeTransfer(weth, msg.sender, reward);
-        emit record(checkPid(msg.sender), checkUsername(msg.sender),IReputation(reputation).checkReputation(msg.sender),msg.sender,reward,block.timestamp);
-    }
-    function getContractBalance() public view returns(uint256) {
-        return IERC20(weth).balanceOf(address(this));
-    }
-    //Live Reop Pool 
-    function setQuota(uint256 _amount) public onlyOwner {
-        Pool(normalPool).setTokenAmount(_amount);
-    }
-    function setReward(uint256 _ratio) public onlyOwner {
-        Pool(normalPool).setAwardRatio(_ratio);
-    } 
-    function setTimeFrequency(uint256 _time) public onlyOwner {
-        Pool(normalPool).setContractIntervals(_time);
-    }
-    function setAddressFrequency(uint256 _time) public onlyOwner {
-        Pool(normalPool).setIntervals(_time);
-    }
-    //Emergency Reop Pool 
-    function _setQuota(uint256 _amount) public onlyOwner {
-        Pool(emergencyPool).setTokenAmount(_amount);
-    }
-    function _setReward(uint256 _ratio) public onlyOwner {
-        Pool(emergencyPool).setAwardRatio(_ratio);
-    } 
-    function _setTimeFrequency(uint256 _time) public onlyOwner {
-        Pool(emergencyPool).setContractIntervals(_time);
-    }
-    function _setAddressFrequency(uint256 _time) public onlyOwner {
-        Pool(emergencyPool).setIntervals(_time);
+        uniswapV2Router.addLiquidity(
+        fdt,
+        uniswapV2Router.WETH(),
+        fdtAmount,
+        wethAmount,
+        0,
+        0,
+        lpReceiver,
+        block.timestamp);
+        TransferHelper.safeTransfer(uniswapV2Router.WETH(), msg.sender, reward);
+
+        emit record(
+            checkPid(msg.sender),
+            checkUsername(msg.sender),
+            IReputation(reputation).checkReputation(msg.sender),
+            msg.sender,
+            wethAmount - reward,
+            reward,
+            block.timestamp
+            );
     }
       function checkPid(address _user) public view returns(uint256){
          (
