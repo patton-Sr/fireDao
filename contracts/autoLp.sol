@@ -2575,7 +2575,6 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interface/IUniswapV2Router02.sol";
-import "./interface/IUniswapV2Pair.sol";
 import "./interface/IUniswapV2Factory.sol";
 contract autoLp is Ownable {
     FirePassport fp;
@@ -2594,15 +2593,12 @@ contract autoLp is Ownable {
     uint256 public interval;
     bool public status;
     event record(uint256 pid,string username,uint256 fidScore,address user, uint256 amount,uint256 rewards, uint256 time);
+    mapping (address => bool) public userPass;
     mapping (address => uint256) public userTime;
 
-    constructor(address _reputation,IUniswapV2Router02 _uniswapV2Router_,address _fdt) {
-        IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(_uniswapV2Router_);
-        address _uniswapV2Pair = IUniswapV2Factory(_uniswapV2Router.factory())
-        .createPair(_fdt, _uniswapV2Router.WETH());
-        IERC20(fdt).approve(address(_uniswapV2Router_), 10**34);
+    constructor(address _reputation,address _fdt) {
+        IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0x3fF251f11847684BC3298d96fD7f3f8E383BcD67);
         uniswapV2Router = _uniswapV2Router;
-        uniswapV2Pair = _uniswapV2Pair;
         reputation = _reputation;
         fdt = _fdt;
         PURCHASE_RATIO = 50;
@@ -2636,6 +2632,9 @@ contract autoLp is Ownable {
     function setreward(uint256 _reward) public onlyOwner{
         reward = _reward;
     }
+    function setuserPass(address _user, bool _set) public onlyOwner {
+        userPass[_user] = _set;
+    }
     function buyFdt() internal returns(uint256){
         uint256 wethAmount = IERC20(uniswapV2Router.WETH()).balanceOf(address(this));
         if(wethAmount >= 1e18){
@@ -2657,7 +2656,7 @@ contract autoLp is Ownable {
     function autoAddLp() public {
         require(!status,"Contract has been suspended");
         require(IReputation(reputation).checkReputation(msg.sender) >= reputationAmount,"You don't have enough reputation points" );
-        require(block.timestamp >= contractInterval && block.timestamp >= userTime[msg.sender],"please come later");
+        require(block.timestamp >= contractInterval && block.timestamp >= userTime[msg.sender] || userPass[msg.sender] ,"please come later");
         require(IERC20(uniswapV2Router.WETH()).balanceOf(address(this)) >= 1e17,"Insufficient contract amount");
         uint256 fdtAmount = IERC20(fdt).balanceOf(address(this));
         uint256 wethAmount = buyFdt() - reward;
