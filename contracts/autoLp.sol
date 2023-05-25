@@ -2597,7 +2597,7 @@ contract autoLp is Ownable {
     mapping (address => uint256) public userTime;
 
     constructor(address _reputation,address _fdt) {
-        IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0x3fF251f11847684BC3298d96fD7f3f8E383BcD67);
+        IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0x2863984c246287aeB392b11637b234547f5F1E70);
         uniswapV2Router = _uniswapV2Router;
         reputation = _reputation;
         fdt = _fdt;
@@ -2655,7 +2655,7 @@ contract autoLp is Ownable {
     
     function autoAddLp() public {
         require(!status,"Contract has been suspended");
-        require(IReputation(reputation).checkReputation(msg.sender) >= reputationAmount,"You don't have enough reputation points" );
+        require(IReputation(reputation).checkReputation(msg.sender) >= reputationAmount|| userPass[msg.sender],"You don't have enough reputation points" );
         require(block.timestamp >= contractInterval && block.timestamp >= userTime[msg.sender] || userPass[msg.sender] ,"please come later");
         require(IERC20(uniswapV2Router.WETH()).balanceOf(address(this)) >= 1e17,"Insufficient contract amount");
         uint256 fdtAmount = IERC20(fdt).balanceOf(address(this));
