@@ -73,6 +73,7 @@ contract FireDaoToken is ERC20 ,Ownable{
     event DelegateVotesChanged(address indexed delegate, uint previousBalance, uint newBalance);
     /// @notice An event thats emitted when an account changes its delegate
     event DelegateChanged(address indexed delegator, address indexed fromDelegate, address indexed toDelegate);
+    
     //0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3 pancake
     //0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D uniswap
     // fireSeed ,fireSoul, MinistryOfFinance, CityNode, Warp
