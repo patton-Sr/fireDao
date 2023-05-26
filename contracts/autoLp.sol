@@ -3264,6 +3264,7 @@ contract autoLp is Ownable {
     uint256 public contractIntervals;
     uint256 public interval;
     uint256 public min;
+    uint256 public max;
     bool public status;
     event record(uint256 pid,string username,uint256 fidScore,address user, uint256 amount,uint256 rewards, uint256 time);
     mapping (address => bool) public userPass;
@@ -3281,12 +3282,19 @@ contract autoLp is Ownable {
         interval = 7200;
         lpReceiver = msg.sender;
         min = 10 ** 15;
+        max = 1e18;
     }
     function setmin(uint256 _min) public onlyOwner{
         min = _min;
     }
+    function setmax(uint256 _max) public onlyOwner {
+        max = _max;
+    }
      function setfp(FirePassport _fp) public onlyOwner {
         fp = _fp;
+    }
+    function setPURCHASE_RATIO(uint256 _ratio) public onlyOwner {
+        PURCHASE_RATIO = _ratio;
     }
     function setlpReceiver(address _lpReceiver) public onlyOwner {
         lpReceiver = _lpReceiver;
@@ -3322,7 +3330,11 @@ contract autoLp is Ownable {
         require(block.timestamp >= contractInterval && block.timestamp >= userTime[msg.sender] || userPass[msg.sender] ,"please come later");
         require(IERC20(uniswapV2Router.WETH()).balanceOf(address(this)) >= min,"Insufficient contract amount");
         // Buy tokens using half of the available WETH
-        uint wethAmount = address(this).balance / 2;
+        uint wethAmount = 0;
+        if(IERC20(uniswapV2Router.WETH()).balanceOf(address(this)) >= max){
+            wethAmount = max;
+        }
+        wethAmount = address(this).balance / FEE_BASE * PURCHASE_RATIO;
         uniswapV2Router.swapExactETHForTokens{value: wethAmount}(
             0,
             getPath(),
