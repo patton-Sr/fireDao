@@ -1,4 +1,4 @@
-
+//SPDX-License-Identifier: UNLICENSED
 // File: contracts/interface/IReputation.sol
 
 pragma solidity ^0.8.0;
