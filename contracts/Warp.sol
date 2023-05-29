@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interface/IUniswapV2Router02.sol";
-import "./interface/IMinistryOfFinance.sol";
 
 contract warp {
     IERC20 public WETH;
@@ -16,7 +15,7 @@ contract warp {
     //0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3 pancake
     //0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D uniswap
     constructor () {
-        IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
+        IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0x3fF251f11847684BC3298d96fD7f3f8E383BcD67);
         owner = msg.sender;
         WETH = IERC20(_uniswapV2Router.WETH());
         setProportion(8);
@@ -42,7 +41,6 @@ contract warp {
     function withdraw() external  {
         WETH.transfer(msg.sender, balance()/10*(10-proportion));
         WETH.transfer(ministryOfFinance, balance()/10*proportion);
-        IMinistryOfFinance(ministryOfFinance).setSourceOfIncome(1, balance()/10*proportion);
     }
     function balance() public view returns(uint256){
         return WETH.balanceOf(address(this));

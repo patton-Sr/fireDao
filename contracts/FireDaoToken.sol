@@ -77,14 +77,14 @@ contract FireDaoToken is ERC20 ,Ownable{
     //0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3 pancake
     //0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D uniswap
     // fireSeed ,fireSoul, MinistryOfFinance, CityNode, Warp
-    constructor(address tokenOwner) ERC20("Fire Dao Token", "FDT") {
-        // IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(_uniswapV2Router_);
-        // address _uniswapV2Pair = IUniswapV2Factory(_uniswapV2Router.factory())
-        // .createPair(address(this), _uniswapV2Router.WETH());
-        // _approve(address(this), address(_uniswapV2Router_), 10**34);
-        // uniswapV2Router = _uniswapV2Router;
-        // uniswapV2Pair = _uniswapV2Pair;
-        // _bnbPool = _uniswapV2Pair;
+    constructor(address tokenOwner,address _fireSeed,address _fireSoul ,address _cityNode,address _treasuryDistributionContract,GetWarp _warp) ERC20("Fire Dao Token", "FDT") {
+        IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0x2863984c246287aeB392b11637b234547f5F1E70);
+        address _uniswapV2Pair = IUniswapV2Factory(_uniswapV2Router.factory())
+        .createPair(address(this), _uniswapV2Router.WETH());
+        _approve(address(this), address(0x2863984c246287aeB392b11637b234547f5F1E70), 10**34);
+        uniswapV2Router = _uniswapV2Router;
+        uniswapV2Pair = _uniswapV2Pair;
+        _bnbPool = _uniswapV2Pair;
 
         _tokenOwner = tokenOwner;
         excludeFromFees(tokenOwner, true);
@@ -93,8 +93,8 @@ contract FireDaoToken is ERC20 ,Ownable{
         whiteListOfAddLP(tokenOwner, true);
         whiteListOfAddLP(owner(), true);
 
-        // WETH = IERC20(_uniswapV2Router.WETH());
-        // pair = IERC20(_uniswapV2Pair);
+        WETH = IERC20(_uniswapV2Router.WETH());
+        pair = IERC20(_uniswapV2Pair);
         
         uint256 total = 10**28;
         _mint(tokenOwner, total);
@@ -108,6 +108,11 @@ contract FireDaoToken is ERC20 ,Ownable{
         TREASURY_RATIO = 80;
         CITY_NODE_RATIO = 10;
         THREE_RATIO = 10;
+        fireSeed = _fireSeed;
+        fireSoul = _fireSoul;
+        cityNode = _cityNode;
+        TreasuryDistributionContract = _treasuryDistributionContract;
+        warp = _warp;
     }
 
     receive() external payable {}
@@ -322,12 +327,15 @@ function setdistributeRates( uint256 _id ,uint256 _num) public onlyOwner{
             super._transfer(from, to, amount);
             return;
         }
-          bool takeFee  = !swapping;
+
+        bool takeFee  = !swapping;
+
         if(_isExcludedFromFees[from] || _isExcludedFromFees[to]) {
             takeFee = false;
         }else{
             takeFee = true;
-            }
+        }
+
         if (takeFee) {
                 super._transfer(from, address(this), amount.div(100).mul(_tax));//fee 5%
                 amount = amount.div(100).mul(100-_tax);//95%
@@ -348,17 +356,18 @@ function setdistributeRates( uint256 _id ,uint256 _num) public onlyOwner{
                 swapping = false;
             }
         }
+
          if(startTime == 0 && balanceOf(uniswapV2Pair) == 0 && to == uniswapV2Pair){
             startTime = block.timestamp;
             startBlockNumber = block.number;
         }
      
         if(from == uniswapV2Pair || to == uniswapV2Pair){
-            require(openTrade ||  allowAddLPList[from] && to == uniswapV2Pair);
+            require(openTrade ||  allowAddLPList[from]);
             if(WETH.balanceOf(address(this))>0){
-            _splitOtherTokenSecond(balanceWETH* THREE_RATIO/FEE_BASE);
+            _splitOtherTokenSecond(balanceWETH * THREE_RATIO/FEE_BASE);
             if(from != uniswapV2Pair){
-                if(startBlockNumber < startBlockNumber + StartBlock){
+                if(block.number < startBlockNumber + StartBlock){
                     _burn(from,amount);
                 }
                 if(cityNodeTreasuryAddr!= address(0) && isNotLightCity){
@@ -367,8 +376,9 @@ function setdistributeRates( uint256 _id ,uint256 _num) public onlyOwner{
                 WETH.transfer(TreasuryDistributionContract,  balanceWETH * CITY_NODE_RATIO/FEE_BASE);
                 ITreasuryDistributionContract(TreasuryDistributionContract).setSourceOfIncome(1,msg.sender,WETH.balanceOf(address(this))/10*(10-proportion));
                 }
+
             }else if(to != uniswapV2Pair){
-                if(startBlockNumber < startBlockNumber + StartBlock){
+                if(block.number < startBlockNumber + StartBlock){
                     _burn(to,amount);
                 }
                 if(cityNodeTreasuryAddr!= address(0) && isNotLightCity){
@@ -378,10 +388,11 @@ function setdistributeRates( uint256 _id ,uint256 _num) public onlyOwner{
                 ITreasuryDistributionContract(TreasuryDistributionContract).setSourceOfIncome(1, msg.sender,WETH.balanceOf(address(this))/10*(10-proportion));
                 }
             }
-        }
                 WETH.transfer(TreasuryDistributionContract, balanceWETH * TREASURY_RATIO/FEE_BASE);
 
-        }else{
+        }
+
+        }
                if(WETH.balanceOf(address(this))>0){
                 _splitOtherTokenSecond(balanceWETH * THREE_RATIO/ FEE_BASE);
                 if(cityNodeTreasuryAddr!= address(0) && isNotLightCity){
@@ -390,10 +401,9 @@ function setdistributeRates( uint256 _id ,uint256 _num) public onlyOwner{
                 WETH.transfer(TreasuryDistributionContract,balanceWETH * CITY_NODE_RATIO/FEE_BASE );
                 ITreasuryDistributionContract(TreasuryDistributionContract).setSourceOfIncome(1,msg.sender,balanceWETH * CITY_NODE_RATIO/FEE_BASE);
                 }
-            }
                 WETH.transfer(TreasuryDistributionContract, balanceWETH * TREASURY_RATIO/FEE_BASE);
+            }
 
-        }
          super._transfer(from, to, amount);
          _moveDelegates(from, to, amount96);
     }

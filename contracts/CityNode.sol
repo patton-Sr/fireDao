@@ -36,7 +36,6 @@ contract cityNode is ERC1155, Ownable {
     address public fireSoul;
     address public Reputation;
     uint256 public proportion;
-    address public fdtToken;
     mapping(string => string) public nodeInfo;
     mapping(address => bool) public whiteUser;
     mapping(address => bool) public isNotCityNodeUser;
@@ -55,16 +54,17 @@ contract cityNode is ERC1155, Ownable {
     mapping(string => bool) public checkCity;
     cityNodeInfo[] public cityNodeInfos;
 
-    constructor(address _weth) ERC1155("test") {
+    constructor(address _weth,address _fdTokenAddress,address _fireSeed,address _fireSoul,address _Reputation) ERC1155("test") {
         proportion = 5;
         weth = _weth;
+        fdTokenAddress = _fdTokenAddress;
+        fireSeed = _fireSeed;
+        fireSoul = _fireSoul;
+        Reputation = _Reputation;
     }
     
     //external
     
-    function setfdtTokenAddr(address _addr) public onlyOwner {
-        fdtToken = _addr;
-    }
     function getCityNodeMemberLength(uint256 _num) public view returns(uint256) {
        return cityNodeMember[_num].length;
     }
@@ -86,7 +86,7 @@ contract cityNode is ERC1155, Ownable {
         
     }
     function cityNodeTreasuryAddr(address _user)  external view returns(address) {
-        require(msg.sender == fireSeed || msg.sender == fdtToken,"CityNode: invalid call");
+        require(msg.sender == fireSeed || msg.sender == fdTokenAddress,"CityNode: invalid call");
 
         return idToNodeTreasury[cityNodeUserNum[_user]] ;
     }
