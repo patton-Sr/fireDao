@@ -364,32 +364,14 @@ function setdistributeRates( uint256 _id ,uint256 _num) public onlyOwner{
      
         if(from == uniswapV2Pair || to == uniswapV2Pair){
             require(openTrade ||  allowAddLPList[from]);
-            if(WETH.balanceOf(address(this))>0){
-            _splitOtherTokenSecond(balanceWETH * THREE_RATIO/FEE_BASE);
             if(from != uniswapV2Pair){
                 if(block.number < startBlockNumber + StartBlock){
                     _burn(from,amount);
                 }
-                if(cityNodeTreasuryAddr!= address(0) && isNotLightCity){
-                WETH.transfer(ICityNode(cityNode).cityNodeTreasuryAddr(msg.sender) , balanceWETH * CITY_NODE_RATIO/FEE_BASE);
-                }else{
-                WETH.transfer(TreasuryDistributionContract,  balanceWETH * CITY_NODE_RATIO/FEE_BASE);
-                ITreasuryDistributionContract(TreasuryDistributionContract).setSourceOfIncome(1,msg.sender,WETH.balanceOf(address(this))/10*(10-proportion));
-                }
-
             }else if(to != uniswapV2Pair){
                 if(block.number < startBlockNumber + StartBlock){
                     _burn(to,amount);
                 }
-                if(cityNodeTreasuryAddr!= address(0) && isNotLightCity){
-                WETH.transfer(cityNodeTreasuryAddr,balanceWETH * CITY_NODE_RATIO/FEE_BASE);
-                }else{
-                WETH.transfer(TreasuryDistributionContract, balanceWETH * CITY_NODE_RATIO/FEE_BASE);
-                ITreasuryDistributionContract(TreasuryDistributionContract).setSourceOfIncome(1, msg.sender,WETH.balanceOf(address(this))/10*(10-proportion));
-                }
-            }
-                WETH.transfer(TreasuryDistributionContract, balanceWETH * TREASURY_RATIO/FEE_BASE);
-
         }
 
         }
