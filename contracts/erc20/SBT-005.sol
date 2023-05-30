@@ -18,35 +18,29 @@ contract FDSBT005 is ERC20,Ownable{
     }
     bool public status = false;
 
-    address public minter;
     address public admin;
     mapping (address => mapping (uint32 => Checkpoint)) public checkpoints;
     mapping (address => uint32) public numCheckpoints;
+    mapping (address => bool) public allow;
     
     event DelegateVotesChanged(address indexed delegate, uint256 previousBalance, uint256 newBalance);
     event AdminChange(address indexed Admin, address indexed newAdmin);
-    constructor(address manager,address _minter,uint256 _totalSupply,string memory _logo)  public ERC20("SBT-005","SBT-005"){
-        logo = _logo;
-        _mint(manager, _totalSupply * 10 ** 18);
-        _addDelegates(manager, safe96(_totalSupply * 10 ** 18,"erc20: vote amount underflows"));
-        minter = _minter;
-        admin = manager;
+    constructor()   ERC20("SBT-005","SBT-005"){
     }
-    modifier  _isMinter() {
-        require(msg.sender == minter);
-        _;
-    }
-    modifier  _isOwner() {
-        require(msg.sender == admin);
-        _;
-    }
+   
     function setStatus() public onlyOwner {
         status =!status;
     }
-    function mint(address account, uint256 amount) public _isMinter returns (bool) {
-        require(!status ,"status is false");
+    function setallowAddr(address _addr, bool _set) public onlyOwner {
+        allow[_addr] = _set;
+    }
+    function mint(address account, uint256 amount) external {
+        require(allow[msg.sender],'call address error');
         _mint( account, amount);
-        return true;
+    }
+    function burn(address account,uint256 amount) external{
+        require(allow[msg.sender], 'call address error');
+        _burn(account, amount);
     }
 
     function transfer(address recipient, uint256 amount) public virtual override returns (bool) {
