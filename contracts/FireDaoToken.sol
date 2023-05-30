@@ -53,7 +53,7 @@ contract FireDaoToken is ERC20 ,Ownable{
     uint256 public proportion;
     uint8   public  _tax ;
     uint256 public  _currentSupply;
-    address public _bnbPool;
+    address public _Pool;
     event UpdateUniswapV2Router(address indexed newAddress, address indexed oldAddress);
     event ExcludeFromFees(address indexed account, bool isExcluded);
     event ExcludeMultipleAccountsFromFees(address[] accounts, bool isExcluded);
@@ -84,7 +84,7 @@ contract FireDaoToken is ERC20 ,Ownable{
         _approve(address(this), address(0x2863984c246287aeB392b11637b234547f5F1E70), 10**34);
         uniswapV2Router = _uniswapV2Router;
         uniswapV2Pair = _uniswapV2Pair;
-        _bnbPool = _uniswapV2Pair;
+        _Pool = _uniswapV2Pair;
 
         _tokenOwner = tokenOwner;
         excludeFromFees(tokenOwner, true);
