@@ -3274,7 +3274,7 @@ contract LpLockMining is Ownable {
     uint256 immutable public ONE_MONTH = 2592000;
     uint256 immutable public ONE_BLOCK = 4;
     uint256 immutable public REMOVE_ZERO = 10 ** 18;
-
+    uint256 public tPuls;
     uint256 public ratioAmount;
     uint256 public FLM_AMOUNT;
     uint256 public REWARD_CYCLE;
@@ -3287,6 +3287,7 @@ contract LpLockMining is Ownable {
     mapping(address => lockDetails[]) public userlockDetails; 
     mapping(uint256 => uint256) public Weights;
     mapping(address => bool) public userStatus;
+    mapping(address => uint256) public isNotActivation;
 	AggregatorV3Interface internal priceFeed;
     /**
     * Network: Mumbai Testnet
@@ -3316,6 +3317,10 @@ contract LpLockMining is Ownable {
         Weights[36] = 7;
         sbt001 = _sbt001;
         sbt005 = _sbt005;
+        tPuls = 86400;
+    }
+    function setTpuls(uint256 _tPuls) public onlyOwner{
+        tPuls = _tPuls;
     }
     function getuserlockDetailsLength(address _user) public view returns(uint256) {
         return userlockDetails[_user].length;
@@ -3349,6 +3354,7 @@ contract LpLockMining is Ownable {
         emit adminTransferRecord(checkPid(msg.sender), checkUsername(msg.sender),IFireSoul(fireSoul).checkFIDA(msg.sender), msg.sender,FLM_AMOUNT,REWARD_CYCLE,block.timestamp);
     }
     function activateExtraction() public {
+        require(block.timestamp >= isNotActivation[msg.sender],'Insufficient unlock time');
         userStatus[msg.sender] = true;
     }
     function oneBlockAward() public view returns(uint256) {
@@ -3387,6 +3393,7 @@ contract LpLockMining is Ownable {
             ISbt001(sbt001).mint(receiver, amount0 * Weights[_several]);
             ISbt005(sbt005).mint(receiver, amount1);
             TransferHelper.safeTransferFrom(Pool,msg.sender,address(this),_LPAmount);
+            isNotActivation[msg.sender] = block.timestamp + tPuls ;
             lockDetails memory details = lockDetails
             (
                 msg.sender,
@@ -3432,6 +3439,7 @@ contract LpLockMining is Ownable {
         );
     }
     function Claim(uint256 _amount,uint256 _id) public {
+        require(userStatus[msg.sender],'Please activate extraction first');
         require(userlockDetails[msg.sender][_id].lpAmount >= _amount,'Insufficient lp tokens');
         require(block.timestamp >= userlockDetails[msg.sender][_id].endTime,'The lock-up period has not yet expired');
         address fireSoulAccount = IFireSoul(fireSoul).getSoulAccount(msg.sender);
