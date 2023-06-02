@@ -4,7 +4,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interface/IUniswapV2Router02.sol";
 
-contract FireDaoTreasury is Ownable {
+contract FireDaoCommunityTreasury is Ownable {
 
     IUniswapV2Router02 public uniswapV2Router;
     mapping(uint256 => mapping(uint256 => string))public proposal;
