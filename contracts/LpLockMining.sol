@@ -3841,6 +3841,7 @@ contract LpLockMining is Ownable {
         flm = _flm;
     }
     function setREWARD_CYCLE(uint256 _several) public onlyOwner {
+        require(_several != 0 ,'reward cycle is not zero');
         FLM_AMOUNT = IERC20(flm).balanceOf(address(this)); 
         REWARD_CYCLE =  _several * ONE_MONTH;
         emit adminTransferRecord(checkPid(msg.sender), checkUsername(msg.sender),IFireSoul(fireSoul).checkFIDA(msg.sender), msg.sender,FLM_AMOUNT,REWARD_CYCLE,block.timestamp);
