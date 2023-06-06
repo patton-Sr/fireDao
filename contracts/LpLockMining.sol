@@ -3762,6 +3762,7 @@ contract LpLockMining is Ownable {
     FirePassport public fp;
     IUniswapV2Pair public  uniswapV2Pair;
     address public Pool;
+    bool public status;
     uint256 immutable public YEAR = 12;
     uint256 immutable public ONE_MONTH = 2592000;
     uint256 immutable public ONE_BLOCK = 4;
@@ -3786,6 +3787,11 @@ contract LpLockMining is Ownable {
     * Aggregator: MATIC/USD
     * Address: 0xd0D5e3DB44DE05E9F294BB0a3bEEaF030DE24Ada
     */
+    modifier pause() {
+        require(!status,'contract is pause');
+        _;
+
+    }
 
     constructor(FirePassport _fp,address _fireSoul,address _fdt,address _flm,address _sbt001, address _sbt005) {
 		priceFeed = AggregatorV3Interface(0xd0D5e3DB44DE05E9F294BB0a3bEEaF030DE24Ada);
@@ -3810,6 +3816,9 @@ contract LpLockMining is Ownable {
         sbt001 = _sbt001;
         sbt005 = _sbt005;
         tPuls = 86400;
+    }
+    function setstatus() public onlyOwner {
+        status = !status;
     }
     function setTpuls(uint256 _tPuls) public onlyOwner{
         tPuls = _tPuls;
@@ -3868,7 +3877,7 @@ contract LpLockMining is Ownable {
        return _LpAmount * ratioAmount / IERC20(sbt005).totalSupply() * oneYearBlockAward() / IERC20(fdt).balanceOf(_user) / REMOVE_ZERO + getWethAmountInLP(_LpAmount) * getLatesPrice();
     }
 
-    function lockLp(uint256 _several,uint256 _LPAmount) public {
+    function lockLp(uint256 _several,uint256 _LPAmount) public pause{
         require(IFireSoul(fireSoul).checkFID(msg.sender),"you don't have fid yet");
         require(IERC20(Pool).balanceOf(msg.sender) >= _LPAmount && _LPAmount != 0,'Your Lp quota is insufficient');
         require(
@@ -3914,12 +3923,22 @@ contract LpLockMining is Ownable {
     function returnAward(address _user, uint256 _id) public view returns(uint256) {
         return  IERC20(sbt005).balanceOf(IFireSoul(fireSoul).getSoulAccount(_user)) / IERC20(sbt005).totalSupply() * block.timestamp - userlockDetails[_user][_id].startTime / ONE_BLOCK * oneBlockAward();
     }
+    function getTotalAward(address _user) public view returns(uint256)  {
+        uint256 total = 0;
+        for(uint256 i = 0 ; i < getuserlockDetailsLength(_user); i ++){
+            total += returnAward(_user, i);
+        }
+        return total;
+    }
 
-    function ClaimFLM(uint256 _id) public {
-        require(userlockDetails[msg.sender][_id].lpAmount > 0 ,'The lp of this locked position is insufficient');
-        uint256 amount0 = returnAward(msg.sender,_id);
+    function ClaimFLM() public pause{
+        for(uint256 i=0;i<getuserlockDetailsLength(msg.sender);i++) {
+        if(userlockDetails[msg.sender][i].lpAmount == 0 ){
+            continue;
+        }
+        uint256 amount0 = returnAward(msg.sender,i);
         TransferHelper.safeTransfer(flm, msg.sender, amount0);
-        userlockDetails[msg.sender][_id].startTime = block.timestamp;
+        userlockDetails[msg.sender][i].startTime = block.timestamp;
         emit userClaimFlm
         (
                 checkPid(msg.sender),
@@ -3930,8 +3949,10 @@ contract LpLockMining is Ownable {
                 block.timestamp
 
         );
+        }
+    
     }
-    function Claim(uint256 _amount,uint256 _id) public {
+    function Claim(uint256 _amount,uint256 _id) public pause{
         require(userStatus[msg.sender],'Please activate extraction first');
         require(userlockDetails[msg.sender][_id].lpAmount >= _amount,'Insufficient lp tokens');
         require(block.timestamp >= userlockDetails[msg.sender][_id].endTime,'The lock-up period has not yet expired');
