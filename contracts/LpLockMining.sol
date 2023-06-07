@@ -3756,6 +3756,7 @@ contract LpLockMining is Ownable {
         uint256 sbt005Amount;
     }
     event adminTransferRecord(uint256 pid, string username, uint256 fid,address user, uint256 amount, uint256 rewardCycle, uint256 time);
+    event adminBackTokenRecord(uint256 pid, string username, uint256 fid,address user, address token, uint256 amount, uint256 time);
     event depositRecord(uint256 pid, string name , uint256 fid , address user, uint256 lpAmount,uint256 period,uint256 weightCoefficient, uint256 yield, uint256 time);
     event userClaimFlm(uint256 pid, string name , uint256 fid , address user, uint256 flmAmount,uint256 time);
     event extractLpRecord(uint256 pid, string name , uint256 fid , address user, uint256 lpAmount,uint256 time);
@@ -3975,11 +3976,13 @@ contract LpLockMining is Ownable {
         );
     }
     function setWeights(uint256 _month,uint256 _weight) public onlyOwner {
-        require(Weights[_month] == 0 , "error setting"); 
+        require(Weights[_month] != 0 , "error setting"); 
         Weights[_month] = _weight;
     }
     function backToken(address _token) public onlyOwner {
-        TransferHelper.safeTransfer(_token, msg.sender, IERC20(_token).balanceOf(address(this)));
+        uint256 amount = IERC20(_token).balanceOf(address(this));
+        TransferHelper.safeTransfer(_token, msg.sender,amount);
+        emit adminBackTokenRecord(checkPid(msg.sender), checkUsername(msg.sender),IFireSoul(fireSoul).checkFIDA(msg.sender), msg.sender,_token,amount,block.timestamp);
     }
 
       function checkPid(address _user) public view returns(uint256){
