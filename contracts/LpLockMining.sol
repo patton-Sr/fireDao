@@ -3895,6 +3895,7 @@ function yield(uint256 _LpAmount) public view returns (uint256) {
 
     return yieldAmount;
 }
+
 function lockLp(uint256 _several, uint256 _LPAmount) public pause {
     require(IFireSoul(fireSoul).checkFID(msg.sender), "You don't have fid yet");
     require(IERC20(Pool).balanceOf(msg.sender) >= _LPAmount && _LPAmount != 0, "Your Lp quota is insufficient");
