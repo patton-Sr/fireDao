@@ -20,6 +20,7 @@ contract FDSBT006 is ERC20,Ownable{
     address public minter;
     address public admin;
     address public MiningAddress;
+    mapping(address => bool) public addressAllow;
     mapping (address => mapping (uint32 => Checkpoint)) public checkpoints;
     mapping (address => uint32) public numCheckpoints;
     
@@ -31,16 +32,16 @@ contract FDSBT006 is ERC20,Ownable{
     function setStatus() public onlyOwner {
         status = !status;
     }
-    function setMiningAddress(address _MiningAddress) public onlyOwner{
-        MiningAddress = _MiningAddress;
+    function setMiningAddress(address _addr,bool _set) public onlyOwner{
+        addressAllow[_addr] = _set;
     }
 
     function mint(address User, uint256 mintAmount) external {
-        require(msg.sender == MiningAddress,"you set Address is error"); 
+        require(addressAllow[msg.sender] ,"you set Address is error"); 
         _mint(User, mintAmount);
     }
     function burn(address User, uint256 mintAmount) external {
-        require(msg.sender == MiningAddress,"you set Address is error"); 
+        require(addressAllow[msg.sender],"you set Address is error"); 
         _burn(User, mintAmount);
     }
 
