@@ -3877,23 +3877,25 @@ function getWethAmountInLP(uint256 _LPAmount) public view returns (uint256) {
     return SafeMath.div(_LPAmount.mul(IERC20(weth).balanceOf(Pool)), uniswapV2Pair.totalSupply());
 }
 
-    function getSbt005TotalSupply() public view returns(uint256) {
-        return IERC20(sbt005).totalSupply();
-    }
-    // 假设当前FDT价格为1USDT
-   function yield(uint256 _LpAmount) public view returns (uint256) {
+function getSbt005TotalSupply() public view returns(uint256) {
+    return IERC20(sbt005).totalSupply();
+}
+
+// 假设当前FDT价格为1USDT
+function yield(uint256 _LpAmount) public view returns (uint256) {
     if (FLM_AMOUNT == 0) {
         return 1;
     }
     
-    uint256 ratio = _LpAmount.mul(ratioAmount).div(getSbt005TotalSupply());
-    uint256 dividend = ratio.mul(oneYearBlockAward());
-    uint256 divisor = getFdtAmountInLP(_LpAmount).add(getWethAmountInLP(_LpAmount));
+    uint256 ratio = SafeMath.div(_LpAmount.mul(ratioAmount), getSbt005TotalSupply());
+    uint256 dividend = SafeMath.mul(ratio, oneYearBlockAward());
+    uint256 divisor = SafeMath.add(getFdtAmountInLP(_LpAmount), getWethAmountInLP(_LpAmount));
 
-    uint256 yieldAmount = SafeMath.div(dividend.mul(1e18), divisor); // Multiply by 1e18 for decimal precision
+    uint256 yieldAmount = SafeMath.div(SafeMath.mul(dividend, 1e18), divisor); // Multiply by 1e18 for decimal precision
 
     return yieldAmount;
 }
+
 
     function lockLp(uint256 _several,uint256 _LPAmount) public pause{
         require(IFireSoul(fireSoul).checkFID(msg.sender),"you don't have fid yet");
