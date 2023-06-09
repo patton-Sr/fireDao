@@ -3864,18 +3864,24 @@ contract LpLockMining is Ownable {
         return FLM_AMOUNT / ONE_MONTH / ONE_BLOCK ;
     }
     function oneYearBlockAward() public view returns(uint256) {
-        return FLM_AMOUNT / ONE_MONTH / ONE_BLOCK * YEAR;
+        return oneBlockAward() * YEAR;
     }
-    function getFdtAmountInLP(uint256 _LPAmount) internal view returns(uint256) {
-        return _LPAmount.mul(IERC20(Pool).balanceOf(fdt)) / uniswapV2Pair.totalSupply();
+    function getFdtAmountInLP(uint256 _LPAmount) public view returns(uint256) {
+        return _LPAmount.mul(IERC20(fdt).balanceOf(Pool)) / uniswapV2Pair.totalSupply();
     }
-    function getWethAmountInLP(uint256 _LPAmount) internal view returns(uint256) {
-        return _LPAmount.mul(IERC20(Pool).balanceOf(weth)) / uniswapV2Pair.totalSupply();
+    function getWethAmountInLP(uint256 _LPAmount) public  view returns(uint256) {
+        return _LPAmount.mul(IERC20(weth).balanceOf(Pool)) / uniswapV2Pair.totalSupply();
 
     }
+    function getSbt005TotalSupply() public view returns(uint256) {
+        return IERC20(sbt005).totalSupply();
+    }
     // 假设当前FDT价格为1USDT
-    function yield(address _user, uint256 _LpAmount) public view returns(uint256) {
-       return _LpAmount * ratioAmount / IERC20(sbt005).totalSupply() * oneYearBlockAward() / IERC20(fdt).balanceOf(_user) / REMOVE_ZERO + getWethAmountInLP(_LpAmount) * getLatesPrice();
+    function yield(uint256 _LpAmount) public view returns(uint256) {
+        if(FLM_AMOUNT == 0) {
+            return 1;
+        }
+       return (_LpAmount  * ratioAmount / getSbt005TotalSupply() * oneYearBlockAward()) / (getFdtAmountInLP(_LpAmount) + getWethAmountInLP(_LpAmount)) ;
     }
 
     function lockLp(uint256 _several,uint256 _LPAmount) public pause{
@@ -3917,12 +3923,12 @@ contract LpLockMining is Ownable {
                 _LPAmount,
                 _several,
                 Weights[_several],
-                yield(msg.sender,_LPAmount),
+                yield(_LPAmount),
                 block.timestamp
                 );
     }
     function returnAward(address _user, uint256 _id) public view returns(uint256) {
-        return  IERC20(sbt005).balanceOf(IFireSoul(fireSoul).getSoulAccount(_user)) / IERC20(sbt005).totalSupply() * block.timestamp - userlockDetails[_user][_id].startTime / ONE_BLOCK * oneBlockAward();
+        return  IERC20(sbt005).balanceOf(IFireSoul(fireSoul).getSoulAccount(_user)) / IERC20(sbt005).totalSupply() * (block.timestamp - userlockDetails[_user][_id].startTime / ONE_BLOCK * oneBlockAward());
     }
     function getTotalAward(address _user) public view returns(uint256)  {
         uint256 total = 0;
@@ -3933,7 +3939,7 @@ contract LpLockMining is Ownable {
     }
 
     function ClaimFLM() public pause{
-        for(uint256 i=0;i<getuserlockDetailsLength(msg.sender);i++) {
+        for(uint256 i=0;i < getuserlockDetailsLength(msg.sender); i++) {
         if(userlockDetails[msg.sender][i].lpAmount == 0 ){
             continue;
         }
