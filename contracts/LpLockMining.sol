@@ -3895,53 +3895,59 @@ function yield(uint256 _LpAmount) public view returns (uint256) {
 
     return yieldAmount;
 }
+function lockLp(uint256 _several, uint256 _LPAmount) public pause {
+    require(IFireSoul(fireSoul).checkFID(msg.sender), "You don't have fid yet");
+    require(IERC20(Pool).balanceOf(msg.sender) >= _LPAmount && _LPAmount != 0, "Your Lp quota is insufficient");
+    require(
+        _several == 0 ||
+        _several == 1 || 
+        _several == 3 ||
+        _several == 6 ||
+        _several == 12 ||
+        _several == 24 ||
+        _several == 36,
+        "Please enter the correct lock-up month"
+    );
+    
+    address receiver = IFireSoul(fireSoul).getSoulAccount(msg.sender);
+    uint256 amount0 = SafeMath.div(_LPAmount.mul(IERC20(fdt).balanceOf(Pool)), uniswapV2Pair.totalSupply());
+    uint256 amount1 = _LPAmount.mul(ratioAmount);
+    
+    ISbt001(sbt001).mint(receiver, SafeMath.mul(amount0, Weights[_several]));
+    ISbt005(sbt005).mint(receiver, amount1);
+    TransferHelper.safeTransferFrom(Pool, msg.sender, address(this), _LPAmount);
+    isNotActivation[msg.sender] = block.timestamp + tPuls;
+    
+    lockDetails memory details = lockDetails(
+        msg.sender,
+        receiver,
+        _LPAmount,
+        _several,
+        Weights[_several],
+        block.timestamp,
+        block.timestamp + _several * ONE_MONTH,
+        SafeMath.mul(amount0, Weights[_several]),
+        amount1
+    );
+    
+    userlockDetails[msg.sender].push(details);
+    
+    emit depositRecord(
+        checkPid(msg.sender),
+        checkUsername(msg.sender),
+        IFireSoul(fireSoul).checkFIDA(msg.sender),
+        msg.sender,
+        _LPAmount,
+        _several,
+        Weights[_several],
+        yield(_LPAmount),
+        block.timestamp
+    );
+}
 
 
-    function lockLp(uint256 _several,uint256 _LPAmount) public pause{
-        require(IFireSoul(fireSoul).checkFID(msg.sender),"you don't have fid yet");
-        require(IERC20(Pool).balanceOf(msg.sender) >= _LPAmount && _LPAmount != 0,'Your Lp quota is insufficient');
-        require(
-                _several == 0 ||
-                _several == 1 || 
-                _several == 3 ||
-                _several == 6 ||
-                _several == 12||
-                _several == 24||
-                _several == 36 ,
-                "Please enter the correct lock-up month");
-            address receiver = IFireSoul(fireSoul).getSoulAccount(msg.sender);
-        uint256 amount0 = SafeMath.div(_LPAmount.mul(IERC20(fdt).balanceOf(Pool)), uniswapV2Pair.totalSupply());
 
-            uint256 amount1 = _LPAmount.mul(ratioAmount);
-            ISbt001(sbt001).mint(receiver, amount0 * Weights[_several]);
-            ISbt005(sbt005).mint(receiver, amount1);
-            TransferHelper.safeTransferFrom(Pool,msg.sender,address(this),_LPAmount);
-            isNotActivation[msg.sender] = block.timestamp + tPuls ;
-            lockDetails memory details = lockDetails
-            (
-                msg.sender,
-                receiver,
-                _LPAmount,
-                _several,
-                Weights[_several],
-                block.timestamp,
-                block.timestamp + _several * ONE_MONTH,
-                amount0 * Weights[_several],
-                amount1
-            );
-            userlockDetails[msg.sender].push(details);
-            emit depositRecord(
-                checkPid(msg.sender),
-                checkUsername(msg.sender),
-                IFireSoul(fireSoul).checkFIDA(msg.sender),
-                msg.sender,
-                _LPAmount,
-                _several,
-                Weights[_several],
-                yield(_LPAmount),
-                block.timestamp
-                );
-    }
+  
 function returnAward(address _user, uint256 _id) public view returns (uint256) {
     uint256 balance = IERC20(sbt005).balanceOf(userlockDetails[_user][_id].soul);
     uint256 startTime = userlockDetails[_user][_id].startTime;
