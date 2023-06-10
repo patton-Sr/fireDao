@@ -8,7 +8,9 @@ contract AirdropERC20 {
     address public admin;
     uint256 public perAmount;
     address[] public userList;
-    mapping(address => bool) public claimed;
+
+    mapping(address => bool) public allowAddr;
+    mapping(address => uint256[]) public userCanClaim;
     modifier onlyAdmin {
         require(msg.sender == admin,"no access");
         _;
@@ -18,6 +20,13 @@ contract AirdropERC20 {
         admin = _admin;
         userList = _userList;
         perAmount = _perAmount;
+    }
+    function setallowAddr(address _addr, bool _set) public onlyAdmin {
+        allowAddr[_addr] = _set;
+    }
+    function addClaimList(address _user, uint256 _amount) public {
+        require(allowAddr[msg.sender], 'address error');
+        
     }
     
     function Claim() public {

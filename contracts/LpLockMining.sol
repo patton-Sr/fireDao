@@ -3958,7 +3958,7 @@ function returnAward(address _user, uint256 _id) public view returns (uint256) {
         return total;
     }
 
-    function ClaimFLM() public pause{
+    function ClaimFLM() public pause {
         for(uint256 i=0;i < getuserlockDetailsLength(msg.sender); i++) {
         if(userlockDetails[msg.sender][i].lpAmount == 0 ){
             continue;
