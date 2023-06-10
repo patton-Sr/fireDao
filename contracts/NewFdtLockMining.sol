@@ -3351,17 +3351,22 @@ contract FdtLockMining is Ownable {
         require(block.timestamp >= isNotActivation[msg.sender],'Insufficient unlock time');
         userStatus[msg.sender] = true;
     }
-    function oneBlockAward() public view returns(uint256) {
-        return FLM_AMOUNT / ONE_MONTH / ONE_BLOCK ;
-    }
-    function oneYearBlockAward() public view returns(uint256) {
-        return FLM_AMOUNT / ONE_MONTH / ONE_BLOCK * YEAR;
-    }
- 
+function oneBlockAward() public view returns (uint256) {
+    return SafeMath.div(SafeMath.div(FLM_AMOUNT, ONE_MONTH), ONE_BLOCK);
+}
+
+function oneYearBlockAward() public view returns (uint256) {
+    return SafeMath.mul(oneBlockAward(), YEAR);
+}
+
     // 假设当前FDT价格为1USDT
-    function yield(address _user, uint256 _fdtAmount) public view returns(uint256) {
-       return _fdtAmount / IERC20(sbt006).totalSupply() * oneYearBlockAward() / IERC20(fdt).balanceOf(_user) * getLatesPrice();
-    }
+ function yield(address _user, uint256 _fdtAmount) public view returns (uint256) {
+    uint256 fdtSupply = IERC20(sbt006).totalSupply();
+    uint256 dividend = SafeMath.mul(SafeMath.mul(oneYearBlockAward(), _fdtAmount), getLatesPrice());
+    uint256 divisor = SafeMath.mul(fdtSupply, IERC20(fdt).balanceOf(_user));
+
+    return SafeMath.div(dividend, divisor);
+}
 
 
     function lockFdt(uint256 _several,uint256 _FdtAmount) public {
@@ -3456,7 +3461,12 @@ contract FdtLockMining is Ownable {
     function backToken(address _token) public onlyOwner {
         TransferHelper.safeTransfer(_token, msg.sender, IERC20(_token).balanceOf(address(this)));
     }
-
+    function getBalanceOfFlm() public view returns(uint256) {
+        return IERC20(flm).balanceOf(address(this));
+    }
+        function getBalanceOfFdt(address _addr) public view returns(uint256) {
+        return IERC20(fdt).balanceOf(_addr);
+    }
       function checkPid(address _user) public view returns(uint256){
          (
              uint256 PID,
