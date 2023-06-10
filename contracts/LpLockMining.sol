@@ -3758,7 +3758,7 @@ contract LpLockMining is Ownable {
     }
     event adminTransferRecord(uint256 pid, string username, uint256 fid,address user, uint256 amount, uint256 rewardCycle, uint256 time);
     event adminBackTokenRecord(uint256 pid, string username, uint256 fid,address user, address token, uint256 amount, uint256 time);
-    event depositRecord(uint256 pid, string name , uint256 fid , address user, uint256 lpAmount,uint256 period,uint256 weightCoefficient, uint256 yield, uint256 time);
+    event depositRecord(uint256 pid, string name , uint256 fid , address user, uint256 lpAmount,uint256 period,uint256 weightCoefficient, uint256 time);
     event userClaimFlm(uint256 pid, string name , uint256 fid , address user, uint256 flmAmount,uint256 time);
     event extractLpRecord(uint256 pid, string name , uint256 fid , address user, uint256 lpAmount,uint256 time);
     FirePassport public fp;
@@ -3882,19 +3882,7 @@ function getSbt005TotalSupply() public view returns(uint256) {
 }
 
 // 假设当前FDT价格为1USDT
-function yield(uint256 _LpAmount) public view returns (uint256) {
-    if (FLM_AMOUNT == 0) {
-        return 1;
-    }
-    
-    uint256 ratio = SafeMath.div(_LpAmount.mul(ratioAmount), getSbt005TotalSupply());
-    uint256 dividend = SafeMath.mul(ratio, oneYearBlockAward());
-    uint256 divisor = SafeMath.add(getFdtAmountInLP(_LpAmount), getWethAmountInLP(_LpAmount));
 
-    uint256 yieldAmount = SafeMath.div(SafeMath.mul(dividend, 1e18), divisor); // Multiply by 1e18 for decimal precision
-
-    return yieldAmount;
-}
 
 function lockLp(uint256 _several, uint256 _LPAmount) public pause {
     require(IFireSoul(fireSoul).checkFID(msg.sender), "You don't have fid yet");
@@ -3941,7 +3929,6 @@ function lockLp(uint256 _several, uint256 _LPAmount) public pause {
         _LPAmount,
         _several,
         Weights[_several],
-        yield(_LPAmount),
         block.timestamp
     );
 }
