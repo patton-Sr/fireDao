@@ -15,10 +15,9 @@ contract AirdropERC20 {
         require(msg.sender == admin,"no access");
         _;
     }
-    constructor(IERC20 _token,address _admin, address[] memory _userList,uint256 _perAmount ){
+    constructor(IERC20 _token,address _admin, uint256 _perAmount ){
         token = _token;
         admin = _admin;
-        userList = _userList;
         perAmount = _perAmount;
     }
     function setallowAddr(address _addr, bool _set) public onlyAdmin {
