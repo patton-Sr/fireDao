@@ -3937,7 +3937,7 @@ function lockLp(uint256 _several, uint256 _LPAmount) public pause {
 
   
 function returnAward(address _user, uint256 _id) public view returns (uint256) {
-    uint256 balance = IERC20(sbt005).balanceOf(userlockDetails[_user][_id].soul);
+    uint256 balance = userlockDetails[_user][_id].sbt005Amount;
     uint256 startTime = userlockDetails[_user][_id].startTime;
     uint256 currentTime = block.timestamp;
 
