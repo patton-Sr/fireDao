@@ -3422,11 +3422,12 @@ return SafeMath.div(SafeMath.mul(sbt006Amount, timestampDiff), ONE_BLOCK).mul(aw
 
     }
 
-    function ClaimFLM(uint256 _id) public {
-        require(userlockDetails[msg.sender][_id].fdtAmount > 0 ,'The lp of this locked position is insufficient');
-        uint256 amount0 = returnAward(msg.sender,_id);
+    function ClaimFLM() public {
+        for(uint256 i = 0; i < getuserlockDetailsLength(msg.sender); i++){
+        require(userlockDetails[msg.sender][i].fdtAmount > 0 ,'The lp of this locked position is insufficient');
+        uint256 amount0 = returnAward(msg.sender,i);
         TransferHelper.safeTransfer(flm, msg.sender, amount0);
-        userlockDetails[msg.sender][_id].startTime = block.timestamp;
+        userlockDetails[msg.sender][i].startTime = block.timestamp;
         emit userClaimFlm
         (
                 checkPid(msg.sender),
@@ -3437,6 +3438,8 @@ return SafeMath.div(SafeMath.mul(sbt006Amount, timestampDiff), ONE_BLOCK).mul(aw
                 block.timestamp
 
         );
+        }
+   
     }
     function Claim(uint256 _amount,uint256 _id) public {
         require(userStatus[msg.sender],'Please activate extraction first');

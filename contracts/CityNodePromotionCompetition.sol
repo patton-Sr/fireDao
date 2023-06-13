@@ -32,7 +32,7 @@ contract CityNodePromotionCompetition is Ownable {
     function setReputation(address _Reputation) public onlyOwner {
         Reputation = _Reputation;
     }
-    function setPauseControlAddress(address _pauseControlAddress) public onlyOwner{
+    function setPauseControlAddress(address _pauseControlAddress) public onlyOwner {
         pauseControlAddress = _pauseControlAddress;
     }
 
