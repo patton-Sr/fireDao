@@ -3413,7 +3413,13 @@ function oneYearBlockAward() public view returns (uint256) {
                 );
     }
     function returnAward(address _user, uint256 _id) public view returns(uint256) {
-        return  IERC20(sbt006).balanceOf(IFireSoul(fireSoul).getSoulAccount(_user)) / IERC20(sbt006).totalSupply() * block.timestamp - userlockDetails[_user][_id].startTime / ONE_BLOCK * oneBlockAward();
+       uint256 sbt006Amount = userlockDetails[_user][_id].sbt006Amount;
+uint256 totalSupply = IERC20(sbt006).totalSupply();
+uint256 timestampDiff = block.timestamp - userlockDetails[_user][_id].startTime;
+uint256 awardPerBlock = oneBlockAward();
+
+return SafeMath.div(SafeMath.mul(sbt006Amount, timestampDiff), ONE_BLOCK).mul(awardPerBlock).div(totalSupply);
+
     }
 
     function ClaimFLM(uint256 _id) public {
@@ -3438,8 +3444,9 @@ function oneYearBlockAward() public view returns (uint256) {
         require(block.timestamp >= userlockDetails[msg.sender][_id].endTime,'The lock-up period has not yet expired');
         address fireSoulAccount = IFireSoul(fireSoul).getSoulAccount(msg.sender);
         TransferHelper.safeTransfer(fdt,msg.sender, _amount);
-        uint256 amount0 = userlockDetails[msg.sender][_id].sbt001Amount * _amount / userlockDetails[msg.sender][_id].fdtAmount ;
-        uint256 amount1 = userlockDetails[msg.sender][_id].sbt006Amount * _amount / userlockDetails[msg.sender][_id].fdtAmount ;
+uint256 amount0 = SafeMath.div(userlockDetails[msg.sender][_id].sbt001Amount.mul(_amount), userlockDetails[msg.sender][_id].fdtAmount);
+uint256 amount1 = SafeMath.div(userlockDetails[msg.sender][_id].sbt006Amount.mul(_amount), userlockDetails[msg.sender][_id].fdtAmount);
+
 
         userlockDetails[msg.sender][_id].fdtAmount -= _amount;
         ISbt001(sbt001).burn(fireSoulAccount, amount0 );
