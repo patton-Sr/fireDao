@@ -3264,7 +3264,7 @@ contract FdtLockMining is Ownable {
         uint256 sbt006Amount;
     }
     event adminTransferRecord(uint256 pid, string username, uint256 fid,address user, uint256 amount, uint256 rewardCycle, uint256 time);
-    event depositRecord(uint256 pid, string name , uint256 fid , address user, uint256 fdtAmount,uint256 period,uint256 weightCoefficient, uint256 yield, uint256 time);
+    event depositRecord(uint256 pid, string name , uint256 fid , address user, uint256 fdtAmount,uint256 period,uint256 weightCoefficient, uint256 time);
     event userClaimFlm(uint256 pid, string name , uint256 fid , address user, uint256 flmAmount,uint256 time);
     event extractLpRecord(uint256 pid, string name , uint256 fid , address user, uint256 fdtAmount,uint256 time);
     FirePassport public fp;
@@ -3359,16 +3359,6 @@ function oneYearBlockAward() public view returns (uint256) {
     return SafeMath.mul(oneBlockAward(), YEAR);
 }
 
-    // 假设当前FDT价格为1USDT
- function yield(address _user, uint256 _fdtAmount) public view returns (uint256) {
-    uint256 fdtSupply = IERC20(sbt006).totalSupply();
-    uint256 dividend = SafeMath.mul(SafeMath.mul(oneYearBlockAward(), _fdtAmount), getLatesPrice());
-    uint256 divisor = SafeMath.mul(fdtSupply, IERC20(fdt).balanceOf(_user));
-
-    return SafeMath.div(dividend, divisor);
-}
-
-
     function lockFdt(uint256 _several,uint256 _FdtAmount) public {
         require(IFireSoul(fireSoul).checkFID(msg.sender),"you don't have fid yet");
         require(IERC20(fdt).balanceOf(msg.sender) >= _FdtAmount,'Your FDT quota is insufficient');
@@ -3408,18 +3398,24 @@ function oneYearBlockAward() public view returns (uint256) {
                 _FdtAmount,
                 _several,
                 Weights[_several],
-                yield(msg.sender,amount1),
                 block.timestamp
                 );
     }
     function returnAward(address _user, uint256 _id) public view returns(uint256) {
-       uint256 sbt006Amount = userlockDetails[_user][_id].sbt006Amount;
-uint256 totalSupply = IERC20(sbt006).totalSupply();
-uint256 timestampDiff = block.timestamp - userlockDetails[_user][_id].startTime;
-uint256 awardPerBlock = oneBlockAward();
+        uint256 sbt006Amount = userlockDetails[_user][_id].sbt006Amount;
+        uint256 totalSupply = IERC20(sbt006).totalSupply();
+        uint256 timestampDiff = block.timestamp - userlockDetails[_user][_id].startTime;
+        uint256 awardPerBlock = oneBlockAward();
 
-return SafeMath.div(SafeMath.mul(sbt006Amount, timestampDiff), ONE_BLOCK).mul(awardPerBlock).div(totalSupply);
+        return SafeMath.div(SafeMath.mul(sbt006Amount, timestampDiff), ONE_BLOCK).mul(awardPerBlock).div(totalSupply);
 
+    }
+    function canClaim() public view returns(uint256 ){
+        uint256 amount = 0; 
+        for(uint256 i = 0 ; i < getuserlockDetailsLength(msg.sender); i++){
+            amount += returnAward(msg.sender, i);
+        }
+        return amount;
     }
 
     function ClaimFLM() public {
@@ -3447,10 +3443,8 @@ return SafeMath.div(SafeMath.mul(sbt006Amount, timestampDiff), ONE_BLOCK).mul(aw
         require(block.timestamp >= userlockDetails[msg.sender][_id].endTime,'The lock-up period has not yet expired');
         address fireSoulAccount = IFireSoul(fireSoul).getSoulAccount(msg.sender);
         TransferHelper.safeTransfer(fdt,msg.sender, _amount);
-uint256 amount0 = SafeMath.div(userlockDetails[msg.sender][_id].sbt001Amount.mul(_amount), userlockDetails[msg.sender][_id].fdtAmount);
-uint256 amount1 = SafeMath.div(userlockDetails[msg.sender][_id].sbt006Amount.mul(_amount), userlockDetails[msg.sender][_id].fdtAmount);
-
-
+        uint256 amount0 = SafeMath.div(userlockDetails[msg.sender][_id].sbt001Amount.mul(_amount), userlockDetails[msg.sender][_id].fdtAmount);
+        uint256 amount1 = SafeMath.div(userlockDetails[msg.sender][_id].sbt006Amount.mul(_amount), userlockDetails[msg.sender][_id].fdtAmount);
         userlockDetails[msg.sender][_id].fdtAmount -= _amount;
         ISbt001(sbt001).burn(fireSoulAccount, amount0 );
         ISbt006(sbt006).burn(fireSoulAccount, amount1 );
@@ -3474,7 +3468,7 @@ uint256 amount1 = SafeMath.div(userlockDetails[msg.sender][_id].sbt006Amount.mul
     function getBalanceOfFlm() public view returns(uint256) {
         return IERC20(flm).balanceOf(address(this));
     }
-        function getBalanceOfFdt(address _addr) public view returns(uint256) {
+    function getBalanceOfFdt(address _addr) public view returns(uint256) {
         return IERC20(fdt).balanceOf(_addr);
     }
       function checkPid(address _user) public view returns(uint256){
