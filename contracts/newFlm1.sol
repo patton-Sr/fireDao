@@ -227,10 +227,6 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
            }
        }
     }
-
-  
-
-  
     function setOpenTrade(bool _enabled) public onlyOwner{
         openTrade = _enabled;
     }
@@ -248,7 +244,7 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
         _burn(msg.sender, burnAmount);
     }
     
-        function _afterTokenTransfer(address from, address to, uint256 amount) internal virtual override(ERC20, ERC20Votes) {
+    function _afterTokenTransfer(address from, address to, uint256 amount) internal virtual override(ERC20, ERC20Votes) {
         
         super._afterTokenTransfer(from, to, amount);
     }
