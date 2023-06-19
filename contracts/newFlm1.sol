@@ -2,6 +2,8 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -11,27 +13,19 @@ import "./interface/IUniswapV2Pair.sol";
 import "./interface/IUniswapV2Factory.sol";
 import "./interface/GetWarp.sol";
 
-contract flame is ERC20 ,Ownable{
+contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
     using SafeMath for uint256;
-    address public feeReceive;
-    address public  uniswapV2Pair;
-    address public    _tokenOwner;
-    address public cityNode;
+ 
     IUniswapV2Router02 public uniswapV2Router;
     IERC20 public WETH;
     IERC20 public pair;
     GetWarp public warp;
+    address public feeReceive;
+    address public  uniswapV2Pair;
+    address public    _tokenOwner;
+    address public cityNode;
     bool private swapping;
     bool public status;
-    uint256 public StartBlock;
-    uint256 _destroyMaxAmount;
-    mapping(address => bool) public _isExcludedFromFees;
-    address[] public whiteListUser;
-    mapping(address => bool) public allowAddLPList;
-    address[] public allowAddLPListUser;
-    mapping(address => bool) public blackList;
-    address[] public blackListUser;
-    mapping(address => uint256) public LPAmount;
     bool public swapAndLiquifyEnabled = true;
     bool public openTrade;
     uint256 public startTime;
@@ -41,27 +35,25 @@ contract flame is ERC20 ,Ownable{
     uint8   public  _tax ;
     uint256 public  _currentSupply;
     address public _Pool;
+    uint256 public StartBlock;
+    uint256 _destroyMaxAmount;
+
+    address[] public whiteListUser;
+    address[] public allowAddLPListUser;
+    address[] public blackListUser;
+
+    mapping(address => bool) public _isExcludedFromFees;
+    mapping(address => bool) public allowAddLPList;
+    mapping(address => bool) public blackList;
+    mapping(address => uint256) public LPAmount;
+  
     event UpdateUniswapV2Router(address indexed newAddress, address indexed oldAddress);
     event ExcludeFromFees(address indexed account, bool isExcluded);
     event ExcludeMultipleAccountsFromFees(address[] accounts, bool isExcluded);
-    //compound
-    /// @notice A checkpoint for marking number of votes from a given block
-    struct Checkpoint {
-        uint32 fromBlock;
-        uint96 votes;
-    }
-    /// @notice A record of votes checkpoints for each account, by index
-    mapping (address => mapping (uint32 => Checkpoint)) public checkpoints;
-    /// @notice The number of checkpoints for each account
-    mapping (address => uint32) public numCheckpoints;
-    /// @notice A record of each accounts delegate
-    mapping (address => address) public delegates;
-    /// @notice An event thats emitted when a delegate account's vote balance changes
-    event DelegateVotesChanged(address indexed delegate, uint previousBalance, uint newBalance);
-    /// @notice An event thats emitted when an account changes its delegate
-    event DelegateChanged(address indexed delegator, address indexed fromDelegate, address indexed toDelegate);
     
-    constructor(address tokenOwner) ERC20("Flame", "FLM") {
+
+    
+    constructor(address tokenOwner) ERC20("Flame", "FLM")ERC20Permit("FLM") {
         IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0x2863984c246287aeB392b11637b234547f5F1E70);
         address _uniswapV2Pair = IUniswapV2Factory(_uniswapV2Router.factory())
         .createPair(address(this), _uniswapV2Router.WETH());
@@ -76,19 +68,24 @@ contract flame is ERC20 ,Ownable{
         excludeFromFees(address(this), true);
         whiteListOfAddLP(tokenOwner, true);
         whiteListOfAddLP(owner(), true);
-
+        feeReceive = owner();
         WETH = IERC20(_uniswapV2Router.WETH());
         pair = IERC20(_uniswapV2Pair);
         
         uint256 total = 100000000000 * 10**18;
         _mint(tokenOwner, total);
-        _addDelegates(tokenOwner, safe96(total,"erc20: vote amount underflows"));
         _currentSupply = total;
         currentTime = block.timestamp;
         _tax = 5;
     }
 
     receive() external payable {}
+        function _burn(address account, uint256 amount) internal virtual override(ERC20, ERC20Votes) {
+        super._burn(account, amount);
+    }
+       function _mint(address to, uint256 amount) internal  override(ERC20, ERC20Votes) {
+        super._mint(to, amount);
+    }
     function setWarp(GetWarp _warp) public onlyOwner {
         warp = _warp;
     }
@@ -251,6 +248,10 @@ contract flame is ERC20 ,Ownable{
         _burn(msg.sender, burnAmount);
     }
     
+        function _afterTokenTransfer(address from, address to, uint256 amount) internal virtual override(ERC20, ERC20Votes) {
+        
+        super._afterTokenTransfer(from, to, amount);
+    }
 
 
     function _transfer(
@@ -262,7 +263,7 @@ contract flame is ERC20 ,Ownable{
         require(from != address(0), "ERC20: transfer from the zero address");
         require(to != address(0), "ERC20: transfer to the zero address");
         require(amount>0);
-        uint96 amount96 = safe96(amount,"");
+
         uint256 balanceWETH = WETH.balanceOf(address(this));
 
 		if(from == address(this) || to == address(this)){
@@ -302,18 +303,17 @@ contract flame is ERC20 ,Ownable{
      
         if(from == uniswapV2Pair || to == uniswapV2Pair){
             require(openTrade ||  allowAddLPList[from]);
+
             if (takeFee) {
                 super._transfer(from, address(this), amount.div(100).mul(_tax));//fee 5%
                 amount = amount.div(100).mul(100-_tax);//95%
             }
-            if(from != uniswapV2Pair){
+            if(from == uniswapV2Pair){
                 if(block.number < startBlockNumber + StartBlock){
                     _burn(from,amount);
                 }
-            }else if(to != uniswapV2Pair){
-                if(block.number < startBlockNumber + StartBlock){
-                    _burn(to,amount);
-                }
+            }else if(to == uniswapV2Pair){
+               
         }
         }
                if(WETH.balanceOf(address(this))>0){
@@ -321,7 +321,6 @@ contract flame is ERC20 ,Ownable{
             }
 
          super._transfer(from, to, amount);
-         _moveDelegates(from, to, amount96);
     }
      
 
@@ -344,123 +343,4 @@ contract flame is ERC20 ,Ownable{
         swapTokensForOther(contractTokenBalance);
     }
 
- 
-//compound 
-    function getPriorVotes(address account, uint blockNumber) public view returns (uint96) {
-        require(blockNumber < block.number, "Comp::getPriorVotes: not yet determined");
-
-        uint32 nCheckpoints = numCheckpoints[account];
-        if (nCheckpoints == 0) {
-            return 0;
-        }
-
-        // First check most recent balance
-        if (checkpoints[account][nCheckpoints - 1].fromBlock <= blockNumber) {
-            return checkpoints[account][nCheckpoints - 1].votes;
-        }
-
-        // Next check implicit zero balance
-        if (checkpoints[account][0].fromBlock > blockNumber) {
-            return 0;
-        }
-
-        uint32 lower = 0;
-        uint32 upper = nCheckpoints - 1;
-        while (upper > lower) {
-            uint32 center = upper - (upper - lower) / 2; // ceil, avoiding overflow
-            Checkpoint memory cp = checkpoints[account][center];
-            if (cp.fromBlock == blockNumber) {
-                return cp.votes;
-            } else if (cp.fromBlock < blockNumber) {
-                lower = center;
-            } else {
-                upper = center - 1;
-            }
-        }
-        return checkpoints[account][lower].votes;
-    }
-
-
-function getCurrentVotes(address account) external view returns (uint96) {
-        uint32 nCheckpoints = numCheckpoints[account];
-        return nCheckpoints > 0 ? checkpoints[account][nCheckpoints - 1].votes : 0;
-    }
-
-
-    function delegate(address delegatee) public {
-        return _delegate(msg.sender, delegatee);
-    }
-
-    function _delegate(address delegator, address delegatee) internal {
-        address currentDelegate = delegates[delegator];
-        uint96 delegatorBalance = safe96(balanceOf(delegator),"");
-        delegates[delegator] = delegatee;
-
-        emit DelegateChanged(delegator, currentDelegate, delegatee);
-
-        _moveDelegates(currentDelegate, delegatee, delegatorBalance);
-    }
-
-
-    function _moveDelegates(address srcRep, address dstRep, uint96 amount) internal {
-        if (srcRep != dstRep && amount > 0) {
-            if (srcRep != address(0)) {
-                uint32 srcRepNum = numCheckpoints[srcRep];
-                uint96 srcRepOld = srcRepNum > 0 ? checkpoints[srcRep][srcRepNum - 1].votes : 0;
-                uint96 srcRepNew = sub96(srcRepOld, amount, "Comp::_moveVotes: vote amount underflows");
-                _writeCheckpoint(srcRep, srcRepNum, srcRepOld, srcRepNew);
-            }
-
-            if (dstRep != address(0)) {
-                uint32 dstRepNum = numCheckpoints[dstRep];
-                uint96 dstRepOld = dstRepNum > 0 ? checkpoints[dstRep][dstRepNum - 1].votes : 0;
-                uint96 dstRepNew = add96(dstRepOld, amount, "Comp::_moveVotes: vote amount overflows");
-                _writeCheckpoint(dstRep, dstRepNum, dstRepOld, dstRepNew);
-            }
-        }
-    }
-
-
-   function _writeCheckpoint(address delegatee, uint32 nCheckpoints, uint96 oldVotes, uint96 newVotes) internal {
-      uint32 blockNumber = safe32(block.number, "Comp::_writeCheckpoint: block number exceeds 32 bits");
-
-      if (nCheckpoints > 0 && checkpoints[delegatee][nCheckpoints - 1].fromBlock == blockNumber) {
-          checkpoints[delegatee][nCheckpoints - 1].votes = newVotes;
-      } else {
-          checkpoints[delegatee][nCheckpoints] = Checkpoint(blockNumber, newVotes);
-          numCheckpoints[delegatee] = nCheckpoints + 1;
-      }
-
-      emit DelegateVotesChanged(delegatee, oldVotes, newVotes);
-    }
-    function _addDelegates(address dstRep, uint96 amount) internal {
-          
-        uint32 dstRepNum = numCheckpoints[dstRep];
-        uint96 dstRepOld = dstRepNum > 0 ? checkpoints[dstRep][dstRepNum - 1].votes : 0;
-        uint96 dstRepNew = add96(dstRepOld, amount, "vote: vote amount overflows");
-        _writeCheckpoint(dstRep, dstRepNum, dstRepOld, dstRepNew);
-        
-    }
-   
-
-    function safe32(uint n, string memory errorMessage) internal pure returns (uint32) {
-        require(n < 2**32, errorMessage);
-        return uint32(n);
-    }
-
-    function safe96(uint n, string memory errorMessage) internal pure returns (uint96) {
-        require(n < 2**96, errorMessage);
-        return uint96(n);
-    }
-
-    function add96(uint96 a, uint96 b, string memory errorMessage) internal pure returns (uint96) {
-        uint96 c = a + b;
-        require(c >= a, errorMessage);
-        return c;
-    }
-
-    function sub96(uint96 a, uint96 b, string memory errorMessage) internal pure returns (uint96) {
-        require(b <= a, errorMessage);
-        return a - b;
-    }
 }
