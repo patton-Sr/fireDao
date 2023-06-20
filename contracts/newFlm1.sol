@@ -21,11 +21,9 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
     EnumerableSet.AddressSet private routers;
     EnumerableSet.AddressSet private pairs;
 
-    IERC20 public pair;
     GetWarp public warp;
     address public feeReceive;
     address public  _tokenOwner;
-    address public cityNode;
     bool private swapping;
     bool public status;
     bool public swapAndLiquifyEnabled = true;
@@ -33,9 +31,7 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
     uint256 public startTime;
     uint256 public startBlockNumber;
     uint256 private currentTime;
-    uint256 public proportion;
     uint8   public  _tax ;
-    uint256 public  _currentSupply;
     uint256 public StartBlock;
     uint256 _destroyMaxAmount;
 
