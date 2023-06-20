@@ -12,7 +12,6 @@ import "./lib/SafeMath.sol";
 import "./interface/IUniswapV2Router02.sol";
 import "./interface/IUniswapV2Pair.sol";
 import "./interface/IUniswapV2Factory.sol";
-import "./interface/GetWarp.sol";
 
 contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -21,7 +20,6 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
     EnumerableSet.AddressSet private routers;
     EnumerableSet.AddressSet private pairs;
 
-    GetWarp public warp;
     address public feeReceive;
     address public  _tokenOwner;
     bool private swapping;
@@ -123,9 +121,7 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
        function _mint(address to, uint256 amount) internal  override(ERC20, ERC20Votes) {
         super._mint(to, amount);
     }
-    function setWarp(GetWarp _warp) public onlyOwner {
-        warp = _warp;
-    }
+
     function setReceiver(address _user) public onlyOwner {
         feeReceive = _user;
     }
