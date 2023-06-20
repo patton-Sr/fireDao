@@ -77,7 +77,6 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
         uint256 total = 100000000000 * 10**18;
 
         _mint(tokenOwner, total);
-        _currentSupply = total;
         currentTime = block.timestamp;
         _tax = 5;
     }
@@ -132,9 +131,6 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
     }
     function setstatus() public onlyOwner{
         status = !status;
-    }
-    function currentSupply() public view virtual returns (uint256) {
-        return _currentSupply;
     }
     function getwhiteListUserLength() public view returns(uint256) {
         return whiteListUser.length;
@@ -371,10 +367,9 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
             tokenAmount,
             0,
             path,
-            address(warp),
+            address(this),
             block.timestamp
         );
-        warp.withdraw();
     }
 
      function swapAndLiquifyV3(uint256 contractTokenBalance,address router) public {
