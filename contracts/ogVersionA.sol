@@ -868,8 +868,8 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
         * ETH Address :0x5D0C84105D44919Dee994d729f74f8EcD05c30fB
 	*/
 	constructor(ERC20 _fdt,  address _weth, address _firePassport) {
-		priceFeed = AggregatorV3Interface(0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612);//arb one 
-		// priceFeed = AggregatorV3Interface(0x62CAe0FA2da220f43a51F86Db2EDb36DcA9A5A08);//arb goerli
+		// priceFeed = AggregatorV3Interface(0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612);//arb one 
+		priceFeed = AggregatorV3Interface(0x62CAe0FA2da220f43a51F86Db2EDb36DcA9A5A08);//arb goerli
 		fdt = _fdt;
 		weth = _weth;
 		salePrice = 10;
