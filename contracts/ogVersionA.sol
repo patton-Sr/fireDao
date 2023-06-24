@@ -864,6 +864,7 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
 		* Aggregator: ETH/USD
 		* Address:0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e
         * Arb goerli:0x62CAe0FA2da220f43a51F86Db2EDb36DcA9A5A08
+        
         * Arb One:0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612
         * ETH Address :0x5D0C84105D44919Dee994d729f74f8EcD05c30fB
 	*/
@@ -1030,7 +1031,7 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
         return 0;
     }
     function addWhiteList(address[] memory _addr) public{
-        require(IsAdminLevelTwo[msg.sender] || IsAdminLevelThree[msg.sender],"you don't have permission");
+        require(IsAdminLevelThree[msg.sender],"you don't have permission");
         require(adminInviter[msg.sender].length <= getMax(msg.sender),"Exceeded the set total");
         for(uint i=0;i<_addr.length;i++){
             if(pidStatusForUser){
@@ -1083,25 +1084,71 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
         ShowWhiteList[_id] = ShowWhiteList[ShowWhiteList.length - 1];
         ShowWhiteList.pop();
     }
-    function addAssignAddress(address[] memory _addr) public onlyOwner{
+    function addAssignAddressAndRatio(address[] memory _addr, uint256[] memory _rate) public onlyOwner{
+        require(_addr.length == _rate.length, 'Please enter the correct address and ratio');
+        require(getRate() <= 100 , 'The non-allocation ratio exceeds the limit, please modify the allocation ratio first');
+        if(assignAddress.length > 0 ) {
+            for(uint i = 0 ; i < _addr.length; i ++) {
+               require(checkRepeat(_addr[i]), 'The added address is duplicated, please readjust and add again') ;
+            }
+        }
         for(uint i = 0 ; i < _addr.length; i++) {
             assignAddress.push(_addr[i]);
-        }
-    }
-    function addRate(uint256[] memory _rate) public onlyOwner{
-        require(getRate() <= 100,"The rate must be within one hundred");
-        for(uint i = 0 ; i< _rate.length ;i++){
             rate.push(_rate[i]);
         }
     }
-    function setAssignAddress(uint256 _id, address _addr) public onlyOwner{
+    function checkRepeat(address _addr) internal view returns(bool){
+        for(uint256 i = 0 ; i < assignAddress.length ; i ++) {
+            if(_addr == assignAddress[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+    function removeAssiginAddressAndRatio(address[] memory _addr) public onlyOwner{
+        for(uint256 j = 0 ; j < _addr.length ;j ++ ) {
+        for(uint256 i = 0; i < assignAddress.length ; i++){
+            if(assignAddress[i] == _addr[j]) {
+                assignAddress[i] = assignAddress[assignAddress.length - 1];
+                rate[i] = rate[rate.length -1];
+                assignAddress.pop();
+                rate.pop();
+                return;
+            }
+        }
+    }
+    require(false, "The address you removed does not exist");
+}
+
+
+    // function removeRate(uint256 _id) public onlyOwner {
+    //         rate[_id] = rate[rate.length - 1];
+    //         rate.pop();
+    // }
+
+    // function checkRatio() internal view returns(uint256) {
+    //     uint256 total = 0;
+    //     for(uint256 i = 0 ; i < rate.length; i ++) {
+    //         total += rate[i];
+    //     }
+    //     return total;
+    // }
+    // function addRate(uint256[] memory _rate) public onlyOwner{
+    //     require(getRate() <= 100,"The rate must be within one hundred");
+    //     for(uint i = 0 ; i< _rate.length ;i++){
+    //         rate.push(_rate[i]);
+    //     }
+    // }
+    function setAssignAddressAndRatio(uint256 _id, address _addr,uint256 _rate) public onlyOwner{
         require(_id < assignAddress.length, "The address doesn't exist");
         assignAddress[_id] = _addr;
-    }
-    function setRate(uint256 _id, uint256 _rate) public onlyOwner{
-        require(_id < rate.length,"The rate doesn't exist");
         rate[_id] = _rate;
+
     }
+    // function setRate(uint256 _id, uint256 _rate) public onlyOwner{
+    //     require(_id < rate.length,"The rate doesn't exist");
+    //     rate[_id] = _rate;
+    // }
     function addInviteRate(uint256[] memory _rate) public onlyOwner{
         require(getRate() <= 100,"The rate must be within one hundred");
         require(_rate.length == 2 || inviteRate.length == 2 , "input error");
@@ -1110,23 +1157,10 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
         }
     }
     function setInviteRate(uint256 _id , uint256 _rate) public onlyOwner{
+        require(_id > inviteRate.length, 'input error');
         inviteRate[_id] = _rate;
     }
-    function removeAssiginAddress(address _addr) public onlyOwner{
-        for(uint256 i = 0; i<assignAddress.length ; i++){
-            if(assignAddress[i] == _addr) {
-                assignAddress[i] = assignAddress[assignAddress.length - 1];
-                assignAddress.pop();
-                return;
-            }
-        }
-        require(false, "The address you removed does not exist");
-    }
 
-    function removeRate(uint256 _id) public onlyOwner {
-            rate[_id] = rate[rate.length - 1];
-            rate.pop();
-    }
     function getRate() public view returns(uint256){
         uint256 total;
         uint256 _inviteRate;
@@ -1139,9 +1173,9 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
         }
         return total + _inviteRate;
     }
-    function withdraw(uint256 _amount) public onlyOwner{
-        fdt.transfer(msg.sender, _amount);
-    }
+    // function withdraw(uint256 _amount) public onlyOwner{
+    //     fdt.transfer(msg.sender, _amount);
+    // }
     function Claim(address tokenAddress, uint256 tokens)
     public
     onlyOwner
@@ -1175,7 +1209,6 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
 
     require(fdtAmount <= getBalanceOfFDT(), "the contract FDT balance is not enough");
     require(userTotalBuy[msg.sender] + fee <= userBuyMax, "over limit");
- 
     require(isValidNumber(fee), "invalid input");
 
 
