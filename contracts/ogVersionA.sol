@@ -864,7 +864,6 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
 		* Aggregator: ETH/USD
 		* Address:0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e
         * Arb goerli:0x62CAe0FA2da220f43a51F86Db2EDb36DcA9A5A08
-        
         * Arb One:0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612
         * ETH Address :0x5D0C84105D44919Dee994d729f74f8EcD05c30fB
 	*/
