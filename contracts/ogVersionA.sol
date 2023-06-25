@@ -837,7 +837,7 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
     ];
     address[] public assignAddress;
     address[] public adminsLevelTwo;
-    address[] public adminsLevelThree;
+    address[] private adminsLevelThree;
     uint256[] public rate;
     whiteList[] public ShowWhiteList;
     mapping(address => whiteList[]) public adminInviter;
