@@ -866,10 +866,11 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
         * Arb goerli:0x62CAe0FA2da220f43a51F86Db2EDb36DcA9A5A08
         * Arb One:0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612
         * ETH Address :0x5D0C84105D44919Dee994d729f74f8EcD05c30fB
+        * mumbai test net address: 0x0715A7794a1dc8e42615F059dD6e406A6594651A
 	*/
 	constructor(ERC20 _fdt,  address _weth, address _firePassport) {
 		// priceFeed = AggregatorV3Interface(0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612);//arb one 
-		priceFeed = AggregatorV3Interface(0x62CAe0FA2da220f43a51F86Db2EDb36DcA9A5A08);//arb goerli
+		priceFeed = AggregatorV3Interface(0x0715A7794a1dc8e42615F059dD6e406A6594651A);//arb goerli
 		fdt = _fdt;
 		weth = _weth;
 		salePrice = 10;
@@ -995,6 +996,8 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
         adminsLevelTwo[_id] = adminsLevelTwo[adminsLevelTwo.length - 1];
         adminsLevelTwo.pop();
         IsAdminLevelTwo[_addr] = false;
+        isRecommender[_addr] = false;
+
         emit reAdminLevelTwo(getPid(_addr), getName(_addr), _addr);
     }
 
@@ -1007,10 +1010,22 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
             break; 
             }
         }
+        removeThree(msg.sender, _addr);
         adminsLevelThree[_id] = adminsLevelThree[adminsLevelThree.length - 1];
         adminsLevelThree.pop();
         IsAdminLevelThree[_addr] = false;
+        isRecommender[_addr] = false;
+
         emit reAdminLevelThree(getPid(_addr), getName(_addr), _addr);
+    }
+    function removeThree(address _user, address _aimAddr) internal {
+        for(uint256 i = 0 ; i< userSetAdminsForThree[_user].length;i++ ){
+            if(_aimAddr == userSetAdminsForThree[_user][i]){
+                userSetAdminsForThree[_user][i] = userSetAdminsForThree[_user][userSetAdminsForThree[_user].length - 1];
+                userSetAdminsForThree[_user].pop();
+                break;
+            }
+        }
     }
 
     function checkAddr(address _user, address _admin) internal view returns(bool) {
@@ -1053,7 +1068,9 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
     function removeWhiteListBatch(address[] memory _addr) public {
         require(IsAdminLevelTwo[msg.sender] || IsAdminLevelThree[msg.sender],"you don't have permission");
         for(uint256 i = 0; i < _addr.length ; i++) {
+            isRecommender[_addr[i]] = false;
             removeWhiteList(_addr[i]);
+
         }
     }
   
@@ -1150,7 +1167,7 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
     // }
     function addInviteRate(uint256[] memory _rate) public onlyOwner{
         require(getRate() <= 100,"The rate must be within one hundred");
-        require(_rate.length == 2 || inviteRate.length == 2 , "input error");
+        require(_rate.length == 2 || inviteRate.length < 2 , "input error");
         for(uint256 i = 0; i < _rate.length; i++) {
             inviteRate.push(_rate[i]);
         }
@@ -1297,8 +1314,8 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
     function getValidNumbers() public view returns(uint256) {
         return validNumbers.length;
     }
-    function getUserSetAdminsLevelThree() public view returns(uint256) {
-       return userSetAdminsForThree[msg.sender].length;
+    function getUserSetAdminsLevelThree(address _user) public view returns(uint256) {
+       return userSetAdminsForThree[_user].length;
     }
 
 
