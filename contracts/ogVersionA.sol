@@ -838,7 +838,7 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
     ];
     address[] public assignAddress;
     address[] public adminsLevelTwo;
-    address[] private adminsLevelThree;
+    address[] public adminsLevelThree;
     uint256[] public rate;
     whiteList[] public ShowWhiteList;
     mapping(address => whiteList[]) public adminInviter;
@@ -852,7 +852,7 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
     mapping(address => address[]) public setAdminsForTwo;
     mapping(address => address[]) public userSetAdminsForThree;
 	AggregatorV3Interface internal priceFeed;
-    event AllRecord(uint256 no,uint256 pid, string name,  address addr,uint256 ethAmount,uint256 usdtAmount,uint256 rate,uint256 fdtAmount,uint256 time);
+    event AllRecord(uint256 no,uint256 pid, string name,  address addr,address addrTow,address addrThree,uint256 ethAmount,uint256 usdtAmount,uint256 rate,uint256 fdtAmount,uint256 time);
     event AllWhiteList(uint256 pid, string name, address user);
     event AllRemoveWList(uint256 pid , string name, address user);
     event adminLevelTwo(uint256 pid , string name , address user);
@@ -1241,7 +1241,7 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
         fdt.transfer(msg.sender, fdtAmount);
         userTotalBuy[msg.sender] += fee;
         totalDonate += fee;
-        emit AllRecord(buyId,getPid(msg.sender), getName(msg.sender), msg.sender, fee, usdtAmount, salePrice, fdtAmount, block.timestamp);
+        emit AllRecord(buyId,getPid(msg.sender), getName(msg.sender), msg.sender,upAddr, downAddr, fee, usdtAmount, salePrice, fdtAmount, block.timestamp);
         buyId++;
     }
 }
