@@ -1624,8 +1624,6 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
             }
         }
         for(uint i = 0 ; i < _addr.length; i++) {
-            // assignAddress.push(_addr[i]);
-            // rate.push(_rate[i]);
             assignAndRate memory ar = assignAndRate({assign:_addr[i],rate:_rate[i]});
             assignAndRates.push(ar);
         }
