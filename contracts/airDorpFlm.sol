@@ -96,6 +96,7 @@ contract airdropFlm is Ownable {
             if(_addr == whiteListInfos[i].user){
                 whiteListInfos[i] = whiteListInfos[whiteListInfos.length -1 ];
                 whiteListInfos.pop();
+                break;
             }
         }
     }
