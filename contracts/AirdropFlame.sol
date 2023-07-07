@@ -5,6 +5,9 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./interface/IFirePassport.sol";
+import "./interface/IFireSoul.sol";
+
 
 contract airdropFlm is Ownable {
     struct whiteListInfo{
@@ -14,6 +17,8 @@ contract airdropFlm is Ownable {
         string introduction;
 
     }
+    address firePassport;
+    address fireSoul;
     uint256 private id;
     address public flm;
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -23,7 +28,7 @@ contract airdropFlm is Ownable {
     mapping(address => uint256) public userTotalClaim;
     mapping(address => address) public fromLevelTwo;
     mapping(address => address[]) public levelTwoAdds;
-    event ClaimRecord(uint256 id,address user, uint256 amount);
+    event ClaimRecord(uint256 id,uint pid,string username ,uint fid,address user, uint256 amount);
 
     modifier onlyAdminTwo {
         require(checkIsNotAdminsLevelTwo(msg.sender),'you are not admin level two');
@@ -34,8 +39,10 @@ contract airdropFlm is Ownable {
         require(checkIsNotWhiteListUser(msg.sender),'you are not whitelist user');
         _;
     }
-    constructor(address _token) {
+    constructor(address _token, address _firePassport, address _fireSoul) {
         flm = _token;
+        firePassport = _firePassport;
+        fireSoul = _fireSoul;
     }
 
     function setAdminsLevelTwo(address[] memory _addr) public onlyOwner{
@@ -87,7 +94,7 @@ contract airdropFlm is Ownable {
             whiteList.add(_addr[i]);
             whiteListInfo memory info = whiteListInfo({user:_addr[i], amount:_amount[i],introduction:_info[i] });
             whiteListInfos.push(info);
-            emit ClaimRecord(id, _addr[i], _amount[i]);
+            emit ClaimRecord(id,getPid(_addr[i]),getName(_addr[i]), getFid(_addr[i]), _addr[i], _amount[i]);
             id++;
         }
     }
@@ -123,6 +130,24 @@ contract airdropFlm is Ownable {
         IERC20(flm).transfer(msg.sender, _amount);
         reduceAmount(msg.sender,_amount);
         userTotalClaim[msg.sender] += _amount;
+    }
+    function getName(address _user) public view returns(string memory){
+        if(IFirePassport(firePassport).hasPID(_user)){
+        return IFirePassport(firePassport).getUserInfo(_user).username;
+        }
+        return "anonymous";
+    }
+    function getFid(address _user) public view returns(uint256) {
+        if(IFireSoul(fireSoul).checkFID(_user)){
+            return IFireSoul(fireSoul).checkFIDA(_user);
+        }
+        return 0;
+    }
+    function getPid(address _user) public view returns(uint) {
+        if(IFirePassport(firePassport).hasPID(_user)){
+        return IFirePassport(firePassport).getUserInfo(_user).PID;
+        }
+        return 0;
     }
     function getAdminsLevelTwoList() external view returns(address[] memory){
         return adminsLevelTwo.values();

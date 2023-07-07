@@ -8,6 +8,8 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 import "./lib/SafeMath.sol";
 import "./interface/IUniswapV2Router02.sol";
 import "./interface/IUniswapV2Pair.sol";
@@ -19,6 +21,10 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
 
     EnumerableSet.AddressSet private routers;
     EnumerableSet.AddressSet private pairs;
+
+    EnumerableSet.AddressSet private routersForV3;
+    EnumerableSet.AddressSet private factoryForV3;
+
 
     address public feeReceive;
     address public  _tokenOwner;
@@ -49,16 +55,16 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
     
 
     
-    constructor(address tokenOwner,address[] memory _routers) ERC20("Flame", "FLM")ERC20Permit("FLM") {
+    constructor(address tokenOwner,address[] memory _routersV2) ERC20("Flame", "FLM")ERC20Permit("FLM") {
 
-    for(uint256 i = 0 ; i<_routers.length; i++){
-        IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(_routers[i]);
+    for(uint256 i = 0 ; i<_routersV2.length; i++){
+        IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(_routersV2[i]);
         address _uniswapV2Pair = IUniswapV2Factory(_uniswapV2Router.factory())
         .createPair(address(this), _uniswapV2Router.WETH());
-        _approve(address(this), address(_routers[i]), 10**34);
+        _approve(address(this), address(_routersV2[i]), 10**34);
         wethAddress[_uniswapV2Pair] = _uniswapV2Router.WETH();
-        routerAddress[_uniswapV2Pair] = _routers[i];
-        routers.add(_routers[i]);
+        routerAddress[_uniswapV2Pair] = _routersV2[i];
+        routers.add(_routersV2[i]);
         pairs.add(_uniswapV2Pair);
        }
         _tokenOwner = tokenOwner;
@@ -80,7 +86,17 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
     }
 
     receive() external payable {}
-    function addRouter(address _router) public {
+    function addRouterForV3(address _router) public onlyOwner {
+        require(routersForV3.contains(_router) == true, "");
+        address _factory;
+        _factory = ISwapRouter(_router).factory();
+        routersForV3.add(_router);
+        factoryForV3.add(_factory);
+    }
+    function removeRouterForV3(address _router) public onlyOwner {
+
+    }
+    function addRouter(address _router) public onlyOwner {
         address _uniswapV2Pair;
         IUniswapV2Router02 _uniswapV2Router;
         if(routers.contains(_router) == true){
