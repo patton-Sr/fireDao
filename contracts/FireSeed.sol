@@ -3022,10 +3022,10 @@ contract FireSeed is ERC1155 ,DefaultOperatorFilterer, Ownable, Pausable{
     mapping(address => bool) public isNotWhiteListUser;
     mapping(address => uint256[]) public ownerOfId; 
     mapping(uint256 => uint256) public discountFactors;
-    constructor(address _treasuryDistributionContract,address _cityNode,address _rainbowTreasury, address _weth) ERC1155("https://bafybeidfu5kotsr2tap72pg6uuipv7yhb47pcnzidcxqszg5z2vrewsdce.ipfs.nftstorage.link/0.json") {
+    constructor(address _treasuryDistributionContract,address _cityNode,address _rainbowTreasury, address _weth) ERC1155("https://bafybeic4doyj66yilxuaesoedeafb6uzzjabrjdff3z43zfmynivturhrq.ipfs.nftstorage.link/0.json") {
     _idTracker.increment();
     weth = _weth;
-    baseURI = "https://bafybeidfu5kotsr2tap72pg6uuipv7yhb47pcnzidcxqszg5z2vrewsdce.ipfs.nftstorage.link/";
+    baseURI = "https://bafybeic4doyj66yilxuaesoedeafb6uzzjabrjdff3z43zfmynivturhrq.ipfs.nftstorage.link/";
     wListMintMax = 1000;
     userMintMax = 100;
     whitelistDiscount = 0;
