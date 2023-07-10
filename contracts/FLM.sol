@@ -8,8 +8,10 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
+import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+import "@uniswap/v3-periphery/contracts/interfaces/IPeripheryImmutableState.sol";
 import "./lib/SafeMath.sol";
 import "./interface/IUniswapV2Router02.sol";
 import "./interface/IUniswapV2Pair.sol";
@@ -23,7 +25,7 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
     EnumerableSet.AddressSet private pairs;
 
     EnumerableSet.AddressSet private routersForV3;
-    EnumerableSet.AddressSet private factoryForV3;
+    EnumerableSet.AddressSet private pairForV3;
 
 
     address public feeReceive;
@@ -49,6 +51,8 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
     mapping(address => uint256) public LPAmount;
     mapping(address => address) public wethAddress;
     mapping(address => address) public routerAddress;
+    mapping(address => address) public routerForFactoryV3;
+    mapping(address => address) public routerForPairV3;
   
     event ExcludeFromFees(address indexed account, bool isExcluded);
     event ExcludeMultipleAccountsFromFees(address[] accounts, bool isExcluded);
@@ -87,13 +91,35 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
 
     receive() external payable {}
     function addRouterForV3(address _router) public onlyOwner {
-        require(routersForV3.contains(_router) == true, "");
-        address _factory;
-        _factory = ISwapRouter(_router).factory();
+        address factoryAddress;
+        address pairV3;
+        address weth9;
+        IUniswapV3Factory  factory;
+        factoryAddress =  IPeripheryImmutableState(_router).factory();
+        factory = IUniswapV3Factory(factoryAddress);
+        weth9 = IPeripheryImmutableState(_router).WETH9();
+
+        require(routersForV3.contains(_router) == true, "route already exists");
+        if(factory.getPool(address(this), weth9, 3000) == address(0)){
+            factory.createPool(address(this), weth9, 3000);
+            pairV3 = factory.getPool(address(this), weth9, 3000) ;
+
+        }else if(factory.getPool(address(this), weth9, 3000) != address(0)){
+            pairV3 = factory.getPool(address(this), weth9, 3000) ;
+        }
+        routerForFactoryV3[_router] = factoryAddress;
+        routerForPairV3[_router]  = pairV3;
+        wethAddress[pairV3] = weth9;
+        routerAddress[pairV3] = _router;
+        pairForV3.add(pairV3);    
         routersForV3.add(_router);
-        factoryForV3.add(_factory);
     }
     function removeRouterForV3(address _router) public onlyOwner {
+        require(routersForV3.contains(_router) == true,"This router does not exist");
+        delete wethAddress[routerForFactoryV3[_router]];
+        delete routerAddress[routerForFactoryV3[_router]];
+        routersForV3.remove(_router);
+        pairForV3.remove(routerForPairV3[_router]);
 
     }
     function addRouter(address _router) public onlyOwner {
@@ -379,6 +405,31 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
 
 }
 
+    function swapExactInputSingleHop(
+        address tokenIn,
+        address tokenOut,
+        address router,
+        uint24 poolFee,
+        uint amountIn
+    ) external returns (uint amountOut) {
+        IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
+        IERC20(tokenIn).approve(address(router), amountIn);
+
+        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
+            .ExactInputSingleParams({
+                tokenIn: tokenIn,
+                tokenOut: tokenOut,
+                fee: poolFee,
+                recipient: msg.sender,
+                deadline: block.timestamp,
+                amountIn: amountIn,
+                amountOutMinimum: 0,
+                sqrtPriceLimitX96: 0
+            });
+
+        amountOut = ISwapRouter(router).exactInputSingle(params);
+    }
+
     function swapTokensForOther(uint256 tokenAmount,address router) private {
 		address[] memory path = new address[](2);
         path[0] = address(this);
@@ -395,5 +446,6 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
      function swapAndLiquifyV3(uint256 contractTokenBalance,address router) public {
         swapTokensForOther(contractTokenBalance,router);
     }
+
 
 }
