@@ -153,6 +153,9 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
     function containsInPair(address _element) public view returns (bool) {
         return pairs.contains(_element);
     }
+    function containsInPairV3(address _element) public view returns(bool) {
+        return  pairForV3.contains(_element);
+    }
     function getRouterLength() public view returns (uint256) {
         return routers.length();
     }
@@ -337,6 +340,7 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
         require(to != address(0), "ERC20: transfer to the zero address");
         require(amount>0);
         address _pair;
+        bool v3Status;
 
 		if(from == address(this) || to == address(this)){
             super._transfer(from, to, amount);
@@ -347,6 +351,12 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
             _pair = from;
         }else if(containsInPair(to)){
             _pair = to;
+        }else if(containsInPairV3(from)){
+            _pair = from;
+            v3Status = true;
+        }else if(containsInPairV3(to)){
+            _pair = to;
+            v3Status = true;
         }
 
         bool takeFee  = !swapping;
@@ -363,12 +373,19 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
                 _tokenOwner != from &&
                 _tokenOwner != to &&
                 from != _pair &&
-                swapAndLiquifyEnabled
+                swapAndLiquifyEnabled &&
+                !v3Status
             ) {
                 swapping = true;
                 currentTime = block.timestamp;//更新时间
                 uint256 tokenAmount = balanceOf(address(this));
-                swapAndLiquifyV3(tokenAmount,routerAddress[_pair]);
+                swapAndLiquifyV2(tokenAmount,routerAddress[_pair]);
+                swapping = false;
+            }else{
+                swapping = true;
+                currentTime = block.timestamp;//更新时间
+                uint256 tokenAmount = balanceOf(address(this));
+                swapAndLiquifyV3(tokenAmount,routerForPairV3[routerAddress[_pair]]);
                 swapping = false;
             }
         }
@@ -406,21 +423,16 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
 }
 
     function swapExactInputSingleHop(
-        address tokenIn,
-        address tokenOut,
         address router,
-        uint24 poolFee,
         uint amountIn
-    ) external returns (uint amountOut) {
-        IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
-        IERC20(tokenIn).approve(address(router), amountIn);
-
+    ) private returns (uint amountOut) {
+        require(IERC20(address(this)).balanceOf(address(this)) > 0 , "The contract is short of quota");
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
             .ExactInputSingleParams({
-                tokenIn: tokenIn,
-                tokenOut: tokenOut,
-                fee: poolFee,
-                recipient: msg.sender,
+                tokenIn: address(this),
+                tokenOut: wethAddress[routerForPairV3[router] ],
+                fee: 3000,
+                recipient: address(this),
                 deadline: block.timestamp,
                 amountIn: amountIn,
                 amountOutMinimum: 0,
@@ -443,9 +455,11 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
         );
     }
 
-     function swapAndLiquifyV3(uint256 contractTokenBalance,address router) public {
+     function swapAndLiquifyV2(uint256 contractTokenBalance,address router) public {
         swapTokensForOther(contractTokenBalance,router);
     }
-
+   function swapAndLiquifyV3(uint contractTokenBalance, address router) public {
+       swapExactInputSingleHop(router, contractTokenBalance);
+   }
 
 }
