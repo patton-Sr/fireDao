@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/IPeripheryImmutableState.sol";
@@ -16,18 +15,13 @@ import "./lib/SafeMath.sol";
 import "./interface/IUniswapV2Router02.sol";
 import "./interface/IUniswapV2Pair.sol";
 import "./interface/IUniswapV2Factory.sol";
-
 contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
     using EnumerableSet for EnumerableSet.AddressSet;
     using SafeMath for uint256;
-
     EnumerableSet.AddressSet private routers;
     EnumerableSet.AddressSet private pairs;
-
     EnumerableSet.AddressSet private routersForV3;
     EnumerableSet.AddressSet private pairForV3;
-
-
     address public feeReceive;
     address public  _tokenOwner;
     bool private swapping;
@@ -40,11 +34,9 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
     uint8   public  _tax ;
     uint256 public StartBlock;
     uint256 _destroyMaxAmount;
-
     address[] public whiteListUser;
     address[] public allowAddLPListUser;
     address[] public blackListUser;
-
     mapping(address => bool) public _isExcludedFromFees;
     mapping(address => bool) public allowAddLPList;
     mapping(address => bool) public blackList;
@@ -78,17 +70,11 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
         whiteListOfAddLP(tokenOwner, true);
         whiteListOfAddLP(owner(), true);
         feeReceive = owner();
-
-        // WETH = IERC20(_uniswapV2Router.WETH());
-        // pair = IERC20(_uniswapV2Pair);
-        
         uint256 total = 100000000000 * 10**18;
-
         _mint(tokenOwner, total);
         currentTime = block.timestamp;
         _tax = 5;
     }
-
     receive() external payable {}
     function addRouterForV3(address _router) public onlyOwner {
         address factoryAddress;
@@ -162,7 +148,6 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
     function getPairLength() public view returns(uint256) {
         return pairs.length();
     }
-    
     function routersList() external view returns(address[] memory) {
        return routers.values();
     }
@@ -181,7 +166,6 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
        function _mint(address to, uint256 amount) internal  override(ERC20, ERC20Votes) {
         super._mint(to, amount);
     }
-
     function setReceiver(address _user) public onlyOwner {
         feeReceive = _user;
     }
@@ -197,7 +181,6 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
     function getblackListUserLenght() public view returns(uint256) {
         return blackListUser.length;
     }
-
     //onlyOwner
     function setStartBlock(uint256 _num) public onlyOwner{
         StartBlock = _num;
@@ -231,22 +214,17 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
             }
         }
     }
-
     function whiteListOfAddLP(address usr, bool enable) public onlyOwner {
         allowAddLPList[usr] = enable;
     }
-
     function setTax(uint8 tax) public onlyOwner {
         require(tax <=5 , 'tax too big');
         _tax = tax;
     }
-
-  
     function excludeFromFees(address account, bool excluded) public onlyOwner {
         _isExcludedFromFees[account] = excluded;
         emit ExcludeFromFees(account, excluded);
     }
-
     function rescueToken(address tokenAddress, uint256 tokens)
     public
     onlyOwner
@@ -254,7 +232,6 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
     {
         return IERC20(tokenAddress).transfer(msg.sender, tokens);
     }
-
     function feewhiteList(address[] calldata accounts) public onlyOwner {
         for (uint256 i = 0; i < accounts.length; i++) {
             checkRepaetWhiteListUser(accounts[i]);
@@ -320,23 +297,17 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
     function setSwapAndLiquifyEnabled(bool _enabled) public onlyOwner {
         swapAndLiquifyEnabled = _enabled;
     }
- 
-  
     //main
     function isExcludedFromFees(address account) public view returns (bool) {
         return _isExcludedFromFees[account];
     }
-    
     function burn(uint256 burnAmount) external {
         _burn(msg.sender, burnAmount);
     }
-    
     function _afterTokenTransfer(address from, address to, uint256 amount) internal virtual override(ERC20, ERC20Votes) {
         
         super._afterTokenTransfer(from, to, amount);
     }
-
-
     function _transfer(
         address from,
         address to,
@@ -348,12 +319,10 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
         require(amount>0);
         address _pair;
         bool v3Status;
-
 		if(from == address(this) || to == address(this)){
             super._transfer(from, to, amount);
             return;
         }
-
         if(containsInPair(from)) {
             _pair = from;
         }else if(containsInPair(to)){
@@ -365,15 +334,12 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
             _pair = to;
             v3Status = true;
         }
-
         bool takeFee  = !swapping;
-
         if(_isExcludedFromFees[from] || _isExcludedFromFees[to]) {
             takeFee = false;
         }else{
             takeFee = true;
         }
-        
            if(balanceOf(address(this)) > 0 && block.timestamp >= currentTime && startTime != 0){
             if (
                 !swapping &&
@@ -388,21 +354,24 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
                 uint256 tokenAmount = balanceOf(address(this));
                 swapAndLiquifyV2(tokenAmount,routerAddress[_pair]);
                 swapping = false;
-            }else{
+            }else if( 
+                !swapping &&
+                _tokenOwner != from &&
+                _tokenOwner != to &&
+                from != _pair &&
+                swapAndLiquifyEnabled
+                ){
                 swapping = true;
                 currentTime = block.timestamp;//更新时间
                 uint256 tokenAmount = balanceOf(address(this));
-                swapAndLiquifyV3(tokenAmount,routerForPairV3[routerAddress[_pair]]);
+                swapAndLiquifyV3(tokenAmount,routerAddress[_pair]);
                 swapping = false;
             }
         }
-
          if(startTime == 0 && balanceOf(_pair) == 0 && to == _pair){
             startTime = block.timestamp;
             startBlockNumber = block.number;
         }
-     
-                
         if(containsInPair(from) || containsInPair(to) && !v3Status){
             require(openTrade ||  allowAddLPList[from]);
 
@@ -432,7 +401,6 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
                 amount = amount.div(100).mul(100-_tax);//95%
             }
                if(containsInPairV3(from)){
-                
                 if(block.number < startBlockNumber + StartBlock){
                     _burn(from,amount);
                 }
@@ -448,29 +416,23 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
         }         
     }
          super._transfer(from, to, amount);
-
 }
-
     function swapExactInputSingleHop(
         address router,
-        uint amountIn
-    ) private returns (uint amountOut) {
-        require(IERC20(address(this)).balanceOf(address(this)) > 0 , "The contract is short of quota");
-        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
-            .ExactInputSingleParams({
-                tokenIn: address(this),
-                tokenOut: wethAddress[routerForPairV3[router] ],
-                fee: 3000,
-                recipient: address(this),
-                deadline: block.timestamp,
-                amountIn: amountIn,
-                amountOutMinimum: 0,
-                sqrtPriceLimitX96: 0
-            });
-
-        amountOut = ISwapRouter(router).exactInputSingle(params);
+        uint256 amountIn
+    ) private  {
+            IERC20(address(this)).approve(router, amountIn);
+            ISwapRouter(router).exactInputSingle(ISwapRouter.ExactInputSingleParams({
+            tokenIn: address(this),
+            tokenOut: wethAddress[routerForPairV3[router]],
+            fee: 3000,
+            recipient: address(this),
+            deadline: block.timestamp + 600, 
+            amountIn: amountIn,
+            amountOutMinimum: 0,
+            sqrtPriceLimitX96: 0
+        }));
     }
-
     function swapTokensForOther(uint256 tokenAmount,address router) private {
 		address[] memory path = new address[](2);
         path[0] = address(this);
@@ -483,12 +445,10 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
             block.timestamp
         );
     }
-
      function swapAndLiquifyV2(uint256 contractTokenBalance,address router) public {
         swapTokensForOther(contractTokenBalance,router);
     }
-   function swapAndLiquifyV3(uint contractTokenBalance, address router) public {
+   function swapAndLiquifyV3(uint256 contractTokenBalance, address router) public {
        swapExactInputSingleHop(router, contractTokenBalance);
    }
-
 }
