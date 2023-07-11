@@ -99,7 +99,7 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
         factory = IUniswapV3Factory(factoryAddress);
         weth9 = IPeripheryImmutableState(_router).WETH9();
 
-        require(routersForV3.contains(_router) == true, "route already exists");
+        require(routersForV3.contains(_router) == false, "route already exists");
         if(factory.getPool(address(this), weth9, 3000) == address(0)){
             factory.createPool(address(this), weth9, 3000);
             pairV3 = factory.getPool(address(this), weth9, 3000) ;
@@ -162,8 +162,15 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
     function getPairLength() public view returns(uint256) {
         return pairs.length();
     }
+    
     function routersList() external view returns(address[] memory) {
        return routers.values();
+    }
+    function routerV3List() external view returns(address[] memory) {
+        return routersForV3.values();
+    }
+    function pairV3List() external view returns(address[] memory){
+        return pairForV3.values();
     }
     function pairsList() external view returns(address[] memory ){
         return pairs.values();
@@ -395,7 +402,8 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
             startBlockNumber = block.number;
         }
      
-        if(containsInPair(from) || containsInPair(to)){
+                
+        if(containsInPair(from) || containsInPair(to) && !v3Status){
             require(openTrade ||  allowAddLPList[from]);
 
             if (takeFee) {
@@ -412,6 +420,27 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
                 IERC20(wethAddress[from]).transfer(feeReceive, balanceWETH);
             }
             }else if(containsInPair(to)){
+                uint256  balanceWETH =  IERC20(wethAddress[to]).balanceOf(address(this));
+                if(IERC20(wethAddress[to]).balanceOf(address(this)) > 0){
+                IERC20(wethAddress[to]).transfer(feeReceive, balanceWETH);
+            }
+        }         
+    }else if(containsInPairV3(from) || containsInPairV3(to)){
+            require(openTrade ||  allowAddLPList[from]);
+                if (takeFee) {
+                super._transfer(from, address(this), amount.div(100).mul(_tax));//fee 5%
+                amount = amount.div(100).mul(100-_tax);//95%
+            }
+               if(containsInPairV3(from)){
+                
+                if(block.number < startBlockNumber + StartBlock){
+                    _burn(from,amount);
+                }
+                if(IERC20(wethAddress[from]).balanceOf(address(this)) > 0){
+                uint256  balanceWETH =  IERC20(wethAddress[from]).balanceOf(address(this));
+                IERC20(wethAddress[from]).transfer(feeReceive, balanceWETH);
+            }
+            }else if(containsInPairV3(to)){
                 uint256  balanceWETH =  IERC20(wethAddress[to]).balanceOf(address(this));
                 if(IERC20(wethAddress[to]).balanceOf(address(this)) > 0){
                 IERC20(wethAddress[to]).transfer(feeReceive, balanceWETH);
