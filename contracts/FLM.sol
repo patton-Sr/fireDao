@@ -346,25 +346,16 @@ contract flame is ERC20 , ERC20Permit, ERC20Votes,Ownable{
                 _tokenOwner != from &&
                 _tokenOwner != to &&
                 from != _pair &&
-                swapAndLiquifyEnabled &&
-                !v3Status
+                swapAndLiquifyEnabled 
             ) {
                 swapping = true;
-                currentTime = block.timestamp;//更新时间
+                currentTime = block.timestamp;
                 uint256 tokenAmount = balanceOf(address(this));
+                if(!v3Status){
                 swapAndLiquifyV2(tokenAmount,routerAddress[_pair]);
-                swapping = false;
-            }else if( 
-                !swapping &&
-                _tokenOwner != from &&
-                _tokenOwner != to &&
-                from != _pair &&
-                swapAndLiquifyEnabled
-                ){
-                swapping = true;
-                currentTime = block.timestamp;//更新时间
-                uint256 tokenAmount = balanceOf(address(this));
+                }else{
                 swapAndLiquifyV3(tokenAmount,routerAddress[_pair]);
+                }
                 swapping = false;
             }
         }

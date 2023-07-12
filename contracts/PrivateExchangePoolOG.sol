@@ -1381,22 +1381,17 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
     ];
     assignAndRate[] public assignAndRates;
     whiteList[] public ShowWhiteList;
+    mapping(address => bool) public isNotLevelTwo;
+    mapping(address => bool) public isNotLevelThree;
     mapping(address => whiteList[]) public adminInviter;
     mapping(address => bool) public WhiteListUser;
 	mapping(address => uint256) public userTotalBuy;
     mapping(address => bool) public isRecommender;
     mapping(address => address) public recommender;
-    mapping(address => address[]) public recommenderInfo;
     // mapping(address => address[]) public setAdminsForTwo;
     mapping(address => address[]) public userSetAdminsForThree;
 	AggregatorV3Interface internal priceFeed;
     event AllRecord(uint256 no,uint256 pid, string name,  address addr,address addrTow,address addrThree,uint256 ethAmount,uint256 usdtAmount,uint256 rate,uint256 fdtAmount,uint256 time);
-    event AllWhiteList(uint256 pid, string name, address user);
-    event AllRemoveWList(uint256 pid , string name, address user);
-    event adminLevelTwo(uint256 pid , string name , address user);
-    event reAdminLevelTwo(uint256 pid , string name , address user);
-    event adminLevelThree(uint256 pid , string name , address user);
-    event reAdminLevelThree(uint256 pid , string name , address user);
 
 	/**
 		* NetWork: Goerli
@@ -1409,7 +1404,8 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
 	*/
 	constructor(ERC20 _fdt,  address _weth, address _firePassport) {
 		// priceFeed = AggregatorV3Interface(0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612);//arb one 
-		priceFeed = AggregatorV3Interface(0x0715A7794a1dc8e42615F059dD6e406A6594651A);//arb goerli
+		priceFeed = AggregatorV3Interface(0x62CAe0FA2da220f43a51F86Db2EDb36DcA9A5A08);//arb goerli
+		// priceFeed = AggregatorV3Interface(0x0715A7794a1dc8e42615F059dD6e406A6594651A);//mumbai goerli
 		fdt = _fdt;
 		weth = _weth;
 		salePrice = 10;
@@ -1462,10 +1458,10 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
     function setWhiteMaxForThree(uint256 _max) public onlyOwner {
         maxThree = _max;
     }
-    function checkAddrForAdminLevelTwo(address _user) internal view returns(bool) {
+    function checkAddrForAdminLevelTwo(address _user) public view returns(bool) {
       return adminsLevelTwo.contains(_user);
     }
-    function checkAddrForAdminLevelThree(address _user) internal view returns(bool){
+    function checkAddrForAdminLevelThree(address _user) public view returns(bool){
         return adminsLevelThree.contains(_user);
 
     }
@@ -1478,10 +1474,8 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
             require(!isRecommender[_addr[i]],"This address has already been invited");
            if (recommender[_addr[i]] == address(0) &&  recommender[msg.sender] != _addr[i] && !isRecommender[_addr[i]]) {
              recommender[_addr[i]] = msg.sender;
-             recommenderInfo[msg.sender].push(_addr[i]);
              isRecommender[_addr[i]] = true;
             adminsLevelTwo.add(_addr[i]);
-            emit adminLevelTwo(getPid(_addr[i]), getName(_addr[i]), _addr[i]);
         }else{
             revert("Please check and re-enter if the input is wrong");
         }
@@ -1491,10 +1485,7 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
     function setAdminLevelThree(address[] memory _addr) public {
         require(checkAddrForAdminLevelTwo(msg.sender), "Address is not an  level two administrator");
         require(userSetAdminsForThree[msg.sender].length.add(_addr.length) < adminLevelThreeMax, "You cannot exceed the maximum limit");
-
-
         for(uint256 i = 0; i < _addr.length; i++){
-
             if(pidStatusForAdmin){
                 require(IFirePassport(firePassport_).hasPID(_addr[i]),"address has no pid");
             }
@@ -1502,11 +1493,9 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
             require(!isRecommender[_addr[i]],"This address has already been added");
            if (recommender[_addr[i]] == address(0) &&  recommender[msg.sender] != _addr[i] && !isRecommender[_addr[i]] ) {
              recommender[_addr[i]] = msg.sender;
-             recommenderInfo[msg.sender].push(_addr[i]);
              isRecommender[_addr[i]] = true;
             adminsLevelThree.add(_addr[i]);
             userSetAdminsForThree[msg.sender].push( _addr[i]);
-            emit adminLevelThree(getPid(_addr[i]), getName(_addr[i]), _addr[i]);
         }else{
             revert("Please check and re-enter if the input is wrong");
         }
@@ -1518,14 +1507,12 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
     function removeAdminLevelTwo(address _addr) public onlyOwner{
         require(checkAddrForAdminLevelTwo(_addr), "Address is not an  level two administrator");
         adminsLevelTwo.remove(_addr);
-        emit reAdminLevelTwo(getPid(_addr), getName(_addr), _addr);
     }
 
     function removeAdminLevelThree(address _addr) public {
         require(checkAddrForAdminLevelTwo(msg.sender) && checkAddrForAdminLevelThree(_addr),"you are not an level two administrator");
         adminsLevelThree.remove(_addr);
         removeThree(msg.sender, _addr);
-        emit reAdminLevelThree(getPid(_addr), getName(_addr), _addr);
     }
  
     function removeThree(address _user, address _aimAddr) internal {
@@ -1564,13 +1551,11 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
         require(checkAddr(_addr[i], msg.sender)  && !isRecommender[_addr[i]],"This address has already been added");
            if (recommender[_addr[i]] == address(0) &&  recommender[msg.sender] != _addr[i] && !isRecommender[_addr[i]]) {
              recommender[_addr[i]] = msg.sender;
-             recommenderInfo[msg.sender].push(_addr[i]);
              isRecommender[_addr[i]] = true;
              whiteList memory wlist = whiteList({Pid:getPid(_addr[i]),name:getName(_addr[i]),user:_addr[i]});
         adminInviter[msg.sender].push(wlist);
         ShowWhiteList.push(wlist);
         WhiteListUser[_addr[i]] = true;
-        emit AllWhiteList(getPid(_addr[i]),getName(_addr[i]),_addr[i]);
         }else{
             revert("Please check and re-enter if the input is wrong");
 
@@ -1596,9 +1581,6 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
                 WhiteListUser[_addr] = false;
                 removeWhiteListTotal(_addr);
                 isRecommender[_addr] = false;
-              
-
-                emit AllRemoveWList(getPid(_addr),getName(_addr),_addr);
                 return;
             }
         }
@@ -1618,12 +1600,11 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
     function addAssignAddressAndRatio(address[] memory _addr, uint256[] memory _rate) public onlyOwner{
         require(_addr.length == _rate.length, 'Please enter the correct address and ratio');
         require(initRate, 'please initial addInviteRate()');
-        if(assignAndRates.length > 0 ) {
-            for(uint i = 0 ; i < _addr.length; i ++) {
-               require(checkRepeat(_addr[i]), 'The added address is duplicated, please readjust and add again') ;
-            }
-        }
+       
         for(uint i = 0 ; i < _addr.length; i++) {
+             if(assignAndRates.length > 0 ) {
+               require(checkRepeat(_addr[i]), 'The added address is duplicated, please readjust and add again') ;
+        }
             assignAndRate memory ar = assignAndRate({assign:_addr[i],rate:_rate[i]});
             assignAndRates.push(ar);
         }
@@ -1656,6 +1637,7 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
 
     function setAssignAddressAndRatio(uint256 _id, address _addr,uint256 _rate) public onlyOwner{
         require(_id < assignAndRates.length, "The address doesn't exist");
+        require(checkRepeat(_addr), 'The added address is duplicated, please readjust and add again') ;
         assignAndRates[_id] = assignAndRate({
             assign: _addr,
             rate: _rate
@@ -1806,9 +1788,7 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
       function getAdminsLevelThreeLength() public view returns(uint256) {
         return adminsLevelThree.length();
     }
-    function getInviteLength() public view returns(uint256) {
-        return recommenderInfo[msg.sender].length;
-    }
+ 
     function getfdtAmount(uint256 fee) public view returns(uint256) {
 	return (fee*getLatesPrice()/10**5)/salePrice;
     }
