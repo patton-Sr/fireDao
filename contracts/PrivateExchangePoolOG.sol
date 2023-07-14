@@ -1403,12 +1403,12 @@ contract PrivateExchangePoolOG is Ownable,Pausable {
         * mumbai test net address: 0x0715A7794a1dc8e42615F059dD6e406A6594651A
 	*/
 	constructor(ERC20 _fdt,  address _weth, address _firePassport) {
-		// priceFeed = AggregatorV3Interface(0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612);//arb one 
-		priceFeed = AggregatorV3Interface(0x62CAe0FA2da220f43a51F86Db2EDb36DcA9A5A08);//arb goerli
+		priceFeed = AggregatorV3Interface(0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612);//arb one 
+		// priceFeed = AggregatorV3Interface(0x62CAe0FA2da220f43a51F86Db2EDb36DcA9A5A08);//arb goerli
 		// priceFeed = AggregatorV3Interface(0x0715A7794a1dc8e42615F059dD6e406A6594651A);//mumbai goerli
 		fdt = _fdt;
 		weth = _weth;
-		salePrice = 10;
+		salePrice = 11;
         adminLevelTwoMax = 10;
         adminLevelThreeMax = 10;
         maxTwo = 50;

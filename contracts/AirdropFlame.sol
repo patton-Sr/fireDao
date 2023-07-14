@@ -44,6 +44,9 @@ contract airdropFlm is Ownable {
         firePassport = _firePassport;
         fireSoul = _fireSoul;
     }
+    function setFlm(address _Flm) public onlyOwner {
+        flm = _Flm;
+    }
 
     function setAdminsLevelTwo(address[] memory _addr) public onlyOwner{
         for(uint256 i = 0 ; i < _addr.length ; i ++){
