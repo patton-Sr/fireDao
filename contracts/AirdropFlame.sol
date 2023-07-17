@@ -10,7 +10,7 @@ import "./interface/IFireSoul.sol";
 
 
 contract airdropFlm is Ownable {
-    struct whiteListInfo{
+    struct airDropListInfo{
     
         address user;
         uint256 amount;
@@ -22,9 +22,9 @@ contract airdropFlm is Ownable {
     uint256 private id;
     address public flm;
     using EnumerableSet for EnumerableSet.AddressSet;
-    whiteListInfo[] public whiteListInfos;
+    airDropListInfo[] public airDropListInfos;
     EnumerableSet.AddressSet private adminsLevelTwo;
-    EnumerableSet.AddressSet private whiteList;
+    EnumerableSet.AddressSet private airDropList;
     mapping(address => uint256) public userTotalClaim;
     mapping(address => address) public fromLevelTwo;
     mapping(address => address[]) public levelTwoAdds;
@@ -54,7 +54,7 @@ contract airdropFlm is Ownable {
         }
     }   
     function checkIsNotWhiteListUser(address _address) internal view returns(bool){
-        return whiteList.contains(_address);
+        return airDropList.contains(_address);
     }
     function checkIsNotAdminsLevelTwo(address _address) internal view returns (bool) {
         return adminsLevelTwo.contains(_address);
@@ -62,9 +62,9 @@ contract airdropFlm is Ownable {
     
     function checkUserCanClaim(address _addr) public view returns(uint256) {
         uint256 total = 0 ;
-        for(uint256 i =0 ; i< whiteListInfos.length ; i++){
-            if(_addr == whiteListInfos[i].user){
-                total = whiteListInfos[i].amount;
+        for(uint256 i =0 ; i< airDropListInfos.length ; i++){
+            if(_addr == airDropListInfos[i].user){
+                total = airDropListInfos[i].amount;
             }
         }
         return total;
@@ -79,41 +79,41 @@ contract airdropFlm is Ownable {
     function checkUserId(address _addr) internal view returns(uint256) {
         uint256 _id = 0;
 
-        for(uint256 i = 0 ; i < whiteListInfos.length ;i++) {
-            if(_addr == whiteListInfos[i].user){
+        for(uint256 i = 0 ; i < airDropListInfos.length ;i++) {
+            if(_addr == airDropListInfos[i].user){
                _id = i;
             }
         }
         return _id;
     }
-    function addWhiteList(address[] memory _addr, uint256[] memory _amount, string[] memory _info) public onlyAdminTwo{
+    function addAirDropList(address[] memory _addr, uint256[] memory _amount, string memory _info) public onlyAdminTwo{
         for(uint256 i = 0; i< _addr.length ; i++){
             if(checkIsNotWhiteListUser(_addr[i])){
-                whiteListInfos[checkUserId(_addr[i])].amount += _amount[i];
+                airDropListInfos[checkUserId(_addr[i])].amount += _amount[i];
                 return;
             }
             fromLevelTwo[_addr[i]] = msg.sender;
             levelTwoAdds[msg.sender].push(_addr[i]);
-            whiteList.add(_addr[i]);
-            whiteListInfo memory info = whiteListInfo({user:_addr[i], amount:_amount[i],introduction:_info[i] });
-            whiteListInfos.push(info);
+            airDropList.add(_addr[i]);
+            airDropListInfo memory info = airDropListInfo({user:_addr[i], amount:_amount[i],introduction:_info });
+            airDropListInfos.push(info);
             emit ClaimRecord(id,getPid(_addr[i]),getName(_addr[i]), getFid(_addr[i]), _addr[i], _amount[i]);
             id++;
         }
     }
     function reomove(address _addr) internal {
-        for(uint256 i = 0 ; i < whiteListInfos.length; i++){
-            if(_addr == whiteListInfos[i].user){
-                whiteListInfos[i] = whiteListInfos[whiteListInfos.length -1 ];
-                whiteListInfos.pop();
+        for(uint256 i = 0 ; i < airDropListInfos.length; i++){
+            if(_addr == airDropListInfos[i].user){
+                airDropListInfos[i] = airDropListInfos[airDropListInfos.length -1 ];
+                airDropListInfos.pop();
                 break;
             }
         }
     }
     function reduceAmount(address _addr,uint256 _amount) internal {
-            for(uint256 i = 0 ; i < whiteListInfos.length; i++){
-            if(_addr == whiteListInfos[i].user){
-                whiteListInfos[i].amount -= _amount;
+            for(uint256 i = 0 ; i < airDropListInfos.length; i++){
+            if(_addr == airDropListInfos[i].user){
+                airDropListInfos[i].amount -= _amount;
                 break;
             }
         }
@@ -121,7 +121,7 @@ contract airdropFlm is Ownable {
     function removeWhiteList( address[] memory _addr) public onlyAdminTwo {
          for(uint256 i = 0; i< _addr.length ; i++){
              require(checkIsNotWhiteListUser(_addr[i]),'the address is not whitelist user');
-            whiteList.remove(_addr[i]);
+            airDropList.remove(_addr[i]);
             reomove(_addr[i]);
         }
     }
@@ -156,13 +156,13 @@ contract airdropFlm is Ownable {
         return adminsLevelTwo.values();
     }
     function getWhiteList() external view returns(address[] memory) {
-        return whiteList.values();
+        return airDropList.values();
     }
    function getAdminsLevelTwoLength() external view returns (uint256) {
         return adminsLevelTwo.length();
     }
     function getWhiteListLength() external view returns(uint256) {
-        return whiteList.length();
+        return airDropList.length();
     }
     function getAdminAddsLength(address _user) external view returns(uint256) {
         return levelTwoAdds[_user].length;
