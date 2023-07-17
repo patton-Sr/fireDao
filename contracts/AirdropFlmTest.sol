@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./lib/TransferHelper.sol";
 import "./interface/IFirePassport.sol";
 import "./interface/IFireSoul.sol";
-
+import "./FirePassport.sol";
 
 contract airdropFlm is Ownable {
     struct airDropListInfo{
@@ -18,6 +18,8 @@ contract airdropFlm is Ownable {
         string introduction;
 
     }
+    FirePassport fp;
+
     address firePassport;
     address fireSoul;
     uint256 private id;
@@ -41,18 +43,22 @@ contract airdropFlm is Ownable {
         require(checkIsNotWhiteListUser(msg.sender),'you are not whitelist user');
         _;
     }
-    constructor(address _token, address _firePassport, address _fireSoul) {
+    constructor(address _token, address payable _firePassport, address _fireSoul) {
         flm = _token;
-        firePassport = _firePassport;
+        firePassport = address(_firePassport);
         fireSoul = _fireSoul;
+        setFpAddr(_firePassport);
     }
-    function setFireSoulAddr(address _fireSoul) public onlyOwner {
+    function setFireSoul(address _fireSoul)public onlyOwner{
         fireSoul = _fireSoul;
+
     }
     function setFlm(address _Flm) public onlyOwner {
         flm = _Flm;
     }
-
+    function setFpAddr(address payable _address) public onlyOwner{
+        fp = FirePassport(_address);
+    }
     function setAdminsLevelTwo(address[] memory _addr) public onlyOwner{
         for(uint256 i = 0 ; i < _addr.length ; i ++){
             adminsLevelTwo.add(_addr[i]);
@@ -102,6 +108,7 @@ contract airdropFlm is Ownable {
             airDropListInfo memory info = airDropListInfo({user:_addr[i], amount:_amount[i],introduction:_info });
             airDropListInfos.push(info);
             }
+
             emit ClaimRecord(id,getPid(_addr[i]),getName(_addr[i]), getFid(_addr[i]), _addr[i], _amount[i]);
             id++;
         }
@@ -143,11 +150,17 @@ contract airdropFlm is Ownable {
         reduceAmount(msg.sender,_amount);
         userTotalClaim[msg.sender] += _amount;
         emit Claimed(getPid(msg.sender),getName(msg.sender), getFid(msg.sender), msg.sender, _amount);
-
     }
     function getName(address _user) public view returns(string memory){
         if(IFirePassport(firePassport).hasPID(_user)){
-        return IFirePassport(firePassport).getUserInfo(_user).username;
+            (
+             ,
+             ,
+             string memory username,
+             ,
+
+         ) = fp.userInfo(_user);
+		return string(username);
         }
         return "anonymous";
     }
@@ -159,7 +172,14 @@ contract airdropFlm is Ownable {
     }
     function getPid(address _user) public view returns(uint) {
         if(IFirePassport(firePassport).hasPID(_user)){
-        return IFirePassport(firePassport).getUserInfo(_user).PID;
+            (
+             uint256 PID,
+             ,
+             ,
+             ,
+
+         ) = fp.userInfo(_user);
+		return uint256(PID);
         }
         return 0;
     }
@@ -178,7 +198,7 @@ contract airdropFlm is Ownable {
     function getAdminAddsLength(address _user) external view returns(uint256) {
         return levelTwoAdds[_user].length;
     }
-      function contractAmount() public view returns(uint256){
+    function contractAmount() public view returns(uint256){
         return IERC20(flm).balanceOf(address(this));
     }
 } 
