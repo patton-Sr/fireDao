@@ -26,6 +26,8 @@ contract airdropFlm is Ownable ,Pausable,ReentrancyGuard{
     address fireSoul;
     uint256 private id;
     address public flm;
+    uint256 public batch;
+
     using EnumerableSet for EnumerableSet.AddressSet;
     airDropListInfo[] public airDropListInfos;
     EnumerableSet.AddressSet private adminsLevelTwo;
@@ -34,8 +36,9 @@ contract airdropFlm is Ownable ,Pausable,ReentrancyGuard{
     mapping(address => uint256) public userTotalClaim;
     mapping(address => address) public fromLevelTwo;
     mapping(address => address[]) public levelTwoAdds;
-    event Claimed(uint pid,string username ,uint fid,address user, uint256 amount);
-    event ClaimRecord(uint256 id,uint pid,string username ,uint fid,address user, uint256 amount);
+ event Claimed(uint pid,string username ,address user, uint256 amount);
+    event ClaimRecord(uint256 batch, uint256 id,uint pid,string username ,address user, uint256 amount,string info);
+    event depositRecord(uint pid , string username, address user,uint256 amount);
 
     modifier onlyAdminTwo {
         require(checkIsNotAdminsLevelTwo(msg.sender),'you are not admin level two');
@@ -46,11 +49,9 @@ contract airdropFlm is Ownable ,Pausable,ReentrancyGuard{
         require(checkIsNotWhiteListUser(msg.sender),'you are not whitelist user');
         _;
     }
-    constructor(address _token, address payable _firePassport, address _fireSoul) {
+    constructor(address _token, address payable _firePassport) {
         flm = _token;
         firePassport = address(_firePassport);
-        fireSoul = _fireSoul;
-        setFpAddr(_firePassport);
     }
     function setFireSoul(address _fireSoul)public onlyOwner{
         fireSoul = _fireSoul;
@@ -110,9 +111,11 @@ contract airdropFlm is Ownable ,Pausable,ReentrancyGuard{
             userIds[_addr[i]] = airDropListInfos.length - 1;
         }
 
-        emit ClaimRecord(id,getPid(_addr[i]),getName(_addr[i]), getFid(_addr[i]), _addr[i], _amount[i]);
+            emit ClaimRecord(batch,id,getPid(_addr[i]),getName(_addr[i]), _addr[i], _amount[i], _info);
+
         id++;
     }
+    batch++;
 }
  
     function reomove(address _addr) internal {
@@ -151,7 +154,7 @@ contract airdropFlm is Ownable ,Pausable,ReentrancyGuard{
         IERC20(flm).transfer(msg.sender, _amount);
         reduceAmount(msg.sender,_amount);
         userTotalClaim[msg.sender] += _amount;
-        emit Claimed(getPid(msg.sender),getName(msg.sender), getFid(msg.sender), msg.sender, _amount);
+        emit Claimed(getPid(msg.sender),getName(msg.sender),  msg.sender, _amount);
     }
     function getName(address _user) public view returns(string memory){
         if(IFirePassport(firePassport).hasPID(_user)){
