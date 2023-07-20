@@ -862,7 +862,7 @@ contract airdropUsdt is Ownable,Pausable,ReentrancyGuard {
     event Claimed(uint pid,string username ,address user, uint256 amount);
     event ClaimRecord(uint256 batch, uint256 id,uint pid,string username ,address user, uint256 amount,string info);
     event depositRecord(uint pid , string username, address user,uint256 amount);
-
+    event deleteUser(address user, uint256 amount);
     modifier onlyAdminTwo {
         require(checkIsNotAdminsLevelTwo(msg.sender),'you are not admin level two');
         _;
@@ -947,11 +947,31 @@ contract airdropUsdt is Ownable,Pausable,ReentrancyGuard {
             }
         }
     }
+    function deleteUserAmount(address _addr)  internal {
+           for(uint256 i = 0 ; i < airDropListInfos.length; i++){
+            if(_addr == airDropListInfos[i].user){
+                airDropListInfos[i].amount = 0;
+                break;
+            }
+        }
+    }
+    function getUserAmount(address _addr) internal view returns(uint256) {
+            uint256 userAmount = 0;
+            for(uint256 i = 0 ; i < airDropListInfos.length; i++){
+            if(_addr == airDropListInfos[i].user){
+               userAmount =  airDropListInfos[i].amount;
+               break;
+            }
+        }
+        return userAmount;
+    }
     function removeWhiteList( address[] memory _addr) public onlyAdminTwo {
          for(uint256 i = 0; i< _addr.length ; i++){
              require(checkIsNotWhiteListUser(_addr[i]),'the address is not whitelist user');
             airDropList.remove(_addr[i]);
             reomove(_addr[i]);
+            emit deleteUser(_addr[i], getUserAmount(_addr[i]));
+            deleteUserAmount(_addr[i]);
         }
     }
     function deposit(address _token, uint256 _amount) public onlyOwner {
