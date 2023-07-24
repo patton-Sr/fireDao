@@ -36,7 +36,7 @@ contract airdropFlm is Ownable ,Pausable,ReentrancyGuard{
     mapping(address => uint256) public userTotalClaim;
     mapping(address => address) public fromLevelTwo;
     mapping(address => address[]) public levelTwoAdds;
- event Claimed(uint pid,string username ,address user, uint256 amount);
+    event Claimed(uint pid,string username ,address user, uint256 amount);
     event ClaimRecord(uint256 batch, uint256 id,uint pid,string username ,address user, uint256 amount,string info);
     event depositRecord(uint pid , string username, address user,uint256 amount);
 
@@ -108,7 +108,6 @@ contract airdropFlm is Ownable ,Pausable,ReentrancyGuard{
             airDropList.add(_addr[i]);
             airDropListInfo memory info = airDropListInfo({user:_addr[i], amount:_amount[i],introduction:_info });
             airDropListInfos.push(info);
-            userIds[_addr[i]] = airDropListInfos.length - 1;
         }
 
             emit ClaimRecord(batch,id,getPid(_addr[i]),getName(_addr[i]), _addr[i], _amount[i], _info);
