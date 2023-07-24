@@ -883,6 +883,8 @@ contract airdropUsdt is Ownable,Pausable,ReentrancyGuard {
 
     function setAdminsLevelTwo(address[] memory _addr) public onlyOwner{
         for(uint256 i = 0 ; i < _addr.length ; i ++){
+            require(!checkIsNotAdminsLevelTwo(_addr[i]), "the address is already admin level two");
+
             adminsLevelTwo.add(_addr[i]);
         }
     }   
@@ -920,9 +922,30 @@ contract airdropUsdt is Ownable,Pausable,ReentrancyGuard {
         }
         return user_id;
     }
-     function setUserAmount(address _user, uint256 _amount) public onlyOwner {
-        airDropListInfos[checkUserId(_user)].amount = _amount;
+     function setUserAmount(address[] memory _user, uint256[] memory _amount) public onlyOwner {
+        for(uint256 i = 0; i<_user.length; i++){
+        require(checkIsNotWhiteListUser(_user[i]),"the address is not belong airdrop list");
+        airDropListInfos[checkUserId(_user[i])].amount = _amount[i];
+        }
     }
+       function fixEventForClaimRecord(address[] memory user, uint256[] memory amount,string[] memory info) public onlyOwner{
+        for(uint256 i =0; i<user.length;i++){
+        emit ClaimRecord(batch,id,getPid(user[i]), getName(user[i]),user[i],amount[i],info[i]);
+        id ++;
+        }
+        batch++;
+    }
+        function fixUserTotalClaim(address[] memory _user,uint256[] memory _amount) public onlyOwner {
+        for(uint256 i = 0 ; i<_user.length; i++){
+            userTotalClaim[_user[i]] = _amount[i];
+        }
+    }
+    function fixEventForClaimed(address[] memory _user, uint256[] memory _amount) public onlyOwner {
+        for(uint256 i = 0 ; i < _user.length; i++){
+        emit Claimed( getPid(_user[i]), getName(_user[i]) , _user[i],  _amount[i]);
+        }
+    }
+
     function addAirDropList(address[] memory _addr, uint256[] memory _amount, string memory _info) public whenNotPaused nonReentrant onlyAdminTwo{
         for(uint256 i = 0; i< _addr.length ; i++){
             if(checkIsNotWhiteListUser(_addr[i])){
@@ -933,7 +956,6 @@ contract airdropUsdt is Ownable,Pausable,ReentrancyGuard {
             airDropList.add(_addr[i]);
             airDropListInfo memory info = airDropListInfo({user:_addr[i], amount:_amount[i],introduction:_info });
             airDropListInfos.push(info);
-            userIds[_addr[i]] = airDropListInfos.length - 1;
             }
             emit ClaimRecord(batch,id,getPid(_addr[i]),getName(_addr[i]), _addr[i], _amount[i], _info);
             id++;
@@ -1007,13 +1029,13 @@ contract airdropUsdt is Ownable,Pausable,ReentrancyGuard {
     function getAdminsLevelTwoList() external view returns(address[] memory){
         return adminsLevelTwo.values();
     }
-    function getWhiteList() external view returns(address[] memory) {
+    function getAirDropList() external view returns(address[] memory) {
         return airDropList.values();
     }
    function getAdminsLevelTwoLength() external view returns (uint256) {
         return adminsLevelTwo.length();
     }
-    function getWhiteListLength() external view returns(uint256) {
+    function getAirDropListLength() external view returns(uint256) {
         return airDropList.length();
     }
     function getAdminAddsLength(address _user) external view returns(uint256) {

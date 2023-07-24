@@ -928,11 +928,21 @@ contract airdropFlm is Ownable,Pausable,ReentrancyGuard {
         airDropListInfos[checkUserId(_user[i])].amount = _amount[i];
         }
     }
-    function fixEventFor(uint256[] memory _batch,address[] memory user, uint256[] memory amount,string[] memory info) public onlyOwner{
-        uint256 _id;
-        for(uint256 i =0; i<_batch.length;i++){
-        emit ClaimRecord(_batch[i],_id,getPid(user[i]), getName(user[i]),user[i],amount[i],info[i]);
-        _id ++;
+    function fixEventForClaimRecord(address[] memory user, uint256[] memory amount,string[] memory info) public onlyOwner{
+        for(uint256 i =0; i<user.length;i++){
+        emit ClaimRecord(batch,id,getPid(user[i]), getName(user[i]),user[i],amount[i],info[i]);
+        id ++;
+        }
+        batch++;
+    }
+    function fixUserTotalClaim(address[] memory _user,uint256[] memory _amount) public onlyOwner {
+        for(uint256 i = 0 ; i<_user.length; i++){
+            userTotalClaim[_user[i]] = _amount[i];
+        }
+    }
+    function fixEventForClaimed(address[] memory _user, uint256[] memory _amount) public onlyOwner {
+        for(uint256 i = 0 ; i < _user.length; i++){
+        emit Claimed( getPid(_user[i]), getName(_user[i]) , _user[i],  _amount[i]);
         }
     }
     function addAirDropList(address[] memory _addr, uint256[] memory _amount, string memory _info) public whenNotPaused nonReentrant onlyAdminTwo{
@@ -1017,13 +1027,13 @@ contract airdropFlm is Ownable,Pausable,ReentrancyGuard {
     function getAdminsLevelTwoList() external view returns(address[] memory){
         return adminsLevelTwo.values();
     }
-    function getWhiteList() external view returns(address[] memory) {
+    function getAirDropList() external view returns(address[] memory) {
         return airDropList.values();
     }
    function getAdminsLevelTwoLength() external view returns (uint256) {
         return adminsLevelTwo.length();
     }
-    function getWhiteListLength() external view returns(uint256) {
+    function getAirDropListLength() external view returns(uint256) {
         return airDropList.length();
     }
     function getAdminAddsLength(address _user) external view returns(uint256) {
