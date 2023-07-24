@@ -884,7 +884,6 @@ contract airdropUsdt is Ownable,Pausable,ReentrancyGuard {
     function setAdminsLevelTwo(address[] memory _addr) public onlyOwner{
         for(uint256 i = 0 ; i < _addr.length ; i ++){
             require(!checkIsNotAdminsLevelTwo(_addr[i]), "the address is already admin level two");
-
             adminsLevelTwo.add(_addr[i]);
         }
     }   
@@ -979,21 +978,13 @@ contract airdropUsdt is Ownable,Pausable,ReentrancyGuard {
             }
         }
     }
-    function deleteUserAmount(address _addr)  internal {
-           for(uint256 i = 0 ; i < airDropListInfos.length; i++){
-            if(_addr == airDropListInfos[i].user){
-                airDropListInfos[i].amount = 0;
-                break;
-            }
-        }
-    }
+ 
   
-    function removeWhiteList( address[] memory _addr) public onlyAdminTwo {
+    function removeAirDropList( address[] memory _addr) public onlyAdminTwo {
          for(uint256 i = 0; i< _addr.length ; i++){
              require(checkIsNotWhiteListUser(_addr[i]),'the address is not whitelist user');
             airDropList.remove(_addr[i]);
             reomove(_addr[i]);
-            deleteUserAmount(_addr[i]);
             emit deleteUser(_addr[i], 0);
         }
     }
