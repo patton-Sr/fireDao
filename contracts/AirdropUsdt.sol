@@ -862,7 +862,7 @@ contract airdropUsdt is Ownable,Pausable,ReentrancyGuard {
     event Claimed(uint pid,string username ,address user, uint256 amount);
     event ClaimRecord(uint256 batch, uint256 id,uint pid,string username ,address user, uint256 amount,string info);
     event depositRecord(uint pid , string username, address user,uint256 amount);
-    event deleteUser(address user, uint256 amount);
+    event decUserAmount(address user, uint256 amount);
     modifier onlyAdminTwo {
         require(checkIsNotAdminsLevelTwo(msg.sender),'you are not admin level two');
         _;
@@ -978,15 +978,7 @@ contract airdropUsdt is Ownable,Pausable,ReentrancyGuard {
         }
         batch++;
     }
-    function reomove(address _addr) internal {
-        for(uint256 i = 0 ; i < airDropListInfos.length; i++){
-            if(_addr == airDropListInfos[i].user){
-                airDropListInfos[i] = airDropListInfos[airDropListInfos.length -1 ];
-                airDropListInfos.pop();
-                break;
-            }
-        }
-    }
+
     function reduceAmount(address _addr,uint256 _amount) internal {
             for(uint256 i = 0 ; i < airDropListInfos.length; i++){
             if(_addr == airDropListInfos[i].user){
@@ -996,14 +988,14 @@ contract airdropUsdt is Ownable,Pausable,ReentrancyGuard {
         }
     }
  
-  
-    function removeAirDropList( address[] memory _addr) public onlyAdminTwo {
-         for(uint256 i = 0; i< _addr.length ; i++){
-             require(checkIsNotWhiteListUser(_addr[i]),'the address is not whitelist user');
-            airDropList.remove(_addr[i]);
-            reomove(_addr[i]);
-            emit deleteUser(_addr[i], 0);
+    function decAirDropAmount( address[] memory _addr,uint256[] memory _amount) public onlyAdminTwo {
+        for(uint256 i = 0; i < _addr.length; i ++) {
+            require(checkIsNotWhiteListUser(_addr[i]),"the address is not airdrop user");
+            reduceAmount(_addr[i], _amount[i]);
+            emit decUserAmount( _addr[i], _amount[i]);
+
         }
+
     }
     function deposit(address _token, uint256 _amount) public onlyOwner {
         TransferHelper.safeTransferFrom(_token, msg.sender, address(this),_amount);
