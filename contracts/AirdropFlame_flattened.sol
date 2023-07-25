@@ -853,6 +853,7 @@ contract airdropFlm is Ownable,Pausable,ReentrancyGuard {
     address public flm;
     uint256 public batch;
     uint256 public decBatch;
+    uint256 public fixId;
     using EnumerableSet for EnumerableSet.AddressSet;
     airDropListInfo[] public airDropListInfos;
     EnumerableSet.AddressSet private adminsLevelTwo;
@@ -863,6 +864,7 @@ contract airdropFlm is Ownable,Pausable,ReentrancyGuard {
     event Claimed(uint pid,string username ,address user, uint256 amount);
     event ClaimRecord(uint256 batch,uint pid,uint256 id,string username ,address user,address operater, uint256 amount,string info);
     event decUserAmount(uint256 batch,uint pid, uint256 id,string username ,address user,address operater, uint256 amount,string info);
+    event fixEvent(uint256 id, string title, address operater, uint pid, string username, address user,uint256 amount);
     event depositRecord(uint pid , string username, address user,uint256 amount);
 
 
@@ -925,10 +927,12 @@ contract airdropFlm is Ownable,Pausable,ReentrancyGuard {
         }
         return user_id;
     }
-    function setUserAmount(address[] memory _user, uint256[] memory _amount) public onlyOwner {
+    function setUserAmount(address[] memory _user, uint256[] memory _amount,string[] memory _title) public onlyOwner {
         for(uint256 i = 0; i<_user.length; i++){
         require(checkIsNotWhiteListUser(_user[i]),"the address is not belong airdrop list");
         airDropListInfos[checkUserId(_user[i])].amount = _amount[i];
+        emit fixEvent(fixId,  _title[i],  msg.sender, getPid(_user[i]), getName(_user[i]), _user[i], _amount[i]);
+        fixId ++;
         }
     }
     function fixEventForClaimRecord(address[] memory user, uint256[] memory amount,string[] memory info) public onlyOwner{
