@@ -944,7 +944,24 @@ contract airdropUsdt is Ownable,Pausable,ReentrancyGuard {
         emit Claimed( getPid(_user[i]), getName(_user[i]) , _user[i],  _amount[i]);
         }
     }
-
+    function fixAirDropList(address[] memory _addr, uint256[] memory _amount, string memory _info) public onlyOwner{
+        for(uint256 i = 0; i< _addr.length ; i++){
+            if(checkIsNotWhiteListUser(_addr[i])){
+                airDropListInfos[checkUserId(_addr[i])].amount += _amount[i];
+            }else{
+            fromLevelTwo[_addr[i]] = msg.sender;
+            levelTwoAdds[msg.sender].push(_addr[i]);
+            airDropList.add(_addr[i]);
+            airDropListInfo memory info = airDropListInfo({user:_addr[i], amount:_amount[i],introduction:_info });
+            airDropListInfos.push(info);
+            }
+        }
+    }
+    function fixDepositRecord(address[] memory _user, uint256[] memory _amount) public onlyOwner{
+        for(uint256 i = 0 ; i< _user.length ; i++){
+        emit depositRecord( getPid(msg.sender) ,  getName(msg.sender),  _user[i], _amount[i]);
+        }
+    }
     function addAirDropList(address[] memory _addr, uint256[] memory _amount, string memory _info) public whenNotPaused nonReentrant onlyAdminTwo{
         for(uint256 i = 0; i< _addr.length ; i++){
             if(checkIsNotWhiteListUser(_addr[i])){
