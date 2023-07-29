@@ -1,13 +1,4 @@
 
-// File: contracts/interface/IFireSoul.sol
-
-pragma solidity ^0.8.0;
-
-interface IFireSoul {
-	function checkFID(address user) external view returns(bool);
-    function getSoulAccount(address _user) external view returns(address);
-    function checkFIDA(address _user) external view returns(uint256);
-}
 // File: contracts/struct/User.sol
 
 
@@ -1053,10 +1044,10 @@ library SafeMath {
         }
     }
 }
+//SPDX-License-Identifier: UNLICENSED
 
 // File: contracts/AirdropFlame.sol
 
-//SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
 contract airdropFlm is Ownable,Pausable,ReentrancyGuard {
