@@ -1557,8 +1557,7 @@ interface ISbt003 {
 pragma solidity ^0.8.0;
 
 interface IFireSeed {
-    function upclass(address usr) external view returns(address);
-    function getSingleAwardSbt007() external view returns(uint256);
+    function getRecommender(address usr) external view returns(address);
     function burnFireSeed(address _account, uint256 _idOfUser, uint256 _value) external ;
 }
 
@@ -2220,11 +2219,83 @@ library EnumerableSet {
     }
 }
 
+// File: @openzeppelin/contracts/security/ReentrancyGuard.sol
+
+
+// OpenZeppelin Contracts (last updated v4.8.0) (security/ReentrancyGuard.sol)
+
+pragma solidity ^0.8.0;
+
+/**
+ * @dev Contract module that helps prevent reentrant calls to a function.
+ *
+ * Inheriting from `ReentrancyGuard` will make the {nonReentrant} modifier
+ * available, which can be applied to functions to make sure there are no nested
+ * (reentrant) calls to them.
+ *
+ * Note that because there is a single `nonReentrant` guard, functions marked as
+ * `nonReentrant` may not call one another. This can be worked around by making
+ * those functions `private`, and then adding `external` `nonReentrant` entry
+ * points to them.
+ *
+ * TIP: If you would like to learn more about reentrancy and alternative ways
+ * to protect against it, check out our blog post
+ * https://blog.openzeppelin.com/reentrancy-after-istanbul/[Reentrancy After Istanbul].
+ */
+abstract contract ReentrancyGuard {
+    // Booleans are more expensive than uint256 or any type that takes up a full
+    // word because each write operation emits an extra SLOAD to first read the
+    // slot's contents, replace the bits taken up by the boolean, and then write
+    // back. This is the compiler's defense against contract upgrades and
+    // pointer aliasing, and it cannot be disabled.
+
+    // The values being non-zero value makes deployment a bit more expensive,
+    // but in exchange the refund on every call to nonReentrant will be lower in
+    // amount. Since refunds are capped to a percentage of the total
+    // transaction's gas, it is best to keep them low in cases like this one, to
+    // increase the likelihood of the full refund coming into effect.
+    uint256 private constant _NOT_ENTERED = 1;
+    uint256 private constant _ENTERED = 2;
+
+    uint256 private _status;
+
+    constructor() {
+        _status = _NOT_ENTERED;
+    }
+
+    /**
+     * @dev Prevents a contract from calling itself, directly or indirectly.
+     * Calling a `nonReentrant` function from another `nonReentrant`
+     * function is not supported. It is possible to prevent this from happening
+     * by making the `nonReentrant` function external, and making it call a
+     * `private` function that does the actual work.
+     */
+    modifier nonReentrant() {
+        _nonReentrantBefore();
+        _;
+        _nonReentrantAfter();
+    }
+
+    function _nonReentrantBefore() private {
+        // On the first call to nonReentrant, _status will be _NOT_ENTERED
+        require(_status != _ENTERED, "ReentrancyGuard: reentrant call");
+
+        // Any calls to nonReentrant after this point will fail
+        _status = _ENTERED;
+    }
+
+    function _nonReentrantAfter() private {
+        // By storing the original value once again, a refund is triggered (see
+        // https://eips.ethereum.org/EIPS/eip-2200)
+        _status = _NOT_ENTERED;
+    }
+}
+
 //SPDX-License-Identifier: UNLICENSED
 
 pragma solidity ^0.8.0;
 
-contract FireSoul is ERC721,Ownable{
+contract FireSoul is ERC721,Ownable,ReentrancyGuard{
 
     using SafeMath for uint256;
     using Counters for Counters.Counter;
@@ -2237,7 +2308,6 @@ contract FireSoul is ERC721,Ownable{
     string public baseURI;
     string public baseExtension = ".json";
     address public FireSeedAddress;
-
     uint256 public FEE_RATIO;
     uint256 public TOP_FEE_RATIO;
     uint256 public MIDDLE_FEE_RATIO;
@@ -2256,7 +2326,6 @@ contract FireSoul is ERC721,Ownable{
     address public pauseControlAddress;
     address public sbt003;
     mapping(address => uint256) public UserFID;
-    mapping(address => uint256[]) public sbtTokenAmount; 
     mapping(address => address) public UserToSoul;
     
     constructor(address _fireseed, address _firePassport,address _weth) ERC721("FireSoul", "FireSoul"){
@@ -2275,7 +2344,6 @@ contract FireSoul is ERC721,Ownable{
     SBT003_RATE_DOWN = 10;
     baseURI = "https://bafybeibjssse6npb5gqh7pkcuvvvgyr6k7xu5q6eaxq7kp3azgdfgj4exy.ipfs.nftstorage.link/";
 }
-
     //onlyOwner
     function addWhiteListUser(address[] memory _users) public onlyOwner {
         for(uint256 i = 0; i < _users.length; i++) {
@@ -2289,8 +2357,6 @@ contract FireSoul is ERC721,Ownable{
             whiteList.remove(_users[i]);
         }
     }
-
-
     function setSbt003Address(address _sbt003) public onlyOwner{
 	    sbt003 = _sbt003;
     }
@@ -2355,20 +2421,20 @@ contract FireSoul is ERC721,Ownable{
         : "";
   }
 
-    function burnToMint(uint256 _tokenId) external payable {
+    function burnToMint(uint256 _tokenId) external payable nonReentrant {
         require(!status, "status is error");
         require(!fidUserList.contains(msg.sender), "you already have FID");
         require(IERC721(firePassport).balanceOf(msg.sender) != 0 ,"you haven't passport");
 
-        address _top = IFireSeed(FireSeedAddress).upclass(msg.sender);
-        address _middle = IFireSeed(FireSeedAddress).upclass(_top);
-        address _down = IFireSeed(FireSeedAddress).upclass(_middle);
+        address _top = IFireSeed(FireSeedAddress).getRecommender(msg.sender);
+        address _middle = IFireSeed(FireSeedAddress).getRecommender(_top);
+        address _down = IFireSeed(FireSeedAddress).getRecommender(_middle);
         
-        if(feeOn){
-            uint256 feeReceiverAmount = fee *  BASE_FEE / FEE_RATIO;
-            uint256 _topAmount = fee *  TOP_FEE_RATIO / FEE_RATIO;
-            uint256 _middleAmount = fee * MIDDLE_FEE_RATIO / FEE_RATIO;
-            uint256 _downAmount = fee * DOWN_FEE_RATIO / FEE_RATIO;
+        if(!feeOn){
+            uint256 feeReceiverAmount = fee.mul(BASE_FEE).div(FEE_RATIO);
+            uint256 _topAmount = fee.mul(TOP_FEE_RATIO).div(FEE_RATIO);
+            uint256 _middleAmount = fee.mul(MIDDLE_FEE_RATIO).div(FEE_RATIO);
+            uint256 _downAmount = fee.mul(DOWN_FEE_RATIO).div(FEE_RATIO);
               require(msg.value == fee,"provide the error number on ETH");
               IWETH(weth).deposit{value: fee}();
               if(_top != address(0) && _middle != address(0) && _down != address(0)){
@@ -2379,7 +2445,6 @@ contract FireSoul is ERC721,Ownable{
               }else{
               IWETH(weth).transfer(feeReceiver,fee);
               }
-
           }
         IFireSeed(FireSeedAddress).burnFireSeed(msg.sender,_tokenId ,1);
         _mint(msg.sender, _idTracker.current());
@@ -2388,9 +2453,12 @@ contract FireSoul is ERC721,Ownable{
         address _Soul = address(new Soul(msg.sender , address(this)));
         UserToSoul[msg.sender] = _Soul;
         if(UserToSoul[_top] != address(0) && UserToSoul[_middle] != address(0) && UserToSoul[_down] != address(0)){
-        ISbt003(sbt003).mint(UserToSoul[_top], TOTAL_REWARD_SBT_003_AMOUNT * SBT003_RATE_TOP / FEE_RATIO *10**18);
-        ISbt003(sbt003).mint(UserToSoul[_middle],TOTAL_REWARD_SBT_003_AMOUNT * SBT003_RATE_MIDDLE / FEE_RATIO*10**18);
-        ISbt003(sbt003).mint(UserToSoul[_down],TOTAL_REWARD_SBT_003_AMOUNT * SBT003_RATE_DOWN / FEE_RATIO*10**18);
+        uint256 rewardAmountTop = TOTAL_REWARD_SBT_003_AMOUNT.mul(SBT003_RATE_TOP).div(FEE_RATIO).mul(10**18);
+        uint256 rewardAmountMiddle = TOTAL_REWARD_SBT_003_AMOUNT.mul(SBT003_RATE_MIDDLE).div(FEE_RATIO).mul(10**18);
+        uint256 rewardAmountDown = TOTAL_REWARD_SBT_003_AMOUNT.mul(SBT003_RATE_DOWN).div(FEE_RATIO).mul(10**18);
+        ISbt003(sbt003).mint(UserToSoul[_top],rewardAmountTop);
+        ISbt003(sbt003).mint(UserToSoul[_middle],rewardAmountMiddle);
+        ISbt003(sbt003).mint(UserToSoul[_down],rewardAmountDown);
         }
         _idTracker.increment();
 

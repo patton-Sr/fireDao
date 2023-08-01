@@ -160,7 +160,7 @@ pragma solidity ^0.8.0;
 
 
 contract CityNodeTreasury  {
-    IERC20 public WETH;
+    IERC20 public weth;
     address[] public AllocationFundAddress;
     uint256[] public rate;
     address payable public admin;
@@ -176,7 +176,7 @@ contract CityNodeTreasury  {
         cityNodeAddress = _cityNode;
     }
     function setToken(IERC20 _weth) public onlyAdmin {
-        WETH = _weth;
+        weth = _weth;
     }
     function transferOwner(address _admin ,address payable _to) external  {
         require(msg.sender == cityNodeAddress && admin == _admin,"no access");
@@ -196,12 +196,12 @@ contract CityNodeTreasury  {
     }
     function AllocationAmount() public {
         for(uint i = 0 ; i < AllocationFundAddress.length;i++){
-            WETH.transfer(AllocationFundAddress[i],rate[i]);
+            weth.transfer(AllocationFundAddress[i],rate[i]);
         }
     }
     function transferAmount(address _to,uint256 amount) public onlyAdmin {
         require(getBalanceOfWeth()>0,"no amount");
-        WETH.transfer(_to, amount);
+        weth.transfer(_to, amount);
     }
 
 
@@ -209,7 +209,7 @@ contract CityNodeTreasury  {
         return DestructStatus;
     }
     function getBalanceOfWeth() public view returns(uint256) {
-        return WETH.balanceOf(address(this));
+        return weth.balanceOf(address(this));
     }
 
 }
@@ -1375,7 +1375,6 @@ contract cityNode is ERC1155, Ownable {
         uint256 createTime;
         uint256 joinCityNodeTime;
         address Treasury;
-        uint256 memberLength;
         string hash;
     }
  
@@ -1398,8 +1397,8 @@ contract cityNode is ERC1155, Ownable {
     mapping(uint256 => address[]) public cityNodeMember;
     mapping(address => uint256) public cityNodeUserNum;
     mapping(uint256 => uint256) public cityNodeIncomeAmount;
-    mapping(address => cityNodeInfo) public userInNodeInfo;
     mapping(uint256 => cityNodeInfo) public idOfNodeInfo;
+    mapping(address => cityNodeInfo) public userInNodeInfo;
     mapping(address => uint256) public userTax;
     mapping(uint256 => address) public cityNodeAdmin;
     mapping(address => address) public nodeTreasuryAdmin;
@@ -1532,7 +1531,6 @@ contract cityNode is ERC1155, Ownable {
 
     // Create a new CityNodeTreasury contract and transfer ownership to the creator.
     CityNodeTreasury nodeTreasury = new CityNodeTreasury(payable(msg.sender), address(this));
-
     // Mint a new NFT with the current user as the owner.
     uint256 tokenId = ctiyNodeId;
     _mint(msg.sender, tokenId, 1, "test");
@@ -1545,7 +1543,7 @@ contract cityNode is ERC1155, Ownable {
     cityNodeAdmin[tokenId] = msg.sender;
     nodeTreasuryAdmin[msg.sender] = address(nodeTreasury);
     idToNodeTreasury[tokenId] = address(nodeTreasury);
-    cityNodeInfo memory info = cityNodeInfo(tokenId, cityNodeName, msg.sender, block.timestamp, block.timestamp, address(nodeTreasury),cityNodeMember[tokenId].length,_info);
+    cityNodeInfo memory info = cityNodeInfo(tokenId, cityNodeName, msg.sender, block.timestamp, block.timestamp, address(nodeTreasury),_info);
     cityNodeInfos.push(info);
     userInNodeInfo[msg.sender] = info;
     idOfNodeInfo[tokenId] = info;
@@ -1562,7 +1560,6 @@ contract cityNode is ERC1155, Ownable {
     require(!isNotCityNodeUser[msg.sender], "you are already join a cityNode");
     require(cityNodeNum < ctiyNodeId, "you input error");
 
-    
     cityNodeMember[cityNodeNum].push(msg.sender);
     cityNodeUserNum[msg.sender] = cityNodeNum;
     
@@ -1578,11 +1575,9 @@ contract cityNode is ERC1155, Ownable {
         createTime,
         block.timestamp,
         nodeTreasury,
-        cityNodeMember[cityNodeNum].length,
         nodeIdInfo[cityNodeNum]
 
     );
-    userInNodeInfo[nodeAdmin].memberLength = cityNodeMember[cityNodeNum].length;
 
     _mint(msg.sender, cityNodeNum, 1, "test");
 
@@ -1627,8 +1622,6 @@ function changeNodeAdmin(address newAdmin) public {
             }
         }
         _burn(msg.sender,cityNodeUserNum[msg.sender],1);
-        
-        
         isNotCityNodeUser[msg.sender] = false;
     }
 
