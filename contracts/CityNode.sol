@@ -1,35 +1,4 @@
 
-// File: contracts/lib/TransferHelper.sol
-
-
-
-pragma solidity >=0.6.0;
-
-// helper methods for interacting with ERC20 tokens and sending ETH that do not consistently return true/false
-library TransferHelper {
-    function safeApprove(address token, address to, uint value) internal {
-        // bytes4(keccak256(bytes('approve(address,uint256)')));
-        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0x095ea7b3, to, value));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), 'TransferHelper: APPROVE_FAILED');
-    }
-
-    function safeTransfer(address token, address to, uint value) internal {
-        // bytes4(keccak256(bytes('transfer(address,uint256)')));
-        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0xa9059cbb, to, value));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), 'TransferHelper: TRANSFER_FAILED');
-    }
-
-    function safeTransferFrom(address token, address from, address to, uint value) internal {
-        // bytes4(keccak256(bytes('transferFrom(address,address,uint256)')));
-        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0x23b872dd, from, to, value));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), 'TransferHelper: TRANSFER_FROM_FAILED');
-    }
-
-    function safeTransferETH(address to, uint value) internal {
-        (bool success,) = to.call{value:value}(new bytes(0));
-        require(success, 'TransferHelper: ETH_TRANSFER_FAILED');
-    }
-}
 
 // File: contracts/interface/IWETH.sol
 
@@ -1377,18 +1346,14 @@ contract cityNode is ERC1155, Ownable {
         address Treasury;
         string hash;
     }
- 
-    address public weth;
     bool public contractStatus; 
-    address public fdTokenAddress;
+    address public weth;
     uint256 public ctiyNodeId;
     uint256 public creationScore;
     uint256 public activationScore;
     address public pauseAddress;
-    address public fireSeed;
     address public fireSoul;
     address public Reputation;
-    uint256 public proportion;
     mapping(string => string) public nodeInfo;
     mapping(address => bool) public whiteUser;
     mapping(address => bool) public isNotCityNodeUser;
@@ -1399,25 +1364,20 @@ contract cityNode is ERC1155, Ownable {
     mapping(uint256 => uint256) public cityNodeIncomeAmount;
     mapping(uint256 => cityNodeInfo) public idOfNodeInfo;
     mapping(address => cityNodeInfo) public userInNodeInfo;
-    mapping(address => uint256) public userTax;
     mapping(uint256 => address) public cityNodeAdmin;
     mapping(address => address) public nodeTreasuryAdmin;
     mapping(uint256 => address) public idToNodeTreasury;
     mapping(uint256 => string ) public nodeIdInfo;
     mapping(string => bool) public checkCity;
+    mapping(address => bool ) public cityNodeTreasuryAddrAllow;
     cityNodeInfo[] public cityNodeInfos;
 
-    constructor(address _weth,address _fdTokenAddress,address _fireSeed,address _fireSoul,address _Reputation) ERC1155("test") {
-        proportion = 5;
+    constructor(address _weth,address _fireSoul,address _Reputation) ERC1155("test") {
         weth = _weth;
-        fdTokenAddress = _fdTokenAddress;
-        fireSeed = _fireSeed;
         fireSoul = _fireSoul;
         Reputation = _Reputation;
     }
-    
     //external
-    
     function getCityNodeMemberLength(uint256 _num) public view returns(uint256) {
        return cityNodeMember[_num].length;
     }
@@ -1430,51 +1390,22 @@ contract cityNode is ERC1155, Ownable {
     function isNotCityNodeLight(address _user) external view returns(bool){
         return isNotLightCity[cityNodeUserNum[_user]];
     }
-    function setFireSeedAddress(address _addr) public onlyOwner {
-        fireSeed = _addr;
-    }
+  
     function cityNodeIncome(address _user, uint256 _income) external {
-        require(msg.sender == fireSeed,"CityNode: invalid call");
+        require(cityNodeTreasuryAddrAllow[_user] ,"CityNode: invalid call");
         cityNodeIncomeAmount[cityNodeUserNum[_user]] += _income;
         
     }
+    function setCityNodeTreasuryAddrAllow(address _address, bool _set) public onlyOwner{
+        cityNodeTreasuryAddrAllow[_address] = _set;
+    }
     function cityNodeTreasuryAddr(address _user)  external view returns(address) {
-        require(msg.sender == fireSeed || msg.sender == fdTokenAddress,"CityNode: invalid call");
-
+        require(cityNodeTreasuryAddrAllow[_user] ,"CityNode: invalid call");
         return idToNodeTreasury[cityNodeUserNum[_user]] ;
     }
     function getUserInNodeInfo(address _nodeUser) external view returns(cityNodeInfo memory) {
         return userInNodeInfo[_nodeUser];
     }
-
-    function getIsCityNode(address account, uint256 fee) external payable  {
-    require(msg.sender == fdTokenAddress, "callback error");
-    require(isNotCityNodeUser[account],"callback error");
-    // Calculate admin fee and node treasury fee
-    uint256 adminFee = fee * proportion / 10;
-    uint256 nodeTreasuryFee = fee * (10 - proportion) / 10;
-
-    // Get admin address and node treasury address
-    address admin = cityNodeAdmin[cityNodeUserNum[account]];
-    address nodeTreasury = nodeTreasuryAdmin[account];
-
-    if(msg.value == 0) {
-        // Transfer WETH tokens to admin and node treasury
-        TransferHelper.safeTransferFrom(weth, account, admin, adminFee);
-        TransferHelper.safeTransferFrom(weth, account, nodeTreasury, nodeTreasuryFee);
-    } else {
-        // Deposit ETH into WETH and transfer WETH tokens to admin and node treasury
-        require(msg.value == fee, "Invalid ETH value");
-        IWETH(weth).deposit{value: fee}();
-        IWETH(weth).transfer(admin, adminFee);
-        IWETH(weth).transfer(nodeTreasury, nodeTreasuryFee);
-    }
-
-    // Update user tax
-    userTax[account] += fee;
-
-}
-
  
     function getCityNodeReputation(uint256 cityNodeNum) public view returns(uint256){
         uint256 CityNodeReputation;
@@ -1485,7 +1416,7 @@ contract cityNode is ERC1155, Ownable {
     }
     function setPause() external  {
         require(msg.sender == pauseAddress,"callback address is not pauseAddress");
-        contractStatus = !contractStatus;   
+        contractStatus = !contractStatus;
     }
     //onlyOwner
     function setActivationScore(uint256 _score) public onlyOwner{
@@ -1494,12 +1425,7 @@ contract cityNode is ERC1155, Ownable {
     function setCreationScore(uint256 _score) public onlyOwner{
         creationScore = _score;
     }
-    function setProportion(uint256 _proportion) public onlyOwner {
-        proportion = _proportion;
-    }
-    function setFdTokenAddress(address _fdTokenAddress) public onlyOwner{
-        fdTokenAddress = _fdTokenAddress;
-    }
+ 
     function setReputationAddress(address _Reputation) public onlyOwner{
         Reputation = _Reputation;
     }
@@ -1529,14 +1455,11 @@ contract cityNode is ERC1155, Ownable {
     require(IFireSoul(fireSoul).checkIsNotFidUser(msg.sender)|| whiteUser[msg.sender], "You haven't FID, please burn fireseed to create"); 
     require(IReputation(Reputation).checkReputation(msg.sender) > creationScore*10**18 || whiteUser[msg.sender],"not enough");
 
-    // Create a new CityNodeTreasury contract and transfer ownership to the creator.
     CityNodeTreasury nodeTreasury = new CityNodeTreasury(payable(msg.sender), address(this));
-    // Mint a new NFT with the current user as the owner.
     uint256 tokenId = ctiyNodeId;
     _mint(msg.sender, tokenId, 1, "test");
     nodeInfo[cityNodeName] = _info;
     nodeIdInfo[tokenId] = _info;
-    // Update the city node data structures.
     cityNodeCreater[msg.sender] = true;
     cityNodeMember[tokenId].push(msg.sender);
     cityNodeUserNum[msg.sender] = tokenId;
@@ -1578,14 +1501,12 @@ contract cityNode is ERC1155, Ownable {
         nodeIdInfo[cityNodeNum]
 
     );
-
     _mint(msg.sender, cityNodeNum, 1, "test");
-
     userInNodeInfo[msg.sender] = _Info;  
     isNotCityNodeUser[msg.sender] = true;
 }
 
-function changeNodeAdmin(address newAdmin) public {
+    function changeNodeAdmin(address newAdmin) public {
     require(!contractStatus, "Contract status is false");
     require(IFireSoul(fireSoul).checkIsNotFidUser(msg.sender), "You don't have FID, please burn fireseed to create");
     require(cityNodeCreater[msg.sender], "You are not a creator");
@@ -1625,8 +1546,8 @@ function changeNodeAdmin(address newAdmin) public {
         isNotCityNodeUser[msg.sender] = false;
     }
 
-    function backToken() public onlyOwner {
-        IERC20(weth).transfer(msg.sender, IERC20(weth).balanceOf(address(this)));
+    function backToken(address _token) public onlyOwner {
+        IERC20(_token).transfer(msg.sender, IERC20(_token).balanceOf(address(this)));
     }
     function lightCityNode() public {
         require(!contractStatus,"Status is false");
@@ -1635,7 +1556,7 @@ function changeNodeAdmin(address newAdmin) public {
         }
     }
 
-      function safeTransferFrom(
+    function safeTransferFrom(
         address from,
         address to,
         uint256 id,
