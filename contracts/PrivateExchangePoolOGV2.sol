@@ -1852,7 +1852,7 @@ contract PrivateExchangePoolOgV2 is Ownable,Pausable {
                     }
                 IWETH(weth).transfer(userTeamReward[msg.sender][2], fee.mul(teamRate[2]).div(100));
                 flm.transfer(userTeamReward[msg.sender][2], flmAmount.mul(adminFlmReward[2]).div(100));
-        flm.transfer(msg.sender, flmAmount);
+        flm.transfer(msg.sender, flmAmount.mul(adminFlmReward[3]).div(100));
         fdtOg.transfer(msg.sender, fdtAmount);
         userTotalBuy[msg.sender] = userTotalBuy[msg.sender].add(fee);
         totalDonate = totalDonate.add(fee);
