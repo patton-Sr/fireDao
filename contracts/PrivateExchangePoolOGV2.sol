@@ -1408,8 +1408,9 @@ contract PrivateExchangePoolOgV2 is Ownable,Pausable {
     mapping(address => address) public userTeam;
     mapping(address =>mapping(address => bool)) public blackList;
 	AggregatorV3Interface internal priceFeed;
-    event allRecord(address  recommender,uint256 no,uint256 pid,   address addr,uint256 ethAmount,uint256 usdtAmount,uint256 fdtAmount,uint256 flmAmount,uint256 time);
+    event allRecord(address  recommender,uint256 no,   address addr,uint256 ethAmount,uint256 usdtAmount,uint256 fdtAmount,uint256 flmAmount,uint256 time);
     event allRegister(uint256 id,address recommenders, address _user);
+    event blackUser(address operater, address user, bool set);
     modifier onlyAdminTwo() {
         require(checkAddrForAdminLevelTwo(msg.sender), "Address is not an  level two administrator");
         _;
@@ -1561,12 +1562,13 @@ contract PrivateExchangePoolOgV2 is Ownable,Pausable {
     function setBlackList(address _user,bool _set) public onlyAdminTwo{
         require(msg.sender == recommender[_user] || msg.sender == recommender[recommender[_user]],"This address is not the second-level or third-level administrator you added");
         blackList[msg.sender][_user] = _set;
+        emit blackUser(msg.sender, _user,_set);
     }
     function setAdminLevelThree(address[] memory _addr) public onlyAdminTwo {
         require(userSetAdminsForThree[msg.sender].length < getMax(msg.sender) && _addr.length < getMax(msg.sender),"over limit");
         for(uint256 i = 0; i < _addr.length; i++){
             if(pidStatusForAdmin){
-                require(IFirePassport(firePassport_).hasPID(_addr[i]),"address has no pid");
+                require(IFirePassport(firePassport_).hasPID(_addr[i]));
             }
             require(msg.sender != _addr[i]);
             require(!isNotRegister[_addr[i]],"A registered account cannot be an administrator");
@@ -1586,7 +1588,7 @@ contract PrivateExchangePoolOgV2 is Ownable,Pausable {
         require(userSetAdminsForFour[msg.sender].length < getMax(msg.sender) && _addr.length < getMax(msg.sender),"over limit");
         for(uint i=0;i<_addr.length;i++){
             if(pidStatusForUser){
-                require(IFirePassport(firePassport_).hasPID(_addr[i]),"address has no pid");
+                require(IFirePassport(firePassport_).hasPID(_addr[i]));
             }
             require(msg.sender != _addr[i]);
         require(!isNotRegister[_addr[i]],"A registered account cannot be an administrator");    
@@ -1884,8 +1886,11 @@ contract PrivateExchangePoolOgV2 is Ownable,Pausable {
         userTotalBuy[msg.sender] = userTotalBuy[msg.sender].add(fee);
         totalDonate = totalDonate.add(fee);
        
-        emit allRecord(recommender[msg.sender],buyId, getPid(msg.sender),  msg.sender, fee, usdtAmount,  fdtAmount,flmAmount, block.timestamp);
+        emit allRecord(recommender[msg.sender],buyId,   msg.sender, fee, usdtAmount,  fdtAmount,flmAmount, block.timestamp);
         buyId++;
+    }
+    function getActivateAccount() public view returns(address[] memory) {
+        return activateAccount.values();
     }
 	function getLatesPrice() public view returns (uint256) {
 		(
@@ -1898,21 +1903,21 @@ contract PrivateExchangePoolOgV2 is Ownable,Pausable {
 		return uint256(price);
 	}
 
-    function getPid(address _user) public view returns(uint) {
-        if(IFirePassport(firePassport_).hasPID(_user)){
-        return IFirePassport(firePassport_).getUserInfo(_user).PID;
-        }
-        return 0;
-    }
+    // function getPid(address _user) public view returns(uint) {
+    //     if(IFirePassport(firePassport_).hasPID(_user)){
+    //     return IFirePassport(firePassport_).getUserInfo(_user).PID;
+    //     }
+    //     return 0;
+    // }
     function getBalanceOfFlm() public view returns(uint256){
         return flm.balanceOf(address(this));
     }
 	function getBalanceOfFDTOG() public view returns(uint256) {
 		return fdtOg.balanceOf(address(this));
 	}
-    function getInviteRate() public view returns(uint256) {
-        return inviteRate.length;
-    }
+    // function getInviteRate() public view returns(uint256) {
+    //     return inviteRate.length;
+    // }
     function getAssignAndRateslength() public view returns(uint256) {
         return assignAndRates.length;
     }
@@ -1928,12 +1933,17 @@ contract PrivateExchangePoolOgV2 is Ownable,Pausable {
     function getValue() public view returns(uint256) {
         return getBalanceOfFDTOG()*(salePrice/1000);
     }
-    function getValidNumbers() public view returns(uint256) {
-        return validNumbers.length;
-    }
+    // function getValidNumbers() public view returns(uint256) {
+    //     return validNumbers.length;
+    // }
     function getUserSetAdminsLevelThree(address _user) public view returns(uint256) {
        return userSetAdminsForThree[_user].length;
     }
+    function getUserSetAdminsLevelFour(address _user) public view returns(uint256) {
+       return userSetAdminsForFour[_user].length;
+    
+    }
+
     receive() external payable {}
      /**
      * @dev Pause staking.
