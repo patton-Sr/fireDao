@@ -1353,6 +1353,7 @@ contract PrivateExchangePoolOgV2 is Ownable,Pausable {
     EnumerableSet.AddressSet private adminsLevelThree;
     EnumerableSet.AddressSet private adminsLevelFour;
     EnumerableSet.AddressSet private activateAccount;
+
     ERC20 public flm;
 	ERC20 public fdtOg;
     address public FireSeedCoupon;
@@ -1410,7 +1411,7 @@ contract PrivateExchangePoolOgV2 is Ownable,Pausable {
 	AggregatorV3Interface internal priceFeed;
     event allRecord(address  recommender,uint256 no,   address addr,uint256 ethAmount,uint256 usdtAmount,uint256 fdtAmount,uint256 flmAmount,uint256 time);
     event allRegister(uint256 id,address recommenders, address _user);
-    event blackUser(address operater, address user, bool set);
+    event blackUser(address operator, address user);
     modifier onlyAdminTwo() {
         require(checkAddrForAdminLevelTwo(msg.sender), "Address is not an  level two administrator");
         _;
@@ -1533,7 +1534,7 @@ contract PrivateExchangePoolOgV2 is Ownable,Pausable {
         }
         maxFour = _max;
     }
-  
+ 
     function checkAddrForActivateAccount(address _user) public view returns(bool) {
         return activateAccount.contains(_user);
     }
@@ -1559,10 +1560,10 @@ contract PrivateExchangePoolOgV2 is Ownable,Pausable {
         
         }
     }
-    function setBlackList(address _user,bool _set) public onlyAdminTwo{
+    function setBlackList(address _user) public onlyAdminTwo{
         require(msg.sender == recommender[_user] || msg.sender == recommender[recommender[_user]],"This address is not the second-level or third-level administrator you added");
-        blackList[msg.sender][_user] = _set;
-        emit blackUser(msg.sender, _user,_set);
+        blackList[msg.sender][_user] = !blackList[msg.sender][_user];
+        emit blackUser(msg.sender,_user );
     }
     function setAdminLevelThree(address[] memory _addr) public onlyAdminTwo {
         require(userSetAdminsForThree[msg.sender].length < getMax(msg.sender) && _addr.length < getMax(msg.sender),"over limit");
@@ -1579,6 +1580,7 @@ contract PrivateExchangePoolOgV2 is Ownable,Pausable {
              isRecommender[_addr[i]] = true;
             adminsLevelThree.add(_addr[i]);
             userSetAdminsForThree[msg.sender].push( _addr[i]);
+            emit allRegister(0, msg.sender, _addr[i]);
         }else{
             revert("Please check and re-enter if the input is wrong");
             }
@@ -1599,6 +1601,7 @@ contract PrivateExchangePoolOgV2 is Ownable,Pausable {
             adminsLevelFour.add(_addr[i]);
 
             userSetAdminsForFour[msg.sender].push( _addr[i]);
+            emit allRegister(0, msg.sender, _addr[i]);
 
         }else{
             revert("Please check and re-enter if the input is wrong");
@@ -1664,6 +1667,7 @@ contract PrivateExchangePoolOgV2 is Ownable,Pausable {
             userTeamReward[_user[i]][0] = msg.sender;
             userTeamReward[_user[i]][1] = recommender[msg.sender];
             userTeamReward[_user[i]][2] = recommender[recommender[msg.sender]];
+            emit allRegister(0, msg.sender, _user[i]);
 
         }
     }
@@ -1924,6 +1928,7 @@ contract PrivateExchangePoolOgV2 is Ownable,Pausable {
   function getAdminsLevelTwoList() public view returns(address[] memory) {
         return adminsLevelTwo.values();
     }
+   
       function getAdminsLevelThreeList() public view returns(address[] memory) {
         return adminsLevelThree.values();
     }
