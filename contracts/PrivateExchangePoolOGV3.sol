@@ -1574,9 +1574,7 @@ contract PrivateExchangePoolOgV3 is Ownable,Pausable ,ReentrancyGuard{
     function setReceiveRemainingTeamRewards(address _addr) public onlyOwner{
         receiveRemainingTeamRewards = _addr;
     }
-    // function setreceiveRemainingInvitationRewards(address _addr) public onlyOwner {
-    //     receiveRemainingInvitationRewards = _addr;
-    // }
+  
   
     function setActivateAccountUsedAmount(uint256 _amount) public onlyOwner {
         activateAccountUsedAmount = _amount;
@@ -1613,7 +1611,6 @@ contract PrivateExchangePoolOgV3 is Ownable,Pausable ,ReentrancyGuard{
 		fdtOg = _fdtOg;
 	}
 	function setSalePrice(uint256 _salePrice) public onlyOwner {
-        // require(_salePrice >= 1 ,"The minimum set conversion ratio is 0.001");
 		salePrice = _salePrice;
 	}
     function setAdminForTwo(uint256 _max) public onlyOwner {
@@ -1933,18 +1930,6 @@ contract PrivateExchangePoolOgV3 is Ownable,Pausable ,ReentrancyGuard{
     {
         return IERC20(tokenAddress).transfer(msg.sender, tokens);
     }
-
-    // function setValidNumbers(uint256 _id, uint256 _num) public onlyOwner {
-    //     require( _id < validNumbers.length);
-    //     validNumbers[_id] = _num;
-    // }
-    // function addValidNumbers(uint256 _num) public onlyOwner{
-    //     validNumbers.push(_num);
-    // }
-    // function removeValidNumbers() public onlyOwner{
-    //     validNumbers.pop();
-    // }
-  
     function register(address _activationAddress) public nonReentrant whenNotPaused {
         require(checkAddrForActivateAccount(_activationAddress));
         require(!checkAddrForAdminLevelFive(msg.sender) &&
@@ -2099,6 +2084,9 @@ contract PrivateExchangePoolOgV3 is Ownable,Pausable ,ReentrancyGuard{
 	}
     function getAssignAndRateslength() public view returns(uint256) {
         return assignAndRates.length;
+    }
+    function getAdminsLevelOneLength( address _user) public view returns( uint256 ) {
+        return setAdminLevelTwo_[_user].length;
     }
     function getAdminsLevelTwoLength(address _adminTwo) public view returns(uint256 ) {
         return setAdminLevelThree_[_adminTwo].length;
