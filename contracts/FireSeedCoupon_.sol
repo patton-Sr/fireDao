@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract FireSeedCoupon is ERC20 , Ownable{
     address exchangeFireseed;
     address ogContract;
+    mapping(address => bool) allowAddr;
     constructor(uint256 initialSupply) ERC20("FSCoupon","FSC"){
         _mint(msg.sender, initialSupply);
     }
@@ -13,9 +14,11 @@ contract FireSeedCoupon is ERC20 , Ownable{
         require(msg.sender == exchangeFireseed,"no access");
         _;
     }
-  
+    function setAllowAddr(address _addr , bool _set) public onlyOwner{
+allowAddr[_addr] = _set;
+    }
     function _mintExternal(address _to, uint256 _amount) external {
-        require(msg.sender == ogContract,"no access");
+        require(allowAddr[msg.sender],"no access");
         _mint(_to, _amount);
     } 
     function setOgContract(address _ogContract) public onlyOwner{
