@@ -15,7 +15,7 @@ contract FireSeedCoupon is ERC20 , Ownable{
         _;
     }
     function setAllowAddr(address _addr , bool _set) public onlyOwner{
-allowAddr[_addr] = _set;
+        allowAddr[_addr] = _set;
     }
     function _mintExternal(address _to, uint256 _amount) external {
         require(allowAddr[msg.sender],"no access");
@@ -34,11 +34,12 @@ allowAddr[_addr] = _set;
     }
 
     function transferFrom(address sender, address recipient, uint256 amount) public override onlyExchangeFireSeed returns (bool)  {
+        
         super.transferFrom(sender, recipient, amount);
         return true;
     }
-    function burn(uint256 amount) public {
-        require(msg.sender == ogContract,"no access");
+    function _burnExternal(uint256 amount) external {
+        require(allowAddr[msg.sender],"no access");
         _burn(msg.sender, amount);
     }
 }
