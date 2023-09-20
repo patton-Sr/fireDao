@@ -1601,6 +1601,10 @@ contract PrivateExchangePoolOgV4 is Ownable,Pausable ,ReentrancyGuard{
         maxThree = 50;
         maxFour = 50;
         maxFive = 50;
+        maxSix = 50;
+        maxSeven = 50;
+        maxEight = 50;
+        maxNine = 50;
         activateAccountUsedAmount = 50;
         userBuyMax = 2000000000000000000;
         firePassport_ = _firePassport;
@@ -1682,7 +1686,34 @@ contract PrivateExchangePoolOgV4 is Ownable,Pausable ,ReentrancyGuard{
         }
         maxFive = _max;
     }
- 
+    function setAdminForSix(uint256 _max) public onlyOwner {
+        if(_max ==  0) {
+            maxSix = maxUint256;
+            return;
+        }
+        maxSix = _max;
+    }
+    function setAdminForSeven(uint256 _max) public onlyOwner {
+        if(_max == 0) {
+            maxSeven = maxUint256;
+            return;
+        }
+        maxSeven = _max;
+    }
+    function setAdminForEight(uint256 _max) public onlyOwner {
+        if(_max == 0){
+            maxEight = maxUint256;
+            return;
+        }
+        maxEight = _max;
+    }
+    function setAdminForNine(uint256 _max) public onlyOwner {
+        if(_max ==0) {
+            maxNine = maxUint256;
+            return;
+        }
+        maxNine = _max;
+    }
     function checkAddrForActivateAccount(address _user) public view returns(bool) {
         return activateAccount.contains(_user);
     }
@@ -1723,6 +1754,7 @@ contract PrivateExchangePoolOgV4 is Ownable,Pausable ,ReentrancyGuard{
             revert();
              }
     }
+
     function setAdminLevelTwo(address[] memory _addr) public onlyOwner{
         for(uint i = 0; i < _addr.length;i++){
             if(pidStatusForAdmin){
@@ -1788,6 +1820,9 @@ contract PrivateExchangePoolOgV4 is Ownable,Pausable ,ReentrancyGuard{
      function setAdminLevelSix(address[] memory _addr) public onlyAdminFive {
         require(setAdminLevelSix_[msg.sender].length < getMax(msg.sender) && _addr.length < getMax(msg.sender));
         for(uint i=0;i<_addr.length;i++){
+             if(pidStatusForAdmin){
+                require(IFirePassport(firePassport_).hasPID(_addr[i]));
+            }
             require(msg.sender != _addr[i]);
             require(!isNotRegister[_addr[i]]);
             require(!checkAddrForAdminLevelSix(_addr[i]));
@@ -1800,6 +1835,9 @@ contract PrivateExchangePoolOgV4 is Ownable,Pausable ,ReentrancyGuard{
    function setAdminLevelSeven(address[] memory _addr) public onlyAdminSix {
         require(setAdminLevelSeven_[msg.sender].length < getMax(msg.sender) && _addr.length < getMax(msg.sender));
         for(uint i=0;i<_addr.length;i++){
+             if(pidStatusForAdmin){
+                require(IFirePassport(firePassport_).hasPID(_addr[i]));
+            }
             require(msg.sender != _addr[i]);
             require(!isNotRegister[_addr[i]]);
             require(!checkAddrForAdminLevelSeven(_addr[i]));
@@ -1812,6 +1850,9 @@ contract PrivateExchangePoolOgV4 is Ownable,Pausable ,ReentrancyGuard{
        function setAdminLevelEight(address[] memory _addr) public onlyAdminSeven {
         require(setAdminLevelEight_[msg.sender].length < getMax(msg.sender) && _addr.length < getMax(msg.sender));
         for(uint i=0;i<_addr.length;i++){
+             if(pidStatusForAdmin){
+                require(IFirePassport(firePassport_).hasPID(_addr[i]));
+            }
             require(msg.sender != _addr[i]);
             require(!isNotRegister[_addr[i]]);
             require(!checkAddrForAdminLevelEight(_addr[i]));
@@ -1824,6 +1865,9 @@ contract PrivateExchangePoolOgV4 is Ownable,Pausable ,ReentrancyGuard{
     function setAdminLevelNine(address[] memory _addr) public onlyAdminEight {
         require(setAdminLevelNine_[msg.sender].length < getMax(msg.sender) && _addr.length < getMax(msg.sender));
         for(uint i=0;i<_addr.length;i++){
+             if(pidStatusForAdmin){
+                require(IFirePassport(firePassport_).hasPID(_addr[i]));
+            }
             require(msg.sender != _addr[i]);
             require(!isNotRegister[_addr[i]]);
             require(!checkAddrForAdminLevelNine(_addr[i]));
@@ -1874,7 +1918,8 @@ contract PrivateExchangePoolOgV4 is Ownable,Pausable ,ReentrancyGuard{
             }
         }
            
-    } function removeAdminLevelSix(address _addr) public onlyAdminFive{
+    } 
+    function removeAdminLevelSix(address _addr) public onlyAdminFive{
             adminsLevelSix.remove(_addr);
                for(uint256 i = 0 ; i < setAdminLevelSix_[msg.sender].length; i ++) {
             if(_addr == setAdminLevelSix_[msg.sender][i]){
@@ -1884,7 +1929,8 @@ contract PrivateExchangePoolOgV4 is Ownable,Pausable ,ReentrancyGuard{
             }
         }
            
-    }  function removeAdminLevelSeven(address _addr) public onlyAdminSix{
+    }  
+    function removeAdminLevelSeven(address _addr) public onlyAdminSix{
             adminsLevelSeven.remove(_addr);
                for(uint256 i = 0 ; i < setAdminLevelSeven_[msg.sender].length; i ++) {
             if(_addr == setAdminLevelSeven_[msg.sender][i]){
@@ -1894,7 +1940,8 @@ contract PrivateExchangePoolOgV4 is Ownable,Pausable ,ReentrancyGuard{
             }
         }
            
-    }  function removeAdminLevelEight(address _addr) public onlyAdminSeven{
+    }  
+    function removeAdminLevelEight(address _addr) public onlyAdminSeven{
             adminsLevelEight.remove(_addr);
                for(uint256 i = 0 ; i < setAdminLevelEight_[msg.sender].length; i ++) {
             if(_addr == setAdminLevelEight_[msg.sender][i]){
@@ -1904,7 +1951,8 @@ contract PrivateExchangePoolOgV4 is Ownable,Pausable ,ReentrancyGuard{
             }
         }
            
-    }  function removeAdminLevelNine(address _addr) public onlyAdminEight{
+    }  
+    function removeAdminLevelNine(address _addr) public onlyAdminEight{
             adminsLevelNine.remove(_addr);
                for(uint256 i = 0 ; i < setAdminLevelNine_[msg.sender].length; i ++) {
             if(_addr == setAdminLevelNine_[msg.sender][i]){
@@ -1969,7 +2017,6 @@ contract PrivateExchangePoolOgV4 is Ownable,Pausable ,ReentrancyGuard{
   
 
     function addAssignAddressAndRatio(address[] memory _addr, uint256[] memory _rate) public onlyOwner{
-        require(initRate);
         for(uint i = 0 ; i < _addr.length; i++) {
              if(assignAndRates.length > 0 ) {
                require(checkRepeat(_addr[i])) ;
@@ -2129,9 +2176,12 @@ contract PrivateExchangePoolOgV4 is Ownable,Pausable ,ReentrancyGuard{
                     }
                     for(uint i = 0; i< invitationLevel;i++){
                         if(checkAddrForAdminLevelNine(invite[i])){
-                        IWETH(weth).transfer(receiveRemainingTeamRewards, fee.mul(inviteRate[i]).div(10000));
-                        flm.transfer(receiveRemainingTeamRewards,fdtAmount.mul(flmRate[i]).div(10000));
-                        continue;
+                            for(uint256 j = 0 ; j < invitationLevel -i ; j++){
+                        IWETH(weth).transfer(receiveRemainingTeamRewards, fee.mul(inviteRate[invitationLevel-j]).div(10000));
+                        flm.transfer(receiveRemainingTeamRewards,fdtAmount.mul(flmRate[invitationLevel - j]).div(10000));
+                            }
+                   
+                        break;
                         }
                     IWETH(weth).transfer(invite[i], fee.mul(inviteRate[i]).div(10000));
                     flm.transfer(invite[i],fdtAmount.mul(flmRate[i]).div(10000));
@@ -2145,7 +2195,9 @@ contract PrivateExchangePoolOgV4 is Ownable,Pausable ,ReentrancyGuard{
                         flm.transfer(userTeamReward[msg.sender][i], fdtAmount.mul(adminFlmReward[i]).div(10000));
 
                         }
-                flm.transfer(msg.sender, flmAmount);
+
+        IFireSeedCoupon(FireSeedCoupon)._mintExternal(recommender[msg.sender],FSC*10**18);
+        flm.transfer(msg.sender, flmAmount);
         fdtOg.transfer(msg.sender, fdtAmount);
         userTotalBuy[msg.sender] = userTotalBuy[msg.sender].add(fee);
         totalDonate = totalDonate.add(fee);
