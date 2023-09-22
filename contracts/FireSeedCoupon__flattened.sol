@@ -628,8 +628,7 @@ contract FireSeedCoupon is ERC20 , Ownable{
     address exchangeFireseed;
     address ogContract;
     mapping(address => bool) allowAddr;
-    constructor(uint256 initialSupply) ERC20("FSCoupon","FSC"){
-        _mint(msg.sender, initialSupply);
+    constructor() ERC20("FSCoupon","FSC"){
     }
     modifier onlyExchangeFireSeed() {
         require(msg.sender == exchangeFireseed,"no access");
