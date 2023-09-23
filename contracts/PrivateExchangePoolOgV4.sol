@@ -1412,7 +1412,7 @@ contract PrivateExchangePoolOgV4 is Ownable,Pausable ,ReentrancyGuard{
 
     using SafeMath for uint256;
     using EnumerableSet for EnumerableSet.AddressSet;
-enum AdminLevel {
+enum  AdminLevel {
     LevelTwo,
     LevelThree,
     LevelFour,
@@ -1487,7 +1487,6 @@ enum AdminLevel {
     mapping(address =>mapping(address => bool)) public blackList;
     mapping(address => bool) public isNotAdmin;
     mapping(uint8 => uint256) public maxLevels;
-    // 创建一个映射，将管理员级别与对应的集合关联起来
     mapping(AdminLevel => EnumerableSet.AddressSet) private adminLevelToSet;
 
 
@@ -1498,6 +1497,14 @@ enum AdminLevel {
         uint256 flmRate2,
         uint256 flmRate1,
         uint256 flmRate0,
+  
+        address user
+    );
+    event allFlmRateForAdmin(
+              uint256 adminFlmRate8,
+        uint256 adminFlmRate7,
+        uint256 adminFlmRate6,
+        uint256 adminFlmRate5,
         uint256 adminFlmRate4,
         uint256 adminFlmRate3,
         uint256 adminFlmRate2,
@@ -1529,19 +1536,32 @@ enum AdminLevel {
         uint256 fdtAmount,
         uint256 flmAmount
         );
-        event allTeamRate(
+        event allTeamAddr(
             address admin0,
             address admin1,
             address admin2,
             address admin3,
             address admin4,
+            address admin5,
+            address admin6,
+            address admin7,
+            address admin8,
+            address addr
+           
+        );
+        event allTeamRate(
             uint256 adminRate0,
             uint256 adminRate1,
             uint256 adminRate2,
             uint256 adminRate3,
             uint256 adminRate4,
+            uint256 adminRate5,
+            uint256 adminRate6,
+            uint256 adminRate7,
+            uint256 adminRate8,
             address addr
         );
+
         event SetActive(
             address _seter,
             address _user
@@ -1639,33 +1659,40 @@ enum AdminLevel {
         }
         maxLevels[_level] = _max;
     }
-   
+    function getAdminLevelList(address _admin) public view returns(address[] memory) {
+        return  setAdminLevel_[_admin][userLevels[_admin]];
+    }
     function checkAddrForActivateAccount(address _user) public view returns(bool) {
         return activateAccount.contains(_user);
     }
     function checkAddrForAdminLevelTwo(address _user) public view returns(bool) {
-        return adminsLevelTwo.contains(_user);
+        return checkAdminLevel(AdminLevel.LevelTwo, _user);
     }
     function checkAddrForAdminLevelThree(address _user) public view returns(bool){
-        return adminsLevelThree.contains(_user);
+        return checkAdminLevel(AdminLevel.LevelThree, _user);
     }
     function checkAddrForAdminLevelFour(address _user) public view returns(bool){
-        return adminsLevelFour.contains(_user);
+        return checkAdminLevel(AdminLevel.LevelFour, _user);
+
     }
     function checkAddrForAdminLevelFive(address _user) public view returns(bool){
-        return adminsLevelFive.contains(_user);
+        return checkAdminLevel(AdminLevel.LevelFive, _user);
+
     }
       function checkAddrForAdminLevelSix(address _user) public view returns(bool){
-        return adminsLevelSix.contains(_user);
+        return checkAdminLevel(AdminLevel.LevelSix, _user);
     }
     function checkAddrForAdminLevelSeven(address _user) public view returns(bool){
-        return adminsLevelSeven.contains(_user);
+        return checkAdminLevel(AdminLevel.LevelSeven, _user);
+
     }
     function checkAddrForAdminLevelEight(address _user) public view returns(bool){
-        return adminsLevelEight.contains(_user);
+        return checkAdminLevel(AdminLevel.LevelEight, _user);
+
     }
     function checkAddrForAdminLevelNine(address _user) public view returns(bool){
-        return adminsLevelNine.contains(_user);
+        return checkAdminLevel(AdminLevel.LevelNine, _user);
+
     }
     function checkTeamUser(address _user) public view returns(bool) {
         address team = recommender[_user];
@@ -1744,6 +1771,7 @@ function setAdmin(AdminLevel _level, address[] memory _addr) internal {
 function removeAdmin(AdminLevel _level, address _addr)  internal{
     require(adminLevelToSet[_level].contains(_addr), "Address not found in admin level");
     adminLevelToSet[_level].remove(_addr);
+    delete userLevels[_addr];
 
     address[] storage adminList = setAdminLevel_[msg.sender][_level];
     for (uint256 i = 0; i < adminList.length; i++) {
@@ -1881,7 +1909,7 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
     }
     function addTeamRate(uint256[] memory _rate) public onlyOwner{
         require(!initTeamRate);
-        require(_rate.length ==5);
+        require(_rate.length ==9);
         for(uint256 i = 0 ;i < _rate.length; i++){
             teamRate.push(_rate[i]);
         }
@@ -1894,7 +1922,7 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
     function addInviteRate(uint256[] memory _rate) public onlyOwner{
         require(!initRate);
         require(_rate.length == 5 || inviteRate.length < 5 );
-        for(uint256 i = 0; i < _rate.length; i++) {
+        for(uint256 i = 0; i < _rate.length; i++)` {
             inviteRate.push(_rate[i]);
         }
         initRate = true;
@@ -2017,6 +2045,14 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
             flmRate[2],
             flmRate[1],
             flmRate[0],
+       
+            msg.sender
+            );
+            emit allFlmRateForAdmin(
+            adminFlmReward[8],
+            adminFlmReward[7],
+            adminFlmReward[6],
+            adminFlmReward[5],
             adminFlmReward[4],
             adminFlmReward[3],
             adminFlmReward[2],
@@ -2037,12 +2073,23 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
             inviteRate[0],
             msg.sender
             );
-            emit allTeamRate(
+            emit allTeamAddr(
+                userTeamReward[msg.sender][8],
+                userTeamReward[msg.sender][7],
+                userTeamReward[msg.sender][6],
+                userTeamReward[msg.sender][5],
                 userTeamReward[msg.sender][4],
                 userTeamReward[msg.sender][3],
                 userTeamReward[msg.sender][2],
                 userTeamReward[msg.sender][1],
                 userTeamReward[msg.sender][0],
+                msg.sender
+            );
+            emit allTeamRate(
+                teamRate[8],
+                teamRate[7],
+                teamRate[6],
+                teamRate[5],
                 teamRate[4],
                 teamRate[3],
                 teamRate[2],
@@ -2050,6 +2097,7 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
                 teamRate[0],
                 msg.sender
             );
+            
         buyId++;
     }
 
@@ -2072,7 +2120,7 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
     function getAssignAndRateslength() public view returns(uint256) {
         return assignAndRates.length;
     }
-    function getAdminsLevelOneLength( address _user) public view returns( uint256 ) {
+    function getAdminsLevelLength( address _user) public view returns( uint256 ) {
         return setAdminLevel_[_user][userLevels[_user]].length;
     }
     function getfdtOgAmount(uint256 fee) public view returns(uint256) {
