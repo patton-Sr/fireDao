@@ -1,3 +1,7 @@
+/**
+ *Submitted for verification at Arbiscan.io on 2023-09-04
+*/
+
 // OpenZeppelin Contracts v4.4.1 (utils/Context.sol)
 
 pragma solidity ^0.8.0;
@@ -1408,20 +1412,11 @@ interface IFireSeedCoupon {
     function _mintExternal(address _to, uint256 _amount) external;
 }
 
-contract PrivateExchangePoolOgV4 is Ownable,Pausable ,ReentrancyGuard{
+contract PrivateExchangePoolOgV3 is Ownable,Pausable ,ReentrancyGuard{
 
     using SafeMath for uint256;
     using EnumerableSet for EnumerableSet.AddressSet;
-enum  AdminLevel {
-    LevelTwo,
-    LevelThree,
-    LevelFour,
-    LevelFive,
-    LevelSix,
-    LevelSeven,
-    LevelEight,
-    LevelNine
-}
+
   uint256 constant private invitationLevel = 5;
     struct assignAndRate {
         address assign;
@@ -1431,10 +1426,6 @@ enum  AdminLevel {
     EnumerableSet.AddressSet private adminsLevelThree;
     EnumerableSet.AddressSet private adminsLevelFour;
     EnumerableSet.AddressSet private adminsLevelFive;
-    EnumerableSet.AddressSet private adminsLevelSix;
-    EnumerableSet.AddressSet private adminsLevelSeven;
-    EnumerableSet.AddressSet private adminsLevelEight;
-    EnumerableSet.AddressSet private adminsLevelNine;
     EnumerableSet.AddressSet private activateAccount;
 
     ERC20 public flm;
@@ -1453,6 +1444,10 @@ enum  AdminLevel {
     address public firePassport_;
     uint256 public registerId;
 	uint256 public salePrice;
+    uint256 public maxTwo;
+    uint256 public maxThree;
+    uint256 public maxFour;
+    uint256 public maxFive;
     uint256 public activateAccountUsedAmount;
     uint256 public userBuyMax;
     uint256[] public inviteRate;
@@ -1477,19 +1472,17 @@ enum  AdminLevel {
 	mapping(address => uint256) public userTotalBuy;
     mapping(address => bool) public isRecommender;
     mapping(address => address) public recommender;
-    mapping(address => mapping(AdminLevel => address[])) public setAdminLevel_;
-    mapping(address => AdminLevel) public userLevels;
+    mapping(address => address[]) public setAdminLevelTwo_;
+    mapping(address => address[]) public setAdminLevelThree_;
+    mapping(address => address[]) public setAdminLevelFour_;
+    mapping(address => address[]) public setAdminLevelFive_;
     mapping(address => bool) public isNotRegister;
     mapping(address => uint256) public activeInviteAmount;
     mapping(address => uint256) public activeUsedAmount;
     mapping(address => mapping(uint256 => address)) public userTeamReward;
     mapping(uint256 => uint256) public adminFlmReward;
+    mapping(address => address) public userTeam;
     mapping(address =>mapping(address => bool)) public blackList;
-    mapping(address => bool) public isNotAdmin;
-    mapping(uint8 => uint256) public maxLevels;
-    mapping(AdminLevel => EnumerableSet.AddressSet) private adminLevelToSet;
-
-
 	AggregatorV3Interface internal priceFeed;
     event allFlmRate(
         uint256 flmRate4,
@@ -1497,14 +1490,6 @@ enum  AdminLevel {
         uint256 flmRate2,
         uint256 flmRate1,
         uint256 flmRate0,
-  
-        address user
-    );
-    event allFlmRateForAdmin(
-              uint256 adminFlmRate8,
-        uint256 adminFlmRate7,
-        uint256 adminFlmRate6,
-        uint256 adminFlmRate5,
         uint256 adminFlmRate4,
         uint256 adminFlmRate3,
         uint256 adminFlmRate2,
@@ -1536,43 +1521,41 @@ enum  AdminLevel {
         uint256 fdtAmount,
         uint256 flmAmount
         );
-        event allTeamAddr(
+        event allTeamRate(
             address admin0,
             address admin1,
             address admin2,
             address admin3,
             address admin4,
-            address admin5,
-            address admin6,
-            address admin7,
-            address admin8,
-            address addr
-           
-        );
-        event allTeamRate(
             uint256 adminRate0,
             uint256 adminRate1,
             uint256 adminRate2,
             uint256 adminRate3,
             uint256 adminRate4,
-            uint256 adminRate5,
-            uint256 adminRate6,
-            uint256 adminRate7,
-            uint256 adminRate8,
             address addr
         );
-
         event SetActive(
             address _seter,
             address _user
         );
     event allRegister(uint256 id,address recommenders, address _user);
     event blackUser(address operator, address user);
-    modifier onlyAdmin(AdminLevel _level) {
-    require(checkAdminLevel(_level, msg.sender), "Not authorized");
-    _;
+    modifier onlyAdminTwo() {
+        require(checkAddrForAdminLevelTwo(msg.sender));
+        _;
     }
- 
+    modifier onlyAdminThree() {
+        require(checkAddrForAdminLevelThree(msg.sender));
+        _;
+    }
+    modifier onlyAdminFour() {
+        require(checkAddrForAdminLevelFour(msg.sender));
+        _;
+    }
+    modifier onlyAdminFive() {
+        require(checkAddrForAdminLevelFive(msg.sender));
+        _;
+    }
 	/**
 		* NetWork: Goerli
 		* Aggregator: ETH/USD
@@ -1583,22 +1566,17 @@ enum  AdminLevel {
         * mumbai test net address: 0x0715A7794a1dc8e42615F059dD6e406A6594651A
 	*/
 	constructor(ERC20 _fdtOg,ERC20 _flm,address _fireSeedCoupon,  address _weth, address _firePassport) {
-		// priceFeed = AggregatorV3Interface(0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612);//arb one 
-		priceFeed = AggregatorV3Interface(0x62CAe0FA2da220f43a51F86Db2EDb36DcA9A5A08);//arb goerli
+		priceFeed = AggregatorV3Interface(0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612);//arb one 
+		// priceFeed = AggregatorV3Interface(0x62CAe0FA2da220f43a51F86Db2EDb36DcA9A5A08);//arb goerli
 		// priceFeed = AggregatorV3Interface(0x0715A7794a1dc8e42615F059dD6e406A6594651A);//mumbai
 		fdtOg = _fdtOg;
         flm = _flm;
 		weth = _weth;
 		salePrice = 11;
-        maxLevels[1] = 50;
-        maxLevels[2] = 50;
-        maxLevels[3] = 50;
-        maxLevels[4] = 50;
-        maxLevels[5] = 50;
-        maxLevels[6] = 50;
-        maxLevels[7] = 50;
-        maxLevels[8] = 50;
-        maxLevels[9] = 50;
+        maxTwo = 50;
+        maxThree = 50;
+        maxFour = 50;
+        maxFive = 50;
         activateAccountUsedAmount = 50;
         userBuyMax = 2000000000000000000;
         firePassport_ = _firePassport;
@@ -1652,60 +1630,52 @@ enum  AdminLevel {
 	function setSalePrice(uint256 _salePrice) public onlyOwner {
 		salePrice = _salePrice;
 	}
-    function setAdminForMAX(uint8 _level,uint256 _max) public onlyOwner {
+    function setAdminForTwo(uint256 _max) public onlyOwner {
         if(_max == 0) {
-        maxLevels[_level] = maxUint256;
+        maxTwo = maxUint256;
         return;
         }
-        maxLevels[_level] = _max;
+        maxTwo = _max;
     }
-    function getAdminLevelList(address _admin) public view returns(address[] memory) {
-        return  setAdminLevel_[_admin][userLevels[_admin]];
+    function setAdminForThree(uint256 _max) public onlyOwner {
+        if(_max == 0) {
+        maxThree = maxUint256;
+        return;
+        }
+        maxThree = _max;
     }
+    function setAdminForFour(uint256 _max) public onlyOwner {
+        if(_max == 0) {
+        maxFour = maxUint256;
+        return;
+        }
+        maxFour = _max;
+    }
+    function setAdminForFive(uint256 _max) public onlyOwner {
+        if(_max ==  0) {
+            maxFive = maxUint256;
+            return;
+        }
+        maxFive = _max;
+    }
+ 
     function checkAddrForActivateAccount(address _user) public view returns(bool) {
         return activateAccount.contains(_user);
     }
     function checkAddrForAdminLevelTwo(address _user) public view returns(bool) {
-        return checkAdminLevel(AdminLevel.LevelTwo, _user);
+        return adminsLevelTwo.contains(_user);
     }
     function checkAddrForAdminLevelThree(address _user) public view returns(bool){
-        return checkAdminLevel(AdminLevel.LevelThree, _user);
+        return adminsLevelThree.contains(_user);
     }
     function checkAddrForAdminLevelFour(address _user) public view returns(bool){
-        return checkAdminLevel(AdminLevel.LevelFour, _user);
-
+        return adminsLevelFour.contains(_user);
     }
     function checkAddrForAdminLevelFive(address _user) public view returns(bool){
-        return checkAdminLevel(AdminLevel.LevelFive, _user);
-
+        return adminsLevelFive.contains(_user);
     }
-      function checkAddrForAdminLevelSix(address _user) public view returns(bool){
-        return checkAdminLevel(AdminLevel.LevelSix, _user);
-    }
-    function checkAddrForAdminLevelSeven(address _user) public view returns(bool){
-        return checkAdminLevel(AdminLevel.LevelSeven, _user);
-
-    }
-    function checkAddrForAdminLevelEight(address _user) public view returns(bool){
-        return checkAdminLevel(AdminLevel.LevelEight, _user);
-
-    }
-    function checkAddrForAdminLevelNine(address _user) public view returns(bool){
-        return checkAdminLevel(AdminLevel.LevelNine, _user);
-
-    }
-    function checkTeamUser(address _user) public view returns(bool) {
-        address team = recommender[_user];
-        for(uint256 i = 0 ;i < 9 ;i++){
-            if(msg.sender == team){
-                return true;
-            }
-            team = recommender[team];
-        }
-        return false;
-    }
-    function setBlackList(address _user) public onlyAdmin(AdminLevel.LevelTwo) {
-        require(checkTeamUser(_user));
+    function setBlackList(address _user) public onlyAdminTwo{
+        require(msg.sender == recommender[_user] || msg.sender == recommender[recommender[_user]] ||msg.sender == recommender[recommender[recommender[_user]]] );
         blackList[msg.sender][_user] = !blackList[msg.sender][_user];
         emit blackUser(msg.sender,_user );
     }
@@ -1717,120 +1687,131 @@ enum  AdminLevel {
             revert();
              }
     }
-    function checkAdminLevel(AdminLevel _level, address _user) public view returns (bool) {
-    return adminLevelToSet[_level].contains(_user);
-    }
-function setAdmin(AdminLevel _level, address[] memory _addr) internal {
-    require(setAdminLevel_[msg.sender][_level].length < getMax(msg.sender) && _addr.length < getMax(msg.sender));
-    for (uint256 i = 0; i < _addr.length; i++) {
-        if (pidStatusForAdmin) {
-            require(IFirePassport(firePassport_).hasPID(_addr[i]));
-        }
-        require(msg.sender != _addr[i]);
-        require(!isNotRegister[_addr[i]]);
-        require(!adminLevelToSet[_level].contains(_addr[i])); 
-        inviteFunc(_addr[i], msg.sender);
-        adminLevelToSet[_level].add(_addr[i]); 
-        setAdminLevel_[msg.sender][_level].push(_addr[i]);
-        isNotAdmin[_addr[i]] = true;
-        userLevels[msg.sender] = _level;
-        emit allRegister(0, msg.sender, _addr[i]);
-    }
-}
-
     function setAdminLevelTwo(address[] memory _addr) public onlyOwner{
-      setAdmin(AdminLevel.LevelTwo, _addr);
-    }
-
-    function setAdminLevelThree(address[] memory _addr) public onlyAdmin(AdminLevel.LevelTwo) {
-     setAdmin(AdminLevel.LevelThree, _addr);
-    }
-    function setAdminLevelFour(address[] memory _addr) public onlyAdmin(AdminLevel.LevelThree){
-     setAdmin(AdminLevel.LevelFour, _addr);
-    }
-    function setAdminLevelFive(address[] memory _addr) public onlyAdmin(AdminLevel.LevelFour) {
-     setAdmin(AdminLevel.LevelFive, _addr);
-    }
-     function setAdminLevelSix(address[] memory _addr) public onlyAdmin(AdminLevel.LevelFive)  {
-     setAdmin(AdminLevel.LevelSix, _addr);
-    
-    }
-   function setAdminLevelSeven(address[] memory _addr) public onlyAdmin(AdminLevel.LevelSix)  {
-     setAdmin(AdminLevel.LevelSeven, _addr);
-      
-    }
-       function setAdminLevelEight(address[] memory _addr) public onlyAdmin(AdminLevel.LevelSeven)  {
-     setAdmin(AdminLevel.LevelEight, _addr);
-  
-    }
-
-    function setAdminLevelNine(address[] memory _addr) public  onlyAdmin(AdminLevel.LevelEight) {
-     setAdmin(AdminLevel.LevelNine, _addr);
-    }
-
-function removeAdmin(AdminLevel _level, address _addr)  internal{
-    require(adminLevelToSet[_level].contains(_addr), "Address not found in admin level");
-    adminLevelToSet[_level].remove(_addr);
-    delete userLevels[_addr];
-
-    address[] storage adminList = setAdminLevel_[msg.sender][_level];
-    for (uint256 i = 0; i < adminList.length; i++) {
-        if (_addr == adminList[i]) {
-            adminList[i] = adminList[adminList.length - 1];
-            adminList.pop();
-            return;
+        for(uint i = 0; i < _addr.length;i++){
+            if(pidStatusForAdmin){
+                require(IFirePassport(firePassport_).hasPID(_addr[i]));
+            }
+            require(msg.sender != _addr[i]);
+            require(!isNotRegister[_addr[i]]);
+            require(!checkAddrForAdminLevelTwo(_addr[i]));
+            inviteFunc(_addr[i],msg.sender);
+            adminsLevelTwo.add(_addr[i]);
+            setAdminLevelTwo_[msg.sender].push(_addr[i]);
+            emit allRegister(0, msg.sender, _addr[i]);
         }
     }
-}
 
+    function setAdminLevelThree(address[] memory _addr) public onlyAdminTwo {
+        require(setAdminLevelThree_[msg.sender].length < getMax(msg.sender) && _addr.length < getMax(msg.sender));
+        for(uint256 i = 0; i < _addr.length; i++){
+            if(pidStatusForAdmin){
+                require(IFirePassport(firePassport_).hasPID(_addr[i]));
+            }
+            require(msg.sender != _addr[i]);
+            require(!isNotRegister[_addr[i]]);
+            require(!checkAddrForAdminLevelThree(_addr[i]));
+            inviteFunc(_addr[i],msg.sender);
+            adminsLevelThree.add(_addr[i]);
+            setAdminLevelThree_[msg.sender].push(_addr[i]);
+            emit allRegister(0, msg.sender, _addr[i]);
+            
+        }
+    }
+      function setAdminLevelFour(address[] memory _addr) public onlyAdminThree{
+        require(setAdminLevelFour_[msg.sender].length < getMax(msg.sender) && _addr.length < getMax(msg.sender));
+        for(uint i=0;i<_addr.length;i++){
+            if(pidStatusForUser){
+                require(IFirePassport(firePassport_).hasPID(_addr[i]));
+            }
+            require(msg.sender != _addr[i]);
+            require(!isNotRegister[_addr[i]]);    
+            require(!checkAddrForAdminLevelFour(_addr[i]));
+            inviteFunc(_addr[i],msg.sender);
+            adminsLevelFour.add(_addr[i]);
+           setAdminLevelFour_[msg.sender].push(_addr[i]);
+            emit allRegister(0, msg.sender, _addr[i]);
 
-    function removeAdminLevelTwo(address _addr) public onlyOwner {
-        removeAdmin(AdminLevel.LevelTwo, _addr);
+        }
     }
-    function removeAdminLevelThree(address _addr) public onlyAdmin(AdminLevel.LevelTwo) {
-        removeAdmin(AdminLevel.LevelThree, _addr);
+    function setAdminLevelFive(address[] memory _addr) public onlyAdminFour {
+        require(setAdminLevelFive_[msg.sender].length < getMax(msg.sender) && _addr.length < getMax(msg.sender));
+        for(uint i=0;i<_addr.length;i++){
+            if(pidStatusForUser){
+                require(IFirePassport(firePassport_).hasPID(_addr[i]));
+            }
+            require(msg.sender != _addr[i]);
+            require(!isNotRegister[_addr[i]]);    
+            require(!checkAddrForAdminLevelFive(_addr[i]));
+            inviteFunc(_addr[i],msg.sender);
+            adminsLevelFive.add(_addr[i]);
+            setAdminLevelFive_[msg.sender].push(_addr[i]);
+            emit allRegister(0, msg.sender, _addr[i]);
+        }
     }
-    function removeAdminLevelFour(address _addr) public onlyAdmin(AdminLevel.LevelThree){
-         removeAdmin(AdminLevel.LevelFour, _addr);
+
+    function removeAdminLevelTwo(address _addr) public onlyOwner{
+        adminsLevelTwo.remove(_addr);
+        for(uint256 i = 0 ; i < setAdminLevelTwo_[msg.sender].length; i ++) {
+            if(_addr == setAdminLevelTwo_[msg.sender][i]){
+                setAdminLevelTwo_[msg.sender][i] = setAdminLevelTwo_[msg.sender][setAdminLevelTwo_[msg.sender].length - 1];
+                setAdminLevelTwo_[msg.sender].pop();
+                return;
+            }
+        }
     }
-    function removeAdminLevelFive(address _addr) public onlyAdmin(AdminLevel.LevelFour){
-         removeAdmin(AdminLevel.LevelFive, _addr);
-    } 
-    function removeAdminLevelSix(address _addr) public onlyAdmin(AdminLevel.LevelFive){
-         removeAdmin(AdminLevel.LevelSix, _addr);
-    }  
-    function removeAdminLevelSeven(address _addr) public onlyAdmin(AdminLevel.LevelSix){
-         removeAdmin(AdminLevel.LevelSeven, _addr);
-    }  
-    function removeAdminLevelEight(address _addr) public onlyAdmin(AdminLevel.LevelSeven){
-         removeAdmin(AdminLevel.LevelEight, _addr);
-    }  
-    function removeAdminLevelNine(address _addr) public onlyAdmin(AdminLevel.LevelEight){
-         removeAdmin(AdminLevel.LevelNine, _addr);
+    function removeAdminLevelThree(address _addr) public onlyAdminTwo {
+        adminsLevelThree.remove(_addr);
+          for(uint256 i = 0 ; i < setAdminLevelThree_[msg.sender].length; i ++) {
+            if(_addr == setAdminLevelTwo_[msg.sender][i]){
+                setAdminLevelThree_[msg.sender][i] = setAdminLevelThree_[msg.sender][setAdminLevelThree_[msg.sender].length - 1];
+                setAdminLevelThree_[msg.sender].pop();
+                return;
+            }
+        }
     }
-    function getUserLevel(address _user) internal view returns (uint8) {
-    if (_user == owner()) return 1;
-    if (checkAddrForAdminLevelTwo(_user)) return 2;
-    if (checkAddrForAdminLevelThree(_user)) return 3;
-    if (checkAddrForAdminLevelFour(_user)) return 4;
-    if (checkAddrForAdminLevelFive(_user)) return 5;
-    if (checkAddrForAdminLevelSix(_user)) return 6;
-    if (checkAddrForAdminLevelSeven(_user)) return 7;
-    if (checkAddrForAdminLevelEight(_user)) return 8;
-    if (checkAddrForAdminLevelNine(_user)) return 9;
-    return 0;
-}
+    function removeAdminLevelFour(address _addr) public onlyAdminThree{
+        adminsLevelFour.remove(_addr);
+          for(uint256 i = 0 ; i < setAdminLevelFour_[msg.sender].length; i ++) {
+            if(_addr == setAdminLevelFour_[msg.sender][i]){
+                setAdminLevelFour_[msg.sender][i] = setAdminLevelFour_[msg.sender][setAdminLevelFour_[msg.sender].length - 1];
+                setAdminLevelFour_[msg.sender].pop();
+                return;
+            }
+        }
+    }
+    function removeAdminLevelFive(address _addr) public onlyAdminFour{
+        adminsLevelFive.remove(_addr);
+               for(uint256 i = 0 ; i < setAdminLevelFour_[msg.sender].length; i ++) {
+            if(_addr == setAdminLevelFour_[msg.sender][i]){
+                setAdminLevelFour_[msg.sender][i] = setAdminLevelFour_[msg.sender][setAdminLevelFour_[msg.sender].length - 1];
+                setAdminLevelFour_[msg.sender].pop();
+                return;
+            }
+        }
+           
+    }
+    
     function getMax(address _user) internal view returns(uint256) {
-    uint8 userLevel = getUserLevel(_user);
-    return maxLevels[userLevel];
+        if(checkAddrForAdminLevelTwo(_user)){
+            return maxTwo;
+        }else if(checkAddrForAdminLevelThree(_user)) {
+            return maxThree;
+        }else if(checkAddrForAdminLevelFour(_user)){
+            return maxFour;
+        }else if(checkAddrForAdminLevelFive(_user)){
+            return maxFive;
+        }
+        return 0;
     }
-     function setActivateAccountForL2(address[] memory _user) public  onlyAdmin(AdminLevel.LevelTwo) {
+  function setActivateAccountForL2(address[] memory _user)public  onlyAdminTwo {
         for(uint256 i = 0 ; i < _user.length ; i++){
             require(!checkAddrForActivateAccount(_user[i]) && isNotRegister[_user[i]] == true);
             activateAccount.add(_user[i]);
+            emit SetActive(msg.sender, _user[i]);
         }
     }
-    function setActivateAccountForL9(address[] memory  _user) public onlyAdmin(AdminLevel.LevelNine){
+    function setActivateAccountForL5(address[] memory  _user) public onlyAdminFive{
     require(activeInviteAmount[msg.sender] <= getMax(msg.sender) && _user.length < getMax(msg.sender));
         for(uint256 i =0 ; i < _user.length ;i++) {
             require(!isNotRegister[_user[i]]);
@@ -1838,16 +1819,19 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
             activateAccount.add(_user[i]);
             inviteFunc(_user[i],msg.sender);
             activeInviteAmount[msg.sender] = activeInviteAmount[msg.sender].add(1);
-            for(uint256 j = 1 ; j < 9 ; j ++){
-                userTeamReward[_user[i]][0] = msg.sender; 
-                userTeamReward[_user[i]][j] = recommender[userTeamReward[_user[i]][j - 1 ]];
-            }
+            userTeamReward[_user[i]][0] = msg.sender;
+            userTeamReward[_user[i]][1] = recommender[msg.sender];
+            userTeamReward[_user[i]][2] = recommender[recommender[msg.sender]];
+            userTeamReward[_user[i]][3] = recommender[recommender[recommender[msg.sender]]];
+            userTeamReward[_user[i]][4] = recommender[recommender[recommender[recommender[msg.sender]]]];
+            emit SetActive(msg.sender, _user[i]);
             emit allRegister(0, msg.sender, _user[i]);
         }
     }
   
 
     function addAssignAddressAndRatio(address[] memory _addr, uint256[] memory _rate) public onlyOwner{
+        require(initRate);
         for(uint i = 0 ; i < _addr.length; i++) {
              if(assignAndRates.length > 0 ) {
                require(checkRepeat(_addr[i])) ;
@@ -1902,14 +1886,14 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
         userFlmRewardRate = _rate;
     }
     function setAdminFlmReward(uint256[] memory _rate) public onlyOwner {
-        for(uint256 i = 0 ; i < 9 ; i++) {
+        for(uint256 i = 0 ; i < 5 ; i++) {
         adminFlmReward[i] = _rate[i];
 
         }
     }
     function addTeamRate(uint256[] memory _rate) public onlyOwner{
         require(!initTeamRate);
-        require(_rate.length ==9);
+        require(_rate.length ==5);
         for(uint256 i = 0 ;i < _rate.length; i++){
             teamRate.push(_rate[i]);
         }
@@ -1958,7 +1942,10 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
     }
     function register(address _activationAddress) public nonReentrant whenNotPaused {
         require(checkAddrForActivateAccount(_activationAddress));
-        require(!isNotAdmin[msg.sender]);
+        require(!checkAddrForAdminLevelFive(msg.sender) &&
+                !checkAddrForAdminLevelFour(msg.sender) &&
+                !checkAddrForAdminLevelThree(msg.sender) &&
+                !checkAddrForAdminLevelTwo(msg.sender));
         require(activeUsedAmount[_activationAddress] <= activateAccountUsedAmount);
         if(checkAddrForActivateAccount(msg.sender) == true && isNotRegister[msg.sender] == false) {
             isNotRegister[msg.sender] = true;
@@ -1968,7 +1955,8 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
         }
         require(!isNotRegister[msg.sender] && !isRecommender[msg.sender] );
         inviteFunc(msg.sender, _activationAddress);
-        for(uint256 i = 0 ; i < 9 ; i++){
+        userTeam[msg.sender] =_activationAddress;
+        for(uint256 i = 0 ; i < 5 ; i++){
         userTeamReward[msg.sender][i] = userTeamReward[_activationAddress][i];
         }
         isNotRegister[msg.sender] = true;
@@ -1977,9 +1965,9 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
         registerId++;
 
     }
-    function donate(uint256 fee) external payable whenNotPaused nonReentrant{
+    function donate(uint256 fee) external payable whenNotPaused  nonReentrant{
         require(isNotRegister[msg.sender]);
-        require(getRate() == 10000);
+        require(getRate() == 100);
         if (pidStatusForUser) {
             require(IFirePassport(firePassport_).hasPID(msg.sender));
         }else if(!checkAddrForActivateAccount(msg.sender)){
@@ -1988,7 +1976,7 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
         address[invitationLevel] memory invite;
         uint256 fdtAmount = fee.mul(getLatesPrice()).div(10**5 * salePrice);
         uint256 usdtAmount = fee.mul(getLatesPrice()).div(10**8);
-        uint256 flmAmount = fdtAmount.mul(userFlmRewardRate).div(10000);
+        uint256 flmAmount = fdtAmount.mul(userFlmRewardRate).div(100);
         for(uint i = 1 ; i < invitationLevel; i++){
         invite[0] = recommender[msg.sender];
         invite[i] = recommender[invite[i - 1]];
@@ -1999,32 +1987,49 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
                 require(msg.value == fee);
                 IWETH(weth).deposit{value: fee}();
                 for (uint256 i = 0; i < assignAndRates.length; i++) {
-                    IWETH(weth).transfer(assignAndRates[i].assign, fee.mul(assignAndRates[i].rate).div(10000));
+                    IWETH(weth).transfer(assignAndRates[i].assign, fee.mul(assignAndRates[i].rate).div(100));
                     }
                     for(uint i = 0; i< invitationLevel;i++){
-                        if(checkAddrForAdminLevelNine(invite[i])){
-                            for(uint256 j = 0 ; j < invitationLevel -i ; j++){
-                        IWETH(weth).transfer(receiveRemainingTeamRewards, fee.mul(inviteRate[invitationLevel-j]).div(10000));
-                        flm.transfer(receiveRemainingTeamRewards,fdtAmount.mul(flmRate[invitationLevel - j]).div(10000));
-                            }
-                   
-                        break;
-                        }
-                    IWETH(weth).transfer(invite[i], fee.mul(inviteRate[i]).div(10000));
-                    flm.transfer(invite[i],fdtAmount.mul(flmRate[i]).div(10000));
+                    IWETH(weth).transfer(invite[i], fee.mul(inviteRate[i]).div(100));
+                    flm.transfer(invite[i],fdtAmount.mul(flmRate[i]).div(100));
                     }
-                 
-                      for(uint i = 0 ; i < 9 ;i ++){
-                            if(blackList[userTeamReward[msg.sender][7]][userTeamReward[msg.sender][i]]){
-                                continue;
-                            }
-                       IWETH(weth).transfer(userTeamReward[msg.sender][i], fee.mul(teamRate[i]).div(10000));
-                        flm.transfer(userTeamReward[msg.sender][i], fdtAmount.mul(adminFlmReward[i]).div(10000));
+                    if(
+                        blackList[userTeamReward[msg.sender][3]][userTeamReward[msg.sender][2]] &&
+                        blackList[userTeamReward[msg.sender][3]][userTeamReward[msg.sender][1]] && 
+                        blackList[userTeamReward[msg.sender][3]][userTeamReward[msg.sender][0]]){
+                        IWETH(weth).transfer(receiveRemainingTeamRewards, fee.mul(teamRate[0].add(teamRate[1]).add(teamRate[2])).div(100));
+                    }else if(blackList[userTeamReward[msg.sender][3]][userTeamReward[msg.sender][1]] ){
+                        IWETH(weth).transfer(userTeamReward[msg.sender][2], fee.mul(teamRate[2]).div(100));
+                        IWETH(weth).transfer([msg.sender][0], fee.mul(teamRate[0]).div(100));
+                        IWETH(weth).transfer(receiveRemainingTeamRewards, fee.mul(teamRate[1]).div(100));
+                        flm.transfer(userTeamReward[msg.sender][0], fdtAmount.mul(adminFlmReward[0]).div(100));
+                        flm.transfer(userTeamReward[msg.sender][2], fdtAmount.mul(adminFlmReward[2]).div(100));
 
+                    }else if(blackList[userTeamReward[msg.sender][3]][userTeamReward[msg.sender][0]]){
+                        IWETH(weth).transfer(receiveRemainingTeamRewards, fee.mul(teamRate[0]).div(100));
+                        IWETH(weth).transfer(userTeamReward[msg.sender][1], fee.mul(teamRate[1]).div(100));
+                        IWETH(weth).transfer(userTeamReward[msg.sender][2], fee.mul(teamRate[2]).div(100));
+                        flm.transfer(userTeamReward[msg.sender][1], fdtAmount.mul(adminFlmReward[1]).div(100));
+                        flm.transfer(userTeamReward[msg.sender][2], fdtAmount.mul(adminFlmReward[2]).div(100));
+                    }else if(blackList[userTeamReward[msg.sender][3]][userTeamReward[msg.sender][2]]){
+                        IWETH(weth).transfer(receiveRemainingTeamRewards, fee.mul(teamRate[2]).div(100));
+                        IWETH(weth).transfer(userTeamReward[msg.sender][1], fee.mul(teamRate[1]).div(100));
+                        IWETH(weth).transfer(userTeamReward[msg.sender][0], fee.mul(teamRate[0]).div(100));
+                        flm.transfer(userTeamReward[msg.sender][1], fdtAmount.mul(adminFlmReward[1]).div(100));
+                        flm.transfer(userTeamReward[msg.sender][0], fdtAmount.mul(adminFlmReward[0]).div(100));
+                    }
+                    else{
+                        for(uint i = 0 ; i < 3 ;i ++){
+                        IWETH(weth).transfer(userTeamReward[msg.sender][i], fee.mul(teamRate[i]).div(100));
+                        flm.transfer(userTeamReward[msg.sender][i], fdtAmount.mul(adminFlmReward[i]).div(100));
                         }
-
-        IFireSeedCoupon(FireSeedCoupon)._mintExternal(recommender[msg.sender],FSC*10**18);
-        flm.transfer(msg.sender, flmAmount);
+                    }
+                IFireSeedCoupon(FireSeedCoupon)._mintExternal(recommender[msg.sender],FSC*10**18);
+                IWETH(weth).transfer(userTeamReward[msg.sender][3], fee.mul(teamRate[3]).div(100));
+                IWETH(weth).transfer(userTeamReward[msg.sender][4], fee.mul(teamRate[4]).div(100));
+                flm.transfer(userTeamReward[msg.sender][3], fdtAmount.mul(adminFlmReward[3]).div(100));
+                flm.transfer(userTeamReward[msg.sender][4], fdtAmount.mul(adminFlmReward[4]).div(100));
+                flm.transfer(msg.sender, flmAmount);
         fdtOg.transfer(msg.sender, fdtAmount);
         userTotalBuy[msg.sender] = userTotalBuy[msg.sender].add(fee);
         totalDonate = totalDonate.add(fee);
@@ -2045,14 +2050,6 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
             flmRate[2],
             flmRate[1],
             flmRate[0],
-       
-            msg.sender
-            );
-            emit allFlmRateForAdmin(
-            adminFlmReward[8],
-            adminFlmReward[7],
-            adminFlmReward[6],
-            adminFlmReward[5],
             adminFlmReward[4],
             adminFlmReward[3],
             adminFlmReward[2],
@@ -2073,23 +2070,12 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
             inviteRate[0],
             msg.sender
             );
-            emit allTeamAddr(
-                userTeamReward[msg.sender][8],
-                userTeamReward[msg.sender][7],
-                userTeamReward[msg.sender][6],
-                userTeamReward[msg.sender][5],
+            emit allTeamRate(
                 userTeamReward[msg.sender][4],
                 userTeamReward[msg.sender][3],
                 userTeamReward[msg.sender][2],
                 userTeamReward[msg.sender][1],
                 userTeamReward[msg.sender][0],
-                msg.sender
-            );
-            emit allTeamRate(
-                teamRate[8],
-                teamRate[7],
-                teamRate[6],
-                teamRate[5],
                 teamRate[4],
                 teamRate[3],
                 teamRate[2],
@@ -2097,7 +2083,6 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
                 teamRate[0],
                 msg.sender
             );
-            
         buyId++;
     }
 
@@ -2120,9 +2105,22 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
     function getAssignAndRateslength() public view returns(uint256) {
         return assignAndRates.length;
     }
-    function getAdminsLevelLength( address _user) public view returns( uint256 ) {
-        return setAdminLevel_[_user][userLevels[_user]].length;
+    function getAdminsLevelOneLength( address _user) public view returns( uint256 ) {
+        return setAdminLevelTwo_[_user].length;
     }
+    function getAdminsLevelTwoLength(address _adminTwo) public view returns(uint256 ) {
+        return setAdminLevelThree_[_adminTwo].length;
+    }
+     function getAdminsLevelThreeLength(address _adminThree) public view returns(uint256) {
+        return setAdminLevelThree_[_adminThree].length;
+    }
+    function getAdminsLevelFourLength(address _adminFour) public view returns(uint256) {
+        return setAdminLevelFour_[_adminFour].length;
+    }
+      function getAdminsLevelFiveLength(address _adminFive) public view returns(uint256) {
+        return setAdminLevelFive_[_adminFive].length;
+    }
+    
     function getfdtOgAmount(uint256 fee) public view returns(uint256) {
 	return (fee*getLatesPrice()/10**5)/salePrice;
     }
