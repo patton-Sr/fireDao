@@ -626,7 +626,6 @@ pragma solidity  ^0.8.0;
 
 contract FireSeedCoupon is ERC20 , Ownable{
     address exchangeFireseed;
-    address ogContract;
     mapping(address => bool) allowAddr;
     constructor() ERC20("FSCoupon","FSC"){
     }
@@ -641,9 +640,7 @@ contract FireSeedCoupon is ERC20 , Ownable{
         require(allowAddr[msg.sender],"no access");
         _mint(_to, _amount);
     } 
-    function setOgContract(address _ogContract) public onlyOwner{
-        ogContract = _ogContract;
-    }
+  
     function setExchangeFireSeed(address _exchangeFireseed) public onlyOwner{
         exchangeFireseed = _exchangeFireseed;
     }
