@@ -1377,7 +1377,7 @@ interface IRainbowNft{
      function mint(address _to) external;
 }
 
-contract PrivateExchangePoolOgV5 is Ownable,Pausable ,ReentrancyGuard{
+contract PrivateExchangePoolOgV6 is Ownable,Pausable ,ReentrancyGuard{
 
     using SafeMath for uint256;
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -1385,7 +1385,9 @@ enum  AdminLevel {
     LevelTwo,
     LevelThree,
     LevelFour,
-    LevelFive
+    LevelFive,
+    LevelSix,
+    LevelSeven
 }
   uint256 constant private invitationLevel = 7;
     struct assignAndRate {
@@ -1459,6 +1461,8 @@ enum  AdminLevel {
         address user
     );
     event allFlmRateForAdmin(
+        uint256 adminFlmRate6,
+        uint256 adminFlmRate5,
         uint256 adminFlmRate4,
         uint256 adminFlmRate3,
         uint256 adminFlmRate2,
@@ -1628,7 +1632,13 @@ enum  AdminLevel {
     function checkAddrForAdminLevelFive(address _user) public view returns(bool){
         return checkAdminLevel(AdminLevel.LevelFive, _user);
     }
- 
+      function checkAddrForAdminLevelSix(address _user) public view returns(bool){
+        return checkAdminLevel(AdminLevel.LevelSix, _user);
+    }
+    function checkAddrForAdminLevelSeven(address _user) public view returns(bool){
+        return checkAdminLevel(AdminLevel.LevelSeven, _user);
+
+    }
     function checkTeamUser(address _user) public view returns(bool) {
         address team = recommender[_user];
         for(uint256 i = 0 ;i < 9 ;i++){
@@ -1686,6 +1696,14 @@ function setAdmin(AdminLevel _level, address[] memory _addr) internal {
     function setAdminLevelFive(address[] memory _addr) public onlyAdmin(AdminLevel.LevelFour) {
      setAdmin(AdminLevel.LevelFive, _addr);
     }
+    function setAdminLevelSix(address[] memory _addr) public onlyAdmin(AdminLevel.LevelFive)  {
+     setAdmin(AdminLevel.LevelSix, _addr);
+    
+    }
+   function setAdminLevelSeven(address[] memory _addr) public onlyAdmin(AdminLevel.LevelSix)  {
+     setAdmin(AdminLevel.LevelSeven, _addr);
+      
+    }
   
 
 function removeAdmin(AdminLevel _level, address _addr)  internal{
@@ -1716,6 +1734,12 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
     function removeAdminLevelFive(address _addr) public onlyAdmin(AdminLevel.LevelFour){
          removeAdmin(AdminLevel.LevelFive, _addr);
     } 
+       function removeAdminLevelSix(address _addr) public onlyAdmin(AdminLevel.LevelFive){
+         removeAdmin(AdminLevel.LevelSix, _addr);
+    }  
+    function removeAdminLevelSeven(address _addr) public onlyAdmin(AdminLevel.LevelSix){
+         removeAdmin(AdminLevel.LevelSeven, _addr);
+    }  
 
     function getUserLevel(address _user) internal view returns (uint8) {
     if (_user == owner()) return 1;
@@ -1723,6 +1747,8 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
     if (checkAddrForAdminLevelThree(_user)) return 3;
     if (checkAddrForAdminLevelFour(_user)) return 4;
     if (checkAddrForAdminLevelFive(_user)) return 5;
+     if (checkAddrForAdminLevelSix(_user)) return 6;
+    if (checkAddrForAdminLevelSeven(_user)) return 7;
     return 0;
 }
     function getMax(address _user) internal view returns(uint256) {
@@ -1916,11 +1942,11 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
                     TransferHelper.safeTransfer(address(flm),invite[i],fdtAmount.mul(flmRate[i]).div(10000));
                     }
                  
-                      for(uint i = 0 ; i < 5 ;i ++){
-                            if(blackList[userTeamReward[msg.sender][3]][userTeamReward[msg.sender][i]]){
+                      for(uint i = 0 ; i < 7 ;i ++){
+                            if(blackList[userTeamReward[msg.sender][5]][userTeamReward[msg.sender][i]]){
                                 continue;
                             }
-                     IERC20(usdt).transfer(userTeamReward[msg.sender][i], fee.mul(teamRate[i]).div(10000));
+                        IERC20(usdt).transfer(userTeamReward[msg.sender][i], fee.mul(teamRate[i]).div(10000));
                         TransferHelper.safeTransfer(address(flm),userTeamReward[msg.sender][i],fdtAmount.mul(adminFlmReward[i]).div(10000));
                         }
 
@@ -1949,10 +1975,11 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
             flmRate[2],
             flmRate[1],
             flmRate[0],
-       
             msg.sender
             );
             emit allFlmRateForAdmin(
+            adminFlmReward[6],
+            adminFlmReward[5],
             adminFlmReward[4],
             adminFlmReward[3],
             adminFlmReward[2],
