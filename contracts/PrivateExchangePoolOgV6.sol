@@ -1917,7 +1917,7 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
             activateAccount.add(msg.sender);
         }
         address[invitationLevel] memory invite;
-        uint256 fdtAmount = fee.div(salePrice).mul(1000);
+        uint256 fdtAmount = fee.mul(1000).div(salePrice);
         uint256 usdtAmount = fee;
         uint256 flmAmount = fdtAmount.mul(userFlmRewardRate).div(10000);
         invite[0] = recommender[msg.sender];
