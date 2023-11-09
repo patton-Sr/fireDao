@@ -1,27 +1,47 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional
-// but useful for running the script in a standalone fashion through `node <script>`.
-//
-// You can also run a script with `npx hardhat run <script>`. If you do that, Hardhat
-// will compile your contracts, add the Hardhat Runtime Environment's members to the
-// global scope, and execute the script.
-const hre = require("hardhat");
+const { ethers, upgrades } = require("hardhat");
+const fs = require("fs");
+const path = require("path");
+
+async function deployAllContracts() {
+    const contractFolder = "../contracts/nfts"; // 文件夹路径，你可以根据实际情况修改
+    const deployedContractAddresses = [];
+
+    const files = fs.readdirSync(contractFolder);
+    
+    for (const file of files) {
+        if (file.endsWith(".sol")) {
+            const contractName = path.basename(file, ".sol");
+            console.log(`Deploying contract: ${contractName}`);
+
+            const Contract = await ethers.getContractFactory(contractName);
+
+            // If you want to deploy an upgradable contract, you can use the following code instead:
+            // const Contract = await upgrades.deployProxy(await ethers.getContractFactory(contractName));
+
+            const contract = await Contract.deploy();
+            await contract.deployed();
+
+            const contractAddress = contract.address;
+            console.log(`Contract ${contractName} address: ${contractAddress}`);
+            deployedContractAddresses.push({ contractName, contractAddress });
+        }
+    }
+
+    return deployedContractAddresses;
+}
 
 async function main() {
-  const [deployer] = await ethers.getSigners();
+    const deployedAddresses = await deployAllContracts();
 
-  console.log("Deploying contracts with the account:", deployer.address);
-
-  console.log("Account balance:", (await deployer.getBalance()).toString());
-
-  const TreasuryDistribution = await ethers.getContractFactory("TreasuryDistribution");
-  const treasuryDistribution = await TreasuryDistribution.deploy();
-
-  console.log("Token address:", treasuryDistribution.address);
+    console.log("All contracts deployed:");
+    deployedAddresses.forEach(({ contractName, contractAddress }) => {
+        console.log(`Contract ${contractName} address: ${contractAddress}`);
+    });
 }
 
 main()
-  .then(() => process.exit(0))
-  .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  });
+    .then(() => process.exit(0))
+    .catch((error) => {
+        console.error(error);
+        process.exit(1);
+    });

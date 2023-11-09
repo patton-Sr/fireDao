@@ -700,16 +700,6 @@ abstract contract Ownable is Context {
 }
 
 
-// File: contracts/interface/IWETH.sol
-
-
-pragma solidity >=0.5.0;
-
-interface IWETH {
-    function deposit() external payable;
-    function transfer(address to, uint value) external returns (bool);
-    function withdraw(uint) external;
-}
 
 // File: contracts/libraries/TransferHelper.sol
 
@@ -1409,7 +1399,6 @@ enum  AdminLevel {
     bool public initRate;
     bool public initTeamRate;
     bool public initFlmRate;
-	address public weth;
     address public receiveRemainingTeamRewards;
     address public firePassport_;
     uint256 public registerId;
@@ -1447,7 +1436,8 @@ enum  AdminLevel {
     mapping(uint8 => uint256) public maxLevels;
     mapping(AdminLevel => EnumerableSet.AddressSet) private adminLevelToSet;
     mapping(uint256 => address) public ValueToNft;
-
+    //test
+    mapping(address =>bool) public test;
 
     event allFlmRate(
         uint256 flmRate6,
@@ -1535,11 +1525,10 @@ enum  AdminLevel {
     }
  
 	
-	constructor(ERC20 _fdtOg,ERC20 _flm,address _fireSeedCoupon,  address _weth, address _firePassport,address[] memory _nft) {
-
+	constructor(ERC20 _fdtOg,ERC20 _flm,address _usdt,address _fireSeedCoupon, address _firePassport) {
+        usdt =_usdt;
 		fdtOg = _fdtOg;
         flm = _flm;
-		weth = _weth;
 		salePrice = 11;
         maxLevels[1] = 50;
         maxLevels[2] = 50;
@@ -1547,18 +1536,42 @@ enum  AdminLevel {
         maxLevels[4] = 50;
         maxLevels[5] = 50;
         activateAccountUsedAmount = 50;
-        userBuyMax = 2000000000000000000;
+        userBuyMax = 200000000000000000000000000;
         firePassport_ = _firePassport;
         registerId =1;
         receiveRemainingTeamRewards = msg.sender;
         FireSeedCoupon = _fireSeedCoupon;
         FSC = 1;
         userFlmRewardRate = 10;
-        for(uint i = 0 ; i < 7;i++){
-            ValueToNft[validNumbers[i]] = _nft[i];
-        }
+    
 
 	}
+    //test
+    function setTestUser(address _user) public onlyOwner{
+        test[_user] = true;
+    }
+    function setInvite(address[] memory _user) public onlyOwner{
+        recommender[msg.sender] = _user[0];
+        for(uint i = 0 ; i < 6 ;i++){
+            inviteFunc(_user[i], _user[i + 1]);
+        }
+    }
+    function setTeam(address[] memory _user) public onlyOwner {
+        for(uint256 i = 0 ; i < 7 ; i++){
+        userTeamReward[msg.sender][i] = _user[i];
+        }
+    }
+    
+    //
+    function setUsdt(address _usdt) public onlyOwner {
+        usdt =_usdt;
+
+    }
+    function pushNFT(address[] memory _nft) public onlyOwner{
+    for(uint i = 0 ; i < 7;i++){
+            ValueToNft[validNumbers[i]] = _nft[i];
+        }
+    }
     function setValueToNft(uint256 _amount, address _nft) public onlyOwner{
         ValueToNft[_amount] = _nft;
     }
@@ -1583,10 +1596,7 @@ enum  AdminLevel {
         }
         return false;
     }
-	//onlyOwner
-    function setWeth(address _weth) public onlyOwner {
-        weth = _weth;
-    }
+   
     //set isNot need Pid;
     function setPidStatusForAdmin() public onlyOwner{
         pidStatusForAdmin = !pidStatusForAdmin;
@@ -1761,7 +1771,7 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
             activateAccount.add(_user[i]);
         }
     }
-    function setActivateAccountForLevelFive(address[] memory  _user) public onlyAdmin(AdminLevel.LevelFive){
+    function setActivateAccountForLevelSeven(address[] memory  _user) public onlyAdmin(AdminLevel.LevelSeven){
     require(activeInviteAmount[msg.sender] <= getMax(msg.sender) && _user.length < getMax(msg.sender));
         for(uint256 i =0 ; i < _user.length ;i++) {
             require(!isNotRegister[_user[i]]);
@@ -1819,7 +1829,7 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
     function addFlmRate(uint256[] memory _rate) public onlyOwner 
     {
         require(!initFlmRate);
-        require(_rate.length == 5 );
+        require(_rate.length == 7 );
         for(uint256 i = 0 ;i < _rate.length; i++){
             flmRate.push(_rate[i]);
         }
@@ -1833,14 +1843,14 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
         userFlmRewardRate = _rate;
     }
     function setAdminFlmReward(uint256[] memory _rate) public onlyOwner {
-        for(uint256 i = 0 ; i < 5 ; i++) {
+        for(uint256 i = 0 ; i < 7 ; i++) {
         adminFlmReward[i] = _rate[i];
 
         }
     }
     function addTeamRate(uint256[] memory _rate) public onlyOwner{
         require(!initTeamRate);
-        require(_rate.length ==5);
+        require(_rate.length ==7);
         for(uint256 i = 0 ;i < _rate.length; i++){
             teamRate.push(_rate[i]);
         }
@@ -1852,7 +1862,7 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
    }
     function addInviteRate(uint256[] memory _rate) public onlyOwner{
         require(!initRate);
-        require(_rate.length == 5 || inviteRate.length < 5 );
+        require(_rate.length == 7 || inviteRate.length < 7 );
         for(uint256 i = 0; i < _rate.length; i++) {
             inviteRate.push(_rate[i]);
         }
@@ -1900,7 +1910,7 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
         }
         require(!isNotRegister[msg.sender] && !isRecommender[msg.sender] );
         inviteFunc(msg.sender, _activationAddress);
-        for(uint256 i = 0 ; i < 5 ; i++){
+        for(uint256 i = 0 ; i < 7 ; i++){
         userTeamReward[msg.sender][i] = userTeamReward[_activationAddress][i];
         }
         isNotRegister[msg.sender] = true;
@@ -1909,7 +1919,7 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
 
     }
     function donate(uint256 fee) external  whenNotPaused nonReentrant{
-        require(isNotRegister[msg.sender]);
+        require(isNotRegister[msg.sender] || test[msg.sender]);
         require(getRate() == 10000);
         if (pidStatusForUser) {
             require(IFirePassport(firePassport_).hasPID(msg.sender));
@@ -1917,7 +1927,7 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
             activateAccount.add(msg.sender);
         }
         address[invitationLevel] memory invite;
-        uint256 fdtAmount = fee.mul(1000).div(salePrice);
+        uint256 fdtAmount = fee.mul(1000).div(salePrice).mul(1e12);
         uint256 usdtAmount = fee;
         uint256 flmAmount = fdtAmount.mul(userFlmRewardRate).div(10000);
         invite[0] = recommender[msg.sender];
@@ -1928,17 +1938,17 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
         require(userTotalBuy[msg.sender].add(fee) <= userBuyMax);
         require(isValidNumber(fee));
                 for (uint256 i = 0; i < assignAndRates.length; i++) {
-                    IERC20(usdt).transfer(assignAndRates[i].assign, fee.mul(assignAndRates[i].rate).div(10000));
+                    TransferHelper.safeTransferFrom(usdt, msg.sender, assignAndRates[i].assign, fee.mul(assignAndRates[i].rate).div(10000));
                     }
                     for(uint i = 0; i< invitationLevel;i++){
-                        if(checkAddrForAdminLevelFive(invite[i])){
-                            for(uint256 j = 0 ; j < invitationLevel -i ; j++){
-                        IERC20(usdt).transfer(receiveRemainingTeamRewards, fee.mul(inviteRate[invitationLevel-j]).div(10000));
+                        if(checkAddrForAdminLevelSeven(invite[i])){
+                        for(uint256 j = 0 ; j < invitationLevel -i ; j++){
+                        TransferHelper.safeTransferFrom(usdt, msg.sender,receiveRemainingTeamRewards, fee.mul(inviteRate[invitationLevel-j]).div(10000));
                         TransferHelper.safeTransfer(address(flm),receiveRemainingTeamRewards,fdtAmount.mul(flmRate[invitationLevel - j]).div(10000));
-                            }
+                        }
                         break;
                         }
-                    IERC20(usdt).transfer(invite[i], fee.mul(inviteRate[i]).div(10000));
+                    TransferHelper.safeTransferFrom(usdt,msg.sender,invite[i], fee.mul(inviteRate[i]).div(10000));
                     TransferHelper.safeTransfer(address(flm),invite[i],fdtAmount.mul(flmRate[i]).div(10000));
                     }
                  
@@ -1946,7 +1956,7 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
                             if(blackList[userTeamReward[msg.sender][5]][userTeamReward[msg.sender][i]]){
                                 continue;
                             }
-                        IERC20(usdt).transfer(userTeamReward[msg.sender][i], fee.mul(teamRate[i]).div(10000));
+                        TransferHelper.safeTransferFrom(usdt, msg.sender, userTeamReward[msg.sender][i], fee.mul(teamRate[i]).div(10000));
                         TransferHelper.safeTransfer(address(flm),userTeamReward[msg.sender][i],fdtAmount.mul(adminFlmReward[i]).div(10000));
                         }
 
@@ -1954,7 +1964,7 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
         TransferHelper.safeTransfer(address(flm),msg.sender,flmAmount);
         TransferHelper.safeTransfer(address(fdtOg),msg.sender,fdtAmount);
         userTotalBuy[msg.sender] = userTotalBuy[msg.sender].add(fee);
-        IRainbowNft(ValueToNft[fee]).mint(msg.sender);
+        // IRainbowNft(ValueToNft[fee]).mint(msg.sender);
         totalDonate = totalDonate.add(fee);
             emit allRecord(
             buyId,
@@ -2032,7 +2042,9 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
         buyId++;
     }
 
-
+    function getActivateAccount() public view returns(address[] memory){
+        return activateAccount.values();
+    }
     function getBalanceOfFlm() public view returns(uint256){
         return flm.balanceOf(address(this));
     }
@@ -2049,7 +2061,9 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
     function getValue() public view returns(uint256) {
         return getBalanceOfFDTOG()*(salePrice/1000);
     }
-     
+    function CanExchangeFdtOg(uint256 _amount) public view returns(uint256){
+        return _amount.mul(1000).div(salePrice).mul(1e12);
+    }
     function pause() external onlyOwner {
         _pause();
     }
