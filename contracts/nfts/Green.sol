@@ -2272,7 +2272,7 @@ contract Green is ERC721,Ownable,ReentrancyGuard{
     mapping(address => bool) public Casted;
     event record(uint256 id,address addr);
     constructor() ERC721("Green", "Green"){
-    baseURI = "11";
+    baseURI = "https://bafybeifkfr7v5be2t4tiwn45kdni4yl7llyobs7bl5xvuuz3vyiggaiumy.ipfs.nftstorage.link/";
     initAmount = 900;
 }
    function getStatus()external view returns(bool){

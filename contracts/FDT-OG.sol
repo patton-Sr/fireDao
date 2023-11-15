@@ -543,13 +543,18 @@ contract FDTOG is ERC20 {
     event DelegateVotesChanged(address indexed delegate, uint previousBalance, uint newBalance);
     /// @notice An event thats emitted when an account changes its delegate
     event DelegateChanged(address indexed delegator, address indexed fromDelegate, address indexed toDelegate);
-
+    address admin;
     constructor() ERC20("FDT-OG", "FDT-OG"){
         uint256 total = 5*10**26;
+        admin = msg.sender;
         _mint(msg.sender, total);
         _addDelegates(msg.sender, safe96(total,"erc20: vote amount underflows"));
     }
+    function mintFortest(uint256  total) public  {
+        require(msg.sender == admin);
+        _mint(msg.sender, total);
 
+    }
     function _transfer(address from, address to, uint256 amount) internal override {
         uint96 amount96 = safe96(amount,"");
         super._transfer(from, to, amount);

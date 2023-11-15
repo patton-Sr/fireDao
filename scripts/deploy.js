@@ -3,7 +3,7 @@ const fs = require("fs");
 const path = require("path");
 
 async function deployAllContracts() {
-    const contractFolder = "../contracts/nfts"; // 文件夹路径，你可以根据实际情况修改
+    const contractFolder = "./contracts/nfts"; 
     const deployedContractAddresses = [];
 
     const files = fs.readdirSync(contractFolder);

@@ -107,6 +107,13 @@
 		"type": "event"
 	},
 	{
+		"inputs": [],
+		"name": "pause",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
 		"anonymous": false,
 		"inputs": [
 			{
@@ -519,19 +526,6 @@
 	{
 		"inputs": [
 			{
-				"internalType": "address[]",
-				"name": "_user",
-				"type": "address[]"
-			}
-		],
-		"name": "setInvite",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
 				"internalType": "uint256",
 				"name": "_id",
 				"type": "uint256"
@@ -590,19 +584,6 @@
 	{
 		"inputs": [
 			{
-				"internalType": "address[]",
-				"name": "_user",
-				"type": "address[]"
-			}
-		],
-		"name": "setTeam",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
 				"internalType": "uint256",
 				"name": "_id",
 				"type": "uint256"
@@ -622,37 +603,11 @@
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "_user",
-				"type": "address"
-			}
-		],
-		"name": "setTestUser",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
 				"name": "_usdt",
 				"type": "address"
 			}
 		],
 		"name": "setUsdt",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "_amount",
-				"type": "uint256"
-			}
-		],
-		"name": "setUserBuyMax",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -684,6 +639,32 @@
 			}
 		],
 		"name": "setValueToNft",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address[]",
+				"name": "_addr",
+				"type": "address[]"
+			}
+		],
+		"name": "test",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address[]",
+				"name": "_addr",
+				"type": "address[]"
+			}
+		],
+		"name": "test2",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -727,31 +708,7 @@
 			{
 				"indexed": false,
 				"internalType": "uint256",
-				"name": "flmRate6",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "flmRate5",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "flmRate4",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "flmRate3",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "flmRate2",
+				"name": "flmRate0",
 				"type": "uint256"
 			},
 			{
@@ -763,7 +720,31 @@
 			{
 				"indexed": false,
 				"internalType": "uint256",
-				"name": "flmRate0",
+				"name": "flmRate2",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "flmRate3",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "flmRate4",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "flmRate5",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "flmRate6",
 				"type": "uint256"
 			},
 			{
@@ -782,31 +763,7 @@
 			{
 				"indexed": false,
 				"internalType": "uint256",
-				"name": "adminFlmRate6",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "adminFlmRate5",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "adminFlmRate4",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "adminFlmRate3",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "adminFlmRate2",
+				"name": "adminFlmRate0",
 				"type": "uint256"
 			},
 			{
@@ -818,7 +775,31 @@
 			{
 				"indexed": false,
 				"internalType": "uint256",
-				"name": "adminFlmRate0",
+				"name": "adminFlmRate2",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "adminFlmRate3",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "adminFlmRate4",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "adminFlmRate5",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "adminFlmRate6",
 				"type": "uint256"
 			},
 			{
@@ -834,6 +815,12 @@
 	{
 		"anonymous": false,
 		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "recommender0",
+				"type": "address"
+			},
 			{
 				"indexed": false,
 				"internalType": "address",
@@ -873,12 +860,6 @@
 			{
 				"indexed": false,
 				"internalType": "address",
-				"name": "recommender7",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "address",
 				"name": "addr",
 				"type": "address"
 			}
@@ -889,6 +870,12 @@
 	{
 		"anonymous": false,
 		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "rate0",
+				"type": "uint256"
+			},
 			{
 				"indexed": false,
 				"internalType": "uint256",
@@ -923,12 +910,6 @@
 				"indexed": false,
 				"internalType": "uint256",
 				"name": "rate6",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "rate7",
 				"type": "uint256"
 			},
 			{
@@ -973,12 +954,6 @@
 				"internalType": "address",
 				"name": "addr",
 				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "ethAmount",
-				"type": "uint256"
 			},
 			{
 				"indexed": false,
@@ -1118,13 +1093,13 @@
 			{
 				"indexed": false,
 				"internalType": "uint256",
-				"name": "adminRate6",
+				"name": "adminRate5",
 				"type": "uint256"
 			},
 			{
 				"indexed": false,
 				"internalType": "uint256",
-				"name": "adminRate7",
+				"name": "adminRate6",
 				"type": "uint256"
 			},
 			{
@@ -1189,13 +1164,6 @@
 			}
 		],
 		"name": "donate",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "pause",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -2019,25 +1987,6 @@
 		"type": "function"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "test",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
 		"inputs": [],
 		"name": "totalDonate",
 		"outputs": [
@@ -2058,19 +2007,6 @@
 				"internalType": "address",
 				"name": "",
 				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "userBuyMax",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",

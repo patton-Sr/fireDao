@@ -2272,7 +2272,7 @@ contract Purple is ERC721,Ownable,ReentrancyGuard{
     mapping(address => bool) public Casted;
     event record(uint256 id,address addr);
     constructor() ERC721("Purple", "Purple"){
-    baseURI = "11";
+    baseURI = "https://bafybeihgki2wjhwpfy7zbb3ogfshws6pxttgm5ghhbrkmysacnlsw7kyaq.ipfs.nftstorage.link/";
     initAmount = 900;
 }
    function getStatus()external view returns(bool){

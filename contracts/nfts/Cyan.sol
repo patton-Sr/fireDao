@@ -2272,7 +2272,7 @@ contract Cyan is ERC721,Ownable,ReentrancyGuard{
     mapping(address => bool) public Casted;
     event record(uint256 id,address addr);
     constructor() ERC721("Cyan", "Cyan"){
-    baseURI = "11";
+    baseURI = "https://bafybeigocpijf7dyj2i2qqjgrlmhs4pohu5vjhpcfn4dgece574rcyu3la.ipfs.nftstorage.link/";
     initAmount = 900;
 }
    function getStatus()external view returns(bool){

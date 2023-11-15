@@ -2272,7 +2272,7 @@ contract Red is ERC721,Ownable,ReentrancyGuard{
     mapping(address => bool) public Casted;
     event record(uint256 id,address addr);
     constructor() ERC721("Red", "Red"){
-    baseURI = "11";
+    baseURI = "https://bafybeiewtbt6bvpvnwy6xggeonmkn7uk7mtl62lnm4jayhx76ahfvk5tqi.ipfs.nftstorage.link/";
     initAmount = 900;
 }
    function getStatus()external view returns(bool){

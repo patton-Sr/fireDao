@@ -2272,7 +2272,7 @@ contract Orange is ERC721,Ownable,ReentrancyGuard{
     mapping(address => bool) public Casted;
     event record(uint256 id,address addr);
     constructor() ERC721("Orange", "Orange"){
-    baseURI = "11";
+    baseURI = "https://bafybeiad7ceyci2mlkyxyvilnv2n2fkwb53lpmt6kjk7jrdo65qozys4r4.ipfs.nftstorage.link/";
     initAmount = 900;
 }
    function getStatus()external view returns(bool){

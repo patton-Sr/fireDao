@@ -2272,7 +2272,7 @@ contract Blue is ERC721,Ownable,ReentrancyGuard{
     mapping(address => bool) public Casted;
     event record(uint256 id,address addr);
     constructor() ERC721("Blue", "Blue"){
-    baseURI = "11";
+    baseURI = "https://bafybeifxoke7kdfqzndfnnrzdjqgqxvpty2ceuxggnvhlp5md5eqbvfmcm.ipfs.nftstorage.link/";
     initAmount = 900;
 }
    function getStatus()external view returns(bool){

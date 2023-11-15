@@ -1359,7 +1359,7 @@ library SafeMath {
 
 
 //	SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity  =0.8.18;
 interface IFireSeedCoupon {
     function _mintExternal(address _to, uint256 _amount) external;
 }
@@ -1404,7 +1404,6 @@ enum  AdminLevel {
     uint256 public registerId;
 	uint256 public salePrice;
     uint256 public activateAccountUsedAmount;
-    uint256 public userBuyMax;
     uint256[] public inviteRate;
     uint256[] public teamRate;
     uint256[] public flmRate;
@@ -1436,48 +1435,46 @@ enum  AdminLevel {
     mapping(uint8 => uint256) public maxLevels;
     mapping(AdminLevel => EnumerableSet.AddressSet) private adminLevelToSet;
     mapping(uint256 => address) public ValueToNft;
-    //test
-    mapping(address =>bool) public test;
+
 
     event allFlmRate(
-        uint256 flmRate6,
-        uint256 flmRate5,
-        uint256 flmRate4,
-        uint256 flmRate3,
-        uint256 flmRate2,
-        uint256 flmRate1,
         uint256 flmRate0,
-  
+        uint256 flmRate1,
+        uint256 flmRate2,
+        uint256 flmRate3,
+        uint256 flmRate4,
+        uint256 flmRate5,
+        uint256 flmRate6,
         address user
     );
     event allFlmRateForAdmin(
-        uint256 adminFlmRate6,
-        uint256 adminFlmRate5,
-        uint256 adminFlmRate4,
-        uint256 adminFlmRate3,
-        uint256 adminFlmRate2,
-        uint256 adminFlmRate1,
         uint256 adminFlmRate0,
+        uint256 adminFlmRate1,
+        uint256 adminFlmRate2,
+        uint256 adminFlmRate3,
+        uint256 adminFlmRate4,
+        uint256 adminFlmRate5,
+        uint256 adminFlmRate6,
         address user
     );
     event allInviteAddr(
+        address recommender0,
         address recommender1,
         address recommender2,
         address recommender3,
         address recommender4,
         address recommender5,
         address recommender6,
-        address recommender7,
         address addr
     );
     event allInviteRate (
-          uint256 rate1,
+        uint256 rate0,
+        uint256 rate1,
         uint256 rate2,
         uint256 rate3,
         uint256 rate4,
         uint256 rate5,
         uint256 rate6,
-        uint256 rate7,
         address addr
    );
     event allRecord(
@@ -1486,7 +1483,6 @@ enum  AdminLevel {
         uint256 salePrice,
         address recommender,
         address addr,
-        uint256 ethAmount,
         uint256 usdtAmount,
         uint256 fdtAmount,
         uint256 flmAmount
@@ -1508,8 +1504,8 @@ enum  AdminLevel {
             uint256 adminRate2,
             uint256 adminRate3,
             uint256 adminRate4,
+            uint256 adminRate5,
             uint256 adminRate6,
-            uint256 adminRate7,
             address addr
         );
 
@@ -1535,8 +1531,9 @@ enum  AdminLevel {
         maxLevels[3] = 50;
         maxLevels[4] = 50;
         maxLevels[5] = 50;
+        maxLevels[6] = 50;
+        maxLevels[7] = 50;
         activateAccountUsedAmount = 50;
-        userBuyMax = 200000000000000000000000000;
         firePassport_ = _firePassport;
         registerId =1;
         receiveRemainingTeamRewards = msg.sender;
@@ -1546,23 +1543,8 @@ enum  AdminLevel {
     
 
 	}
-    //test
-    function setTestUser(address _user) public onlyOwner{
-        test[_user] = true;
-    }
-    function setInvite(address[] memory _user) public onlyOwner{
-        recommender[msg.sender] = _user[0];
-        for(uint i = 0 ; i < 6 ;i++){
-            inviteFunc(_user[i], _user[i + 1]);
-        }
-    }
-    function setTeam(address[] memory _user) public onlyOwner {
-        for(uint256 i = 0 ; i < 7 ; i++){
-        userTeamReward[msg.sender][i] = _user[i];
-        }
-    }
+   
     
-    //
     function setUsdt(address _usdt) public onlyOwner {
         usdt =_usdt;
 
@@ -1604,9 +1586,7 @@ enum  AdminLevel {
     function setPidStatusForUser() public onlyOwner {
         pidStatusForUser = !pidStatusForUser;
     }
-    function setUserBuyMax(uint256 _amount) public onlyOwner{
-        userBuyMax = _amount;
-    }
+
     function setFlmAddress(ERC20 _flm) public onlyOwner {
         flm = _flm;
     }
@@ -1779,8 +1759,8 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
             activateAccount.add(_user[i]);
             inviteFunc(_user[i],msg.sender);
             activeInviteAmount[msg.sender] = activeInviteAmount[msg.sender].add(1);
-            for(uint256 j = 1 ; j < 5 ; j ++){
-                userTeamReward[_user[i]][0] = msg.sender; 
+            userTeamReward[_user[i]][0] = msg.sender; 
+            for(uint256 j = 1 ; j < 7 ; j ++){
                 userTeamReward[_user[i]][j] = recommender[userTeamReward[_user[i]][j - 1 ]];
             }
             emit allRegister(0, msg.sender, _user[i]);
@@ -1918,14 +1898,16 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
         registerId++;
 
     }
+ 
     function donate(uint256 fee) external  whenNotPaused nonReentrant{
-        require(isNotRegister[msg.sender] || test[msg.sender]);
+        require(isNotRegister[msg.sender]);
         require(getRate() == 10000);
         if (pidStatusForUser) {
             require(IFirePassport(firePassport_).hasPID(msg.sender));
         }else if(!checkAddrForActivateAccount(msg.sender)){
             activateAccount.add(msg.sender);
         }
+        bool shouldBreak = false;
         address[invitationLevel] memory invite;
         uint256 fdtAmount = fee.mul(1000).div(salePrice).mul(1e12);
         uint256 usdtAmount = fee;
@@ -1934,37 +1916,41 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
         for(uint i = 1 ; i < invitationLevel; i++){
         invite[i] = recommender[invite[i - 1]];
         }
-        require(fdtAmount <= getBalanceOfFDTOG());
-        require(userTotalBuy[msg.sender].add(fee) <= userBuyMax);
         require(isValidNumber(fee));
+            TransferHelper.safeTransferFrom(usdt,msg.sender, address(this),fee);
                 for (uint256 i = 0; i < assignAndRates.length; i++) {
-                    TransferHelper.safeTransferFrom(usdt, msg.sender, assignAndRates[i].assign, fee.mul(assignAndRates[i].rate).div(10000));
+                    TransferHelper.safeTransfer(usdt, assignAndRates[i].assign, fee.mul(assignAndRates[i].rate).div(10000));
                     }
+          
                     for(uint i = 0; i< invitationLevel;i++){
                         if(checkAddrForAdminLevelSeven(invite[i])){
-                        for(uint256 j = 0 ; j < invitationLevel -i ; j++){
-                        TransferHelper.safeTransferFrom(usdt, msg.sender,receiveRemainingTeamRewards, fee.mul(inviteRate[invitationLevel-j]).div(10000));
-                        TransferHelper.safeTransfer(address(flm),receiveRemainingTeamRewards,fdtAmount.mul(flmRate[invitationLevel - j]).div(10000));
+                            for(uint256 j = 0 ; j < invitationLevel - i ; j++){
+                                if(j + 1 == invitationLevel - i){
+                                    shouldBreak =true;
+                                }
+                            TransferHelper.safeTransfer(usdt, receiveRemainingTeamRewards, fee.mul(inviteRate[invitationLevel - j - 1]).div(10000));
+                            TransferHelper.safeTransfer(address(flm),receiveRemainingTeamRewards,fdtAmount.mul(flmRate[invitationLevel - j -1]).div(10000));
+                            }
                         }
-                        break;
+                        if(shouldBreak){
+                            break;
                         }
-                    TransferHelper.safeTransferFrom(usdt,msg.sender,invite[i], fee.mul(inviteRate[i]).div(10000));
-                    TransferHelper.safeTransfer(address(flm),invite[i],fdtAmount.mul(flmRate[i]).div(10000));
+                        TransferHelper.safeTransfer(usdt,invite[i], fee.mul(inviteRate[i]).div(10000));
+                        TransferHelper.safeTransfer(address(flm),invite[i],fdtAmount.mul(flmRate[i]).div(10000));
+                
                     }
-                 
-                      for(uint i = 0 ; i < 7 ;i ++){
+                      for(uint i = 0 ; i < invitationLevel ;i ++){
                             if(blackList[userTeamReward[msg.sender][5]][userTeamReward[msg.sender][i]]){
                                 continue;
                             }
-                        TransferHelper.safeTransferFrom(usdt, msg.sender, userTeamReward[msg.sender][i], fee.mul(teamRate[i]).div(10000));
+                        TransferHelper.safeTransfer(usdt,  userTeamReward[msg.sender][i], fee.mul(teamRate[i]).div(10000));
                         TransferHelper.safeTransfer(address(flm),userTeamReward[msg.sender][i],fdtAmount.mul(adminFlmReward[i]).div(10000));
                         }
-
         IFireSeedCoupon(FireSeedCoupon)._mintExternal(recommender[msg.sender],FSC*10**18);
         TransferHelper.safeTransfer(address(flm),msg.sender,flmAmount);
         TransferHelper.safeTransfer(address(fdtOg),msg.sender,fdtAmount);
         userTotalBuy[msg.sender] = userTotalBuy[msg.sender].add(fee);
-        // IRainbowNft(ValueToNft[fee]).mint(msg.sender);
+        IRainbowNft(ValueToNft[fee]).mint(msg.sender);
         totalDonate = totalDonate.add(fee);
             emit allRecord(
             buyId,
@@ -1972,50 +1958,48 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
             salePrice,
             recommender[msg.sender],
             msg.sender,
-            fee,
             usdtAmount,
             fdtAmount,
             flmAmount
             );
             emit allFlmRate(
-            flmRate[6],
+            flmRate[6],//admin 1
             flmRate[5],
             flmRate[4],
             flmRate[3],
             flmRate[2],
             flmRate[1],
-            flmRate[0],
+            flmRate[0],//admin7
             msg.sender
             );
             emit allFlmRateForAdmin(
-            adminFlmReward[6],
+            adminFlmReward[6], //admin1
             adminFlmReward[5],
             adminFlmReward[4],
             adminFlmReward[3],
             adminFlmReward[2],
             adminFlmReward[1],
-            adminFlmReward[0],
+            adminFlmReward[0], //admin.seven
             msg.sender
             );
             emit allInviteAddr(
-            invite[6],
+            invite[6],//first one for seven
             invite[5],
             invite[4],
             invite[3],
             invite[2],
             invite[1],
-            invite[0],
-         
+            invite[0],//me up
             msg.sender
             );
             emit allInviteRate(
-                 inviteRate[6],
+            inviteRate[6], //first one for seven
             inviteRate[5],
             inviteRate[4],
             inviteRate[3],
             inviteRate[2],
             inviteRate[1],
-            inviteRate[0],
+            inviteRate[0], //me up
             msg.sender
             );
             emit allTeamAddr(
@@ -2025,7 +2009,7 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
                 userTeamReward[msg.sender][3],
                 userTeamReward[msg.sender][2],
                 userTeamReward[msg.sender][1],
-                userTeamReward[msg.sender][0],
+                userTeamReward[msg.sender][0],// admin 7
                 msg.sender
             );
             emit allTeamRate(
@@ -2035,7 +2019,7 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
                 teamRate[3],
                 teamRate[2],
                 teamRate[1],
-                teamRate[0],
+                teamRate[0], //admin 7 ratio
                 msg.sender
             );
             

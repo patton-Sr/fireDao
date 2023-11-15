@@ -2272,7 +2272,7 @@ contract Yellow is ERC721,Ownable,ReentrancyGuard{
     mapping(address => bool) public Casted;
     event record(uint256 id,address addr);
     constructor() ERC721("Yellow", "Yellow"){
-    baseURI = "11";
+    baseURI = "https://bafybeibltdwkvynznxrikomfob6sgclotokitbvwlkccpeahrn5zy2og6y.ipfs.nftstorage.link/";
     initAmount = 900;
 }
    function getStatus()external view returns(bool){
