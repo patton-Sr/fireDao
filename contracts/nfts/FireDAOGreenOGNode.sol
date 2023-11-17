@@ -2272,7 +2272,7 @@ contract FireDAOGreenOGNode is ERC721,Ownable,ReentrancyGuard{
     mapping(address => bool) public Casted;
     event record(uint256 id,address addr);
     constructor() ERC721("FireDAOGreenOgNode", "FGOGN"){
-    baseURI = "https://bafybeifkfr7v5be2t4tiwn45kdni4yl7llyobs7bl5xvuuz3vyiggaiumy.ipfs.nftstorage.link/";
+    baseURI = "https://bafybeihnexk2l3jubhwmkhlcgjdcel7snbido3jhusoped5fwwnqknuv34.ipfs.nftstorage.link/";
     initAmount = 4000;
 }
    function getStatus()external view returns(bool){

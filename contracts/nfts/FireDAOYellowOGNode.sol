@@ -2272,7 +2272,7 @@ contract FireDAOYellowOGNode is ERC721,Ownable,ReentrancyGuard{
     mapping(address => bool) public Casted;
     event record(uint256 id,address addr);
     constructor() ERC721("FireDAOYellowOgNode", "FYOGN"){
-    baseURI = "https://bafybeibltdwkvynznxrikomfob6sgclotokitbvwlkccpeahrn5zy2og6y.ipfs.nftstorage.link/";
+    baseURI = "https://bafybeigpr43qokb6ebt6f4xh43vkzwuc2g5oi6ynst3ab7bw5zbflj37my.ipfs.nftstorage.link/";
     initAmount = 5000;
 }
    function getStatus()external view returns(bool){

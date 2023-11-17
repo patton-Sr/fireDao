@@ -1365,6 +1365,7 @@ interface IFireSeedCoupon {
 }
 interface IRainbowNft{
      function mint(address _to) external;
+     function getStatus()external view returns(bool);
 }
 
 contract PrivateExchangePoolOgV6 is Ownable,Pausable ,ReentrancyGuard{
@@ -1940,7 +1941,9 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
         TransferHelper.safeTransfer(address(flm),msg.sender,flmAmount);
         TransferHelper.safeTransfer(address(fdtOg),msg.sender,fdtAmount);
         userTotalBuy[msg.sender] = userTotalBuy[msg.sender].add(fee);
+        if(IRainbowNft(ValueToNft[fee]).getStatus()){
         IRainbowNft(ValueToNft[fee]).mint(msg.sender);
+        }
         totalDonate = totalDonate.add(fee);
             emit allRecord(
             buyId,

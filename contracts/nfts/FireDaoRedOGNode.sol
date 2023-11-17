@@ -2272,8 +2272,8 @@ contract FireDaoRedOGNode is ERC721,Ownable,ReentrancyGuard{
     mapping(address => bool) public Casted;
     event record(uint256 id,address addr);
     constructor() ERC721("FireDaoRedOgNode", "FROGN"){
-    baseURI = "https://bafybeiewtbt6bvpvnwy6xggeonmkn7uk7mtl62lnm4jayhx76ahfvk5tqi.ipfs.nftstorage.link/";
-    initAmount = 900;
+    baseURI = "https://bafybeih65puex5szh5777cajvenf3wthtuwoieyfefbaf6uenuwblrrs34.ipfs.nftstorage.link/";
+    initAmount = 7000;
 }
    function getStatus()external view returns(bool){
         if(initAmount == totalMint){
