@@ -1543,7 +1543,9 @@ enum  AdminLevel {
     
 
 	}
-   
+    function setMaxPurche(uint256 _id, uint256 _amount) public onlyOwner {
+        validNumbers[_id] = _amount;
+    }
     
     function setUsdt(address _usdt) public onlyOwner {
         usdt =_usdt;
@@ -1907,7 +1909,6 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
         }else if(!checkAddrForActivateAccount(msg.sender)){
             activateAccount.add(msg.sender);
         }
-        bool shouldBreak = false;
         address[invitationLevel] memory invite;
         uint256 fdtAmount = fee.mul(1000).div(salePrice).mul(1e12);
         uint256 usdtAmount = fee;
@@ -1923,18 +1924,7 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
                     }
           
                     for(uint i = 0; i< invitationLevel;i++){
-                        if(checkAddrForAdminLevelSeven(invite[i])){
-                            for(uint256 j = 0 ; j < invitationLevel - i ; j++){
-                                if(j + 1 == invitationLevel - i){
-                                    shouldBreak =true;
-                                }
-                            TransferHelper.safeTransfer(usdt, receiveRemainingTeamRewards, fee.mul(inviteRate[invitationLevel - j - 1]).div(10000));
-                            TransferHelper.safeTransfer(address(flm),receiveRemainingTeamRewards,fdtAmount.mul(flmRate[invitationLevel - j -1]).div(10000));
-                            }
-                        }
-                        if(shouldBreak){
-                            break;
-                        }
+                    
                         TransferHelper.safeTransfer(usdt,invite[i], fee.mul(inviteRate[i]).div(10000));
                         TransferHelper.safeTransfer(address(flm),invite[i],fdtAmount.mul(flmRate[i]).div(10000));
                 

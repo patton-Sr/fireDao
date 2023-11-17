@@ -2255,7 +2255,7 @@ abstract contract ReentrancyGuard {
 
 pragma solidity ^0.8.0;
 
-contract Yellow is ERC721,Ownable,ReentrancyGuard{
+contract FireDAOPurpleOGNode is ERC721,Ownable,ReentrancyGuard{
 
     using SafeMath for uint256;
     using Counters for Counters.Counter;
@@ -2271,9 +2271,9 @@ contract Yellow is ERC721,Ownable,ReentrancyGuard{
     mapping(address => bool) public allowAddr;
     mapping(address => bool) public Casted;
     event record(uint256 id,address addr);
-    constructor() ERC721("Yellow", "Yellow"){
-    baseURI = "https://bafybeibltdwkvynznxrikomfob6sgclotokitbvwlkccpeahrn5zy2og6y.ipfs.nftstorage.link/";
-    initAmount = 900;
+    constructor() ERC721("FireDAOPurpleOgNode", "FPOGN"){
+    baseURI = "https://bafybeihgki2wjhwpfy7zbb3ogfshws6pxttgm5ghhbrkmysacnlsw7kyaq.ipfs.nftstorage.link/";
+    initAmount = 1000;
 }
    function getStatus()external view returns(bool){
         if(initAmount == totalMint){
@@ -2282,9 +2282,7 @@ contract Yellow is ERC721,Ownable,ReentrancyGuard{
         return true;
     }
     //onlyOwner
-      function setInitAmount(uint256 _amount) public onlyOwner {
-        initAmount = _amount;
-    }
+  
     function addWhiteListUser(address[] memory _users) public onlyOwner {
         for(uint256 i = 0; i < _users.length; i++) {
             require(!checkIsNotWhiteListUser(_users[i]), "There is already a whitelist account in the user, please check and try again");
