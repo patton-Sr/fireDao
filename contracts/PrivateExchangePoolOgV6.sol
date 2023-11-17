@@ -1545,7 +1545,10 @@ enum  AdminLevel {
 
 	}
     function setMaxPurche(uint256 _id, uint256 _amount) public onlyOwner {
+        require(ValueToNft[validNumbers[_id]] != address(0));
+        address buffer = ValueToNft[validNumbers[_id]];
         validNumbers[_id] = _amount;
+        ValueToNft[_amount] = buffer;
     }
     
     function setUsdt(address _usdt) public onlyOwner {

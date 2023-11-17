@@ -5,19 +5,17 @@ async function main() {
   
     console.log(`Calling contracts with address: ${deployer.address}`);
   
-    const YourContract = await ethers.getContractFactory("Red");
+    const YourContract = await ethers.getContractFactory("FireDaoRedOGNode");
   
-    const methodName = "setBaseURI";
+    const methodName = "initAmount";
   
-    const contractAddresses =["0x021135d663F8EbFA3ca30A728fC45B720be1C2Bb",
-
-    "0xCA8F97684f606E242e41906033143391fa2152a6","0x57510fA55a4aEdB2175202CA348ABbB2777E21D7","0x93fAf7868F28E943BbE932D874f61877BC453d59","0xA1B0ea1E130f9CB7A380E8adBD453cb90F61a035","0x5C2C2ac3F8CF1B18694C56E7Ac9AD39A3725ACF4","0xb6D115B2805A94d95C74a1DC4084472bD83118Cf"];
+    const contractAddresses =["0x52DD5C3b4775EB49E97Bf5B4833Fc8E25e26f7B0","0xe2B3114A69535ac91cd6b494C128f312F8a9B87c","0x452EBeE15C193068308116AC0EDeC36cb2f28CbB","0x86e098686FE87246e6FA75B843F712fc2f300b0B","0x051072af73212d82931B0820E1d766D0D8bF4372","0x0585Be074e8599077F7B397F06AA6f991a6CC4d3","0x3a23D495FBe24Ea3026b6A9D81d840913daDd8DB"];
   
     for (const contractAddress of contractAddresses) {
       console.log(`Calling ${methodName} on contract at address: ${contractAddress}...`);
   
       const yourContractInstance = await YourContract.attach(contractAddress);
-      const result = await yourContractInstance[methodName]("");
+      const result = await yourContractInstance[methodName]();
   
       console.log(`${methodName} result from ${contractAddress}: ${result}`);
     }
