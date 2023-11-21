@@ -7,7 +7,7 @@ async function main() {
   
     const YourContract = await ethers.getContractFactory("FireDaoRedOGNode");
   
-    const methodName = "initAmount";
+    const methodName = "setAllowAddr";
   
     const contractAddresses =["0x52DD5C3b4775EB49E97Bf5B4833Fc8E25e26f7B0","0xe2B3114A69535ac91cd6b494C128f312F8a9B87c","0x452EBeE15C193068308116AC0EDeC36cb2f28CbB","0x86e098686FE87246e6FA75B843F712fc2f300b0B","0x051072af73212d82931B0820E1d766D0D8bF4372","0x0585Be074e8599077F7B397F06AA6f991a6CC4d3","0x3a23D495FBe24Ea3026b6A9D81d840913daDd8DB"];
   
@@ -15,7 +15,7 @@ async function main() {
       console.log(`Calling ${methodName} on contract at address: ${contractAddress}...`);
   
       const yourContractInstance = await YourContract.attach(contractAddress);
-      const result = await yourContractInstance[methodName]();
+      const result = await yourContractInstance[methodName]("0xD96b78BddaD38886DF87211493648E01bc7cf12d",true);
   
       console.log(`${methodName} result from ${contractAddress}: ${result}`);
     }
