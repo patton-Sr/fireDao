@@ -1368,7 +1368,7 @@ interface IRainbowNft{
      function getStatus()external view returns(bool);
 }
 
-contract PrivateExchangePoolOgV6 is Ownable,Pausable ,ReentrancyGuard{
+contract PrivateExchangePoolOgV7 is Ownable,Pausable ,ReentrancyGuard{
 
     using SafeMath for uint256;
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -1395,6 +1395,7 @@ enum  AdminLevel {
 
     ERC20 public flm;
 	ERC20 public fdtOg;
+    uint256 public totalClaim;
     address public usdt;
     address public FireSeedCoupon;
     uint256  maxUint256 = 2**256 - 1;
@@ -1447,7 +1448,10 @@ enum  AdminLevel {
     mapping(uint256 => address) public ValueToNft;
     mapping(address => orderReward[]) public orderRewards;
 
-
+    event claimRecord(     
+        address user,
+        uint256 amount);
+   
     event allFlmRate(
         uint256 flmRate0,
         uint256 flmRate1,
@@ -1956,11 +1960,13 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
                 orderRewards[_user][i].flmAmount = orderRewards[_user][i].flmAmount.sub(_claimAmount);
                 orderRewards[_user][i].time = block.timestamp;
                 if(orderRewards[_user][i].flmAmount== _claimAmount){
-                    orderRewards[_user][i].flmAmount =0;
+                    orderRewards[_user][i].flmAmount = 0;
                 }
             }
         }
         TransferHelper.safeTransfer(address(flm),msg.sender,total);
+        
+        totalClaim = totalClaim.add(total);
 
     }
  
@@ -1998,7 +2004,7 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
                                 continue;
                             }
                         TransferHelper.safeTransfer(usdt,  userTeamReward[msg.sender][i], fee.mul(teamRate[i]).div(10000));
-                        TransferHelper.safeTransfer(address(flm),userTeamReward[msg.sender][i],fdtAmount.mul(adminFlmReward[i]).div(10000));
+                        TransferHelper.safeTransfer(address(flm),userTeamReward[msg.sender][i],flmAmount.mul(adminFlmReward[i]).div(10000));
                         }
         IFireSeedCoupon(FireSeedCoupon)._mintExternal(recommender[msg.sender],FSC*10**18);
         TransferHelper.safeTransfer(address(flm), msg.sender, flmAmount);

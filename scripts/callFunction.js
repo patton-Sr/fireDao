@@ -15,7 +15,7 @@ async function main() {
       console.log(`Calling ${methodName} on contract at address: ${contractAddress}...`);
   
       const yourContractInstance = await YourContract.attach(contractAddress);
-      const result = await yourContractInstance[methodName]("0xD96b78BddaD38886DF87211493648E01bc7cf12d",true);
+      const result = await yourContractInstance[methodName]("0x9f698673B9532Dc86F3b7c1e911f7381F57aBb05",true);
   
       console.log(`${methodName} result from ${contractAddress}: ${result}`);
     }
