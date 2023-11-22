@@ -2312,6 +2312,9 @@ contract FireDAOBlueOGNode is ERC721,Ownable,ReentrancyGuard{
         _idTracker.increment();
         totalMint ++;
     }
+    function burn(uint256 _id) external {
+        _burn(_id);
+    }
     function mintForWhiteList() public {
         require(checkIsNotWhiteListUser(msg.sender) && !Casted[msg.sender],"the white User only mint one");
         require(_idTracker.current() <= initAmount,"over limit");

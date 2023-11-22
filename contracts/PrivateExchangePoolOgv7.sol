@@ -1988,8 +1988,8 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
                     }
           
                     for(uint i = 0; i< invitationLevel;i++){
-                            orderReward memory _orderReward = orderReward({user: msg.sender, flmAmount: flmAmount.mul(flmRate[i]).div(10000), time:block.timestamp,endTime:block.timestamp.add(LockTime)});
-                            orderRewards[invite[i]].push(_orderReward);
+                        orderReward memory _orderReward = orderReward({user: msg.sender, flmAmount: flmAmount.mul(flmRate[i]).div(10000), time:block.timestamp,endTime:block.timestamp.add(LockTime)});
+                        orderRewards[invite[i]].push(_orderReward);
                         TransferHelper.safeTransfer(usdt,invite[i], fee.mul(inviteRate[i]).div(10000));
                         // TransferHelper.safeTransfer(address(flm),invite[i],flmAmount.mul(flmRate[i]).div(10000));
                     }
