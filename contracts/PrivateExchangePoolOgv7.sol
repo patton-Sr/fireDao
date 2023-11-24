@@ -1388,6 +1388,7 @@ enum  AdminLevel {
     struct orderReward{
         address user;
         uint256 flmAmount;
+        uint256 startTime;
         uint256 time;
         uint256 endTime;
     }
@@ -1496,6 +1497,7 @@ enum  AdminLevel {
         uint256 no,
         uint256 fscAmount,
         uint256 salePrice,
+        uint256 flmPrice,
         address recommender,
         address addr,
         uint256 usdtAmount,
@@ -1564,7 +1566,7 @@ enum  AdminLevel {
         TransferHelper.safeTransferFrom(address(flm),msg.sender, address(this), _amount);
     }
     function setLockTime(uint256 _date) public onlyOwner{
-        LockTime = _date.mul(DAY);
+        LockTime = _date.mul(DAY).div(blockTime);
     }
 
     function setMaxPurche(uint256 _id, uint256 _amount) public onlyOwner {
@@ -1936,11 +1938,11 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
     function canClaimFlm(address _user) external view returns(uint256) {
         uint256 total = 0;
         for(uint256 i = 0 ; i < getRewardFlmLength(_user); i++){
-            if(block.timestamp > orderRewards[msg.sender][i].endTime || orderRewards[msg.sender][i].flmAmount == 0){
+            if(block.number > orderRewards[msg.sender][i].endTime || orderRewards[msg.sender][i].flmAmount == 0){
                 continue;
             }
-            if(orderRewards[_user][i].time < block.timestamp && block.timestamp <= orderRewards[_user][i].endTime ){
-                uint256 _allBlock = (block.timestamp.sub(orderRewards[_user][i].time)).div(blockTime);
+            if(orderRewards[_user][i].time < block.number && block.number <= orderRewards[_user][i].endTime ){
+                uint256 _allBlock = (orderRewards[_user][i].endTime.sub(orderRewards[_user][i].startTime));
                 total = total.add(getOneBlockReward(orderRewards[_user][i].flmAmount, _allBlock));
             }
         }
@@ -1950,15 +1952,15 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
     function ClaimFlm(address _user) public {
             uint256 total = 0;
         for(uint256 i = 0 ; i < getRewardFlmLength(_user); i++){
-            if(block.timestamp > orderRewards[msg.sender][i].endTime || orderRewards[msg.sender][i].flmAmount == 0){
+            if(block.number > orderRewards[msg.sender][i].endTime){
                 continue;
             }
-            if(orderRewards[_user][i].time < block.timestamp && block.timestamp <= orderRewards[_user][i].endTime ){
-                uint256 _allBlock = (block.timestamp.sub(orderRewards[_user][i].time)).div(blockTime);
+            if(orderRewards[_user][i].time < block.number && block.number <= orderRewards[_user][i].endTime ){
+                uint256 _allBlock = (orderRewards[_user][i].endTime.sub(orderRewards[_user][i].startTime));
                 uint256 _claimAmount = getOneBlockReward(orderRewards[_user][i].flmAmount, _allBlock);
                 total = total.add(_claimAmount);
                 orderRewards[_user][i].flmAmount = orderRewards[_user][i].flmAmount.sub(_claimAmount);
-                orderRewards[_user][i].time = block.timestamp;
+                orderRewards[_user][i].time = block.number;
                 if(orderRewards[_user][i].flmAmount== _claimAmount){
                     orderRewards[_user][i].flmAmount = 0;
                 }
@@ -1994,7 +1996,7 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
                     }
           
                     for(uint i = 0; i< invitationLevel;i++){
-                        orderReward memory _orderReward = orderReward({user: msg.sender, flmAmount: flmAmount.mul(flmRate[i]).div(10000), time:block.timestamp,endTime:block.timestamp.add(LockTime)});
+                        orderReward memory _orderReward = orderReward({user: msg.sender, flmAmount: flmAmount.mul(flmRate[i]).div(10000),startTime:block.number, time:block.number,endTime:block.number.add(LockTime)});
                         orderRewards[invite[i]].push(_orderReward);
                         TransferHelper.safeTransfer(usdt,invite[i], fee.mul(inviteRate[i]).div(10000));
                         // TransferHelper.safeTransfer(address(flm),invite[i],flmAmount.mul(flmRate[i]).div(10000));
@@ -2018,6 +2020,7 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
             buyId,
             FSC,
             salePrice,
+            flmPrice,
             recommender[msg.sender],
             msg.sender,
             usdtAmount,
