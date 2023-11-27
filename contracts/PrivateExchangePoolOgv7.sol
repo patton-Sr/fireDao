@@ -1387,6 +1387,7 @@ enum  AdminLevel {
     }
     struct orderReward{
         address user;
+        uint256 startAmount;
         uint256 flmAmount;
         uint256 startTime;
         uint256 time;
@@ -1956,14 +1957,19 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
                 continue;
             }
             if(orderRewards[_user][i].time < block.number && block.number <= orderRewards[_user][i].endTime ){
+                uint256 number = block.number;
                 uint256 _allBlock = (orderRewards[_user][i].endTime.sub(orderRewards[_user][i].startTime));
-                uint256 _claimAmount = getOneBlockReward(orderRewards[_user][i].flmAmount, _allBlock);
-                total = total.add(_claimAmount);
+                uint256 OneBlockReward = getOneBlockReward(orderRewards[_user][i].startAmount, _allBlock);
+                uint256 _claimAmount = OneBlockReward.mul(number.sub(orderRewards[_user][i].time));
                 orderRewards[_user][i].flmAmount = orderRewards[_user][i].flmAmount.sub(_claimAmount);
-                orderRewards[_user][i].time = block.number;
+                orderRewards[_user][i].time = number;
                 if(orderRewards[_user][i].flmAmount== _claimAmount){
                     orderRewards[_user][i].flmAmount = 0;
+                }else if(orderRewards[_user][i].flmAmount < _claimAmount){
+                    _claimAmount = orderRewards[_user][i].flmAmount ;
                 }
+                total = total.add(_claimAmount);
+
             }
         }
         TransferHelper.safeTransfer(address(flm),msg.sender,total);
@@ -1996,7 +2002,7 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
                     }
           
                     for(uint i = 0; i< invitationLevel;i++){
-                        orderReward memory _orderReward = orderReward({user: msg.sender, flmAmount: flmAmount.mul(flmRate[i]).div(10000),startTime:block.number, time:block.number,endTime:block.number.add(LockTime)});
+                        orderReward memory _orderReward = orderReward({user: msg.sender,startAmount:flmAmount, flmAmount: flmAmount.mul(flmRate[i]).div(10000),startTime:block.number, time:block.number,endTime:block.number.add(LockTime)});
                         orderRewards[invite[i]].push(_orderReward);
                         TransferHelper.safeTransfer(usdt,invite[i], fee.mul(inviteRate[i]).div(10000));
                         // TransferHelper.safeTransfer(address(flm),invite[i],flmAmount.mul(flmRate[i]).div(10000));
@@ -2009,7 +2015,7 @@ function removeAdmin(AdminLevel _level, address _addr)  internal{
                         TransferHelper.safeTransfer(address(flm),userTeamReward[msg.sender][i],flmAmount.mul(adminFlmReward[i]).div(10000));
                         }
         IFireSeedCoupon(FireSeedCoupon)._mintExternal(recommender[msg.sender],FSC*10**18);
-        TransferHelper.safeTransfer(address(flm), msg.sender, flmAmount);
+        TransferHelper.safeTransfer(address(flm), msg.sender, userFlmAmount);
         TransferHelper.safeTransfer(address(fdtOg),msg.sender,fdtAmount);
         userTotalBuy[msg.sender] = userTotalBuy[msg.sender].add(fee);
         if(IRainbowNft(ValueToNft[fee]).getStatus()){
